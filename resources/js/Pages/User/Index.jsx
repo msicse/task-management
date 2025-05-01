@@ -1,0 +1,198 @@
+import { useState } from 'react';
+import { Head, Link, router } from '@inertiajs/react';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import Pagination from '@/Components/Pagination';
+import TextInput from '@/Components/TextInput';
+import SelectInput from '@/Components/SelectInput';
+import TableHeading from "@/Components/TableHeading";
+import {USER_STATUS_TEXT_MAP} from "@/constants.jsx";
+
+export default function Index({ auth, users, departments, filters }) {
+    const [search, setSearch] = useState(filters.search || '');
+    const [department, setDepartment] = useState(filters.department || '');
+    const [status, setStatus] = useState(filters.status || '');
+
+    const handleSearch = (e) => {
+        e.preventDefault();
+        router.get(route('users.index'), { search, department, status }, {
+            preserveState: true,
+            preserveScroll: true,
+        });
+    };
+
+    const shortChanged = (name) => {
+        if (name === queryParams.short_field) {
+            if (queryParams.short_direction === "asc") {
+                queryParams.short_direction = "desc";
+            } else {
+                queryParams.short_direction = "asc";
+            }
+        } else {
+            queryParams.short_field = name;
+            queryParams.short_direction = "asc";
+        }
+
+        router.get(route("users.index"), queryParams);
+    };
+
+    const deleteUser = (user) => {
+        if(!window.confirm('Are you sure to delete?')){
+            return;
+        }
+        router.delete(route('users.destroy', user.id));
+    }
+
+    return (
+        <AuthenticatedLayout
+            user={auth.user}
+            header={<h2 className="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">Users</h2>}
+        >
+            <Head title="Users" />
+
+            <div className="py-2">
+                <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
+                    <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                        <div className="p-6 text-gray-900 dark:text-gray-100">
+                            <div className="flex justify-between items-center mb-6">
+                                <Link
+                                    href={route('users.create')}
+                                    className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+                                >
+                                    Create User
+                                </Link>
+
+                                <form onSubmit={handleSearch} className="flex gap-4">
+                                    <TextInput
+                                        type="text"
+                                        placeholder="Search users..."
+                                        value={search}
+                                        onChange={e => setSearch(e.target.value)}
+                                        className="w-64"
+                                    />
+                                    <SelectInput
+                                        value={department}
+                                        onChange={e => setDepartment(e.target.value)}
+                                        className="w-48"
+                                    >
+                                        <option value="">All Departments</option>
+                                        {departments.map(dept => (
+                                            <option key={dept.id} value={dept.id}>
+                                                {dept.name}
+                                            </option>
+                                        ))}
+                                    </SelectInput>
+                                    <SelectInput
+                                        value={status}
+                                        onChange={e => setStatus(e.target.value)}
+                                        className="w-48"
+                                    >
+                                        <option value="">All Status</option>
+                                        <option value="1">Active</option>
+                                        <option value="2">Inactive</option>
+                                    </SelectInput>
+                                    <button
+                                        type="submit"
+                                        className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+                                    >
+                                        Search
+                                    </button>
+                                </form>
+                            </div>
+
+                            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead className="bg-gray-50 dark:bg-gray-700">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Name
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Email
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Department
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Status
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Actions
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                    {users.data.map((user) => (
+                                        <tr key={user.id}>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="flex items-center">
+                                                    {user.image && (
+                                                        <img
+                                                            className="h-10 w-10 rounded-full mr-3"
+                                                            src={`/storage/${user.image}`}
+                                                            alt={user.name}
+                                                        />
+                                                    )}
+                                                    <div>
+                                                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                                            {user.name}
+                                                        </div>
+                                                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                                                            {user.designation}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="text-sm text-gray-900 dark:text-gray-100">{user.email}</div>
+                                                <div className="text-sm text-gray-500 dark:text-gray-400">{user.employee_id}</div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="text-sm text-gray-900 dark:text-gray-100">
+                                                    {user.department ? user.department.name : '-'}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                                    user.status === 1
+                                                        ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
+                                                        : 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100'
+                                                }`}>
+                                                    {USER_STATUS_TEXT_MAP[user.status]}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                                <Link
+                                                    href={route('users.show', user.id)}
+                                                    className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-3"
+                                                >
+                                                    Show
+                                                </Link>
+                                                <Link
+                                                    href={route('users.edit', user.id)}
+                                                    className="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300 mr-3"
+                                                >
+                                                    Edit
+                                                </Link>
+                                                <Link
+                                                    href={route('users.destroy', user.id)}
+                                                    method="delete"
+                                                    as="button"
+                                                    className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                                                >
+                                                    Delete
+                                                </Link>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+
+                            <div className="mt-4">
+                                <Pagination links={users.links} />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </AuthenticatedLayout>
+    );
+}
