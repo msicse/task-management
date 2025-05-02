@@ -88,8 +88,8 @@ class TaskController extends Controller
 
         // Get comments with their replies and user information
         $comments = $task->comments()
-            ->whereNull('parent_id')  // Get only top-level comments
-            ->with(['user', 'replies.user'])  // Eager load relationships
+            //->whereNull('parent_id')  // Get only top-level comments
+            ->with(['user', 'replies'])  // Eager load relationships
             ->get();
 
         // Load files with user information
@@ -113,7 +113,7 @@ class TaskController extends Controller
 
         return inertia('Task/Show', [
             'task' => new TaskResource($task),
-            'comments' => $comments,
+            'comments' => CommentResource::collection($comments),
             'files' => $files,
         ]);
     }

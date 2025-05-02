@@ -12,6 +12,8 @@ import TaskFiles from "@/Components/TaskFiles";
 import { useState } from "react";
 
 export default function Show({ auth, task, comments, files }) {
+
+    console.log("comments", comments);
   const [replyingTo, setReplyingTo] = useState(null);
   const [updating, setUpdating] = useState(false);
 
@@ -256,8 +258,8 @@ export default function Show({ auth, task, comments, files }) {
                 </div>
 
                 <div className="space-y-6">
-                  {comments?.length > 0 ? (
-                    comments.map((comment) => (
+                  {comments?.data?.length > 0 ? (
+                    comments.data.map((comment) => (
                       <div
                         key={comment.id}
                         className="border-b border-gray-200 dark:border-gray-700 pb-6 last:border-0"
@@ -279,9 +281,8 @@ export default function Show({ auth, task, comments, files }) {
                                 {comment.user.name}
                               </h4>
                               <span className="text-xs text-gray-500 dark:text-gray-400">
-                                {new Date(
-                                  comment.created_at
-                                ).toLocaleDateString()}
+                                {comment.created_at}
+                                {comment.created_at_human}
                               </span>
                             </div>
                             <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">
@@ -313,9 +314,7 @@ export default function Show({ auth, task, comments, files }) {
                                             {reply.user.name}
                                           </h4>
                                           <span className="text-xs text-gray-500 dark:text-gray-400">
-                                            {new Date(
-                                              reply.created_at
-                                            ).toLocaleDateString()}
+                                          {reply.created_at_human}
                                           </span>
                                         </div>
                                         <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">
@@ -350,6 +349,7 @@ export default function Show({ auth, task, comments, files }) {
                                 <CommentForm
                                   taskId={task.id}
                                   parentId={comment.id}
+                                  ButtonName="Reply"
                                 />
                               </div>
                             )}

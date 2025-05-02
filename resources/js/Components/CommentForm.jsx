@@ -3,11 +3,12 @@ import InputError from "@/Components/InputError";
 import TextareaInput from "@/Components/TextareaInput";
 import PrimaryButton from "@/Components/PrimaryButton";
 
-export default function CommentForm({ taskId, parentId = null }) {
+export default function CommentForm({ taskId, parentId = null, ButtonName = "Post Comment" }) {
     const { data, setData, post, processing, reset, errors } = useForm({
         content: "",
         task_id: taskId,
         parent_id: parentId,
+        ButtonName: ButtonName,
     });
 
     const submit = (e) => {
@@ -27,7 +28,7 @@ export default function CommentForm({ taskId, parentId = null }) {
                 <TextareaInput
                     value={data.content}
                     onChange={(e) => setData("content", e.target.value)}
-                    placeholder="Write your comment..."
+                    placeholder={`Write your comment...`}
                     className="w-full"
                     rows={3}
                 />
@@ -35,7 +36,7 @@ export default function CommentForm({ taskId, parentId = null }) {
             </div>
             <div className="flex justify-end">
                 <PrimaryButton disabled={processing}>
-                    {processing ? "Posting..." : "Post Comment"}
+                    {processing ? "Posting..." : ButtonName}
                 </PrimaryButton>
             </div>
         </form>
