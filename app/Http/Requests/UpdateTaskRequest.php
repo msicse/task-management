@@ -24,13 +24,16 @@ class UpdateTaskRequest extends FormRequest
     {
         return [
             "image" => ["nullable", "image"],
-            "name" => ["required", "max:255"],
-            "description" => ["string"],
+            "name" => ["nullable", "max:255"],
+            "description" => ["nullable", "string"],
             "due_date" => ["nullable", "date"],
-            "status" => ["required", Rule::in(['pending', 'in_progress', 'completed'])],
-            "priority" => ["required", Rule::in(['low', 'medium', 'high'])],
-            "project_id" => ["required", 'exists:projects,id'],
-            "assigned_user_id" => ["required", 'exists:users,id'],
+            "status" => ["nullable", Rule::in(['pending', 'in_progress', 'completed'])],
+            "priority" => ["nullable", Rule::in(['low', 'medium', 'high'])],
+            "project_id" => ["nullable", 'exists:projects,id'],
+            "assigned_user_id" => ["nullable", 'exists:users,id'],
+            "completed_at" => ["nullable", "date"],
+            "assignor_score" => ["nullable", "integer", "min:1", "max:5"],
+            "assignee_score" => ["nullable", "integer", "min:1", "max:5"],
         ];
     }
 }

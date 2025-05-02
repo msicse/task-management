@@ -32,7 +32,7 @@ class TaskFile extends Model
     public function getFileIcon()
     {
         $extension = pathinfo($this->original_name, PATHINFO_EXTENSION);
-        
+
         switch (strtolower($extension)) {
             case 'pdf':
                 return 'fa-file-pdf';
@@ -61,14 +61,7 @@ class TaskFile extends Model
     public function getFileSizeForHumans()
     {
         $bytes = $this->size;
-        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
-        $index = 0;
-        
-        while ($bytes >= 1024 && $index < count($units) - 1) {
-            $bytes /= 1024;
-            $index++;
-        }
-        
-        return round($bytes, 2) . ' ' . $units[$index];
+        // Convert bytes to KB and round to 2 decimal places
+        return round($bytes / 1024, 2) . ' KB';
     }
 }

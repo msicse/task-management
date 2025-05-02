@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Comment;
+use App\Models\Task;
+use App\Http\Resources\CommentResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -23,6 +25,17 @@ class CommentController extends Controller
             'user_id' => Auth::id(),
         ]);
 
-        return back()->with('success', 'Comment added successfully.');
+        // Load the task with its comments and their relationships
+        $task = Task::with(['comments' => function($query) {
+            $query->whereNull('parent_id')
+                  ->with(['user', 'replies.user'])
+                  ->latest();
+        }])->find($validated['task_id']);
+
+        // Return to the previous page with the updated comments
+        return back()->with([
+            'success' => 'Comment added successfully',
+            'comments' => CommentResource::collection($task->comments)
+        ]);
     }
-} 
+}

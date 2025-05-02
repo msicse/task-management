@@ -15,7 +15,8 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use App\Models\Category;
-
+use Carbon\Carbon;
+use App\Http\Resources\CommentResource;
 
 class TaskController extends Controller
 {
@@ -83,87 +84,34 @@ class TaskController extends Controller
      */
     public function show(Task $task)
     {
-        $task->load(['assignedUser', 'createdBy', 'updatedBy', 'project', 'files.user']);
+        $task->load(['assignedUser', 'createdBy', 'updatedBy', 'project']);
 
-        // Add dummy comments for demonstration
-        $comments = collect([
-            [
-                'id' => 1,
-                'content' => 'I\'ve started working on this task. Will update progress soon.',
-                'created_at' => now()->subDays(2),
-                'user' => [
-                    'name' => 'John Doe',
-                    'avatar' => 'https://ui-avatars.com/api/?name=John+Doe&background=0D8ABC&color=fff'
-                ],
-                'replies' => [
-                    [
-                        'id' => 2,
-                        'content' => 'Great! Let me know if you need any help.',
-                        'created_at' => now()->subDays(1),
-                        'user' => [
-                            'name' => 'Jane Smith',
-                            'avatar' => 'https://ui-avatars.com/api/?name=Jane+Smith&background=7C3AED&color=fff'
-                        ]
+        // Get comments with their replies and user information
+        $comments = $task->comments()
+            ->whereNull('parent_id')  // Get only top-level comments
+            ->with(['user', 'replies.user'])  // Eager load relationships
+            ->get();
+
+        // Load files with user information
+        $files = $task->files()
+            ->with('user')
+            ->latest()
+            ->get()
+            ->map(function ($file) {
+                return [
+                    'id' => $file->id,
+                    'original_name' => $file->original_name,
+                    'mime_type' => $file->mime_type,
+                    'size_for_humans' => $file->getFileSizeForHumans(),
+                    'icon' => $file->getFileIcon(),
+                    'created_at' => $file->created_at->format('d-m-Y'),
+                    'user' => [
+                        'name' => $file->user->name,
                     ],
-                    [
-                        'id' => 3,
-                        'content' => 'Thanks! I\'ll keep you posted.',
-                        'created_at' => now()->subHours(12),
-                        'user' => [
-                            'name' => 'John Doe',
-                            'avatar' => 'https://ui-avatars.com/api/?name=John+Doe&background=0D8ABC&color=fff'
-                        ]
-                    ]
-                ]
-            ],
-            [
-                'id' => 4,
-                'content' => 'I\'ve reviewed the requirements. Everything looks clear.',
-                'created_at' => now()->subHours(6),
-                'user' => [
-                    'name' => 'Mike Johnson',
-                    'avatar' => 'https://ui-avatars.com/api/?name=Mike+Johnson&background=059669&color=fff'
-                ],
-                'replies' => []
-            ],
-            [
-                'id' => 5,
-                'content' => 'Progress update: Completed 50% of the task. Will finish by tomorrow.',
-                'created_at' => now()->subHours(2),
-                'user' => [
-                    'name' => 'John Doe',
-                    'avatar' => 'https://ui-avatars.com/api/?name=John+Doe&background=0D8ABC&color=fff'
-                ],
-                'replies' => [
-                    [
-                        'id' => 6,
-                        'content' => 'That\'s great progress! Keep up the good work.',
-                        'created_at' => now()->subHour(),
-                        'user' => [
-                            'name' => 'Sarah Wilson',
-                            'avatar' => 'https://ui-avatars.com/api/?name=Sarah+Wilson&background=DC2626&color=fff'
-                        ]
-                    ]
-                ]
-            ]
-        ]);
+                ];
+            });
 
-        // Format files for the view
-        $files = $task->files->map(function ($file) {
-            return [
-                'id' => $file->id,
-                'original_name' => $file->original_name,
-                'mime_type' => $file->mime_type,
-                'size_for_humans' => $file->getFileSizeForHumans(),
-                'icon' => $file->getFileIcon(),
-                'created_at' => $file->created_at,
-                'user' => [
-                    'name' => $file->user->name,
-                ],
-            ];
-        });
-
-        return Inertia::render('Task/Show', [
+        return inertia('Task/Show', [
             'task' => new TaskResource($task),
             'comments' => $comments,
             'files' => $files,
@@ -194,15 +142,38 @@ class TaskController extends Controller
         $image = $data['image'] ?? null;
         $data['updated_by'] = Auth::user()->id;
 
-        if ($task->image_path) {
-            Storage::disk('public')->deleteDirectory(dirname($task->image_path));
+        // Handle status change and completion date
+        if (isset($data['status'])) {
+            if ($data['status'] === 'completed' && $task->status !== 'completed') {
+                $data['completed_at'] = now();
+            } elseif ($data['status'] !== 'completed') {
+                $data['completed_at'] = null;
+            }
         }
+
+        // Handle scoring - removed redundant assignments
+        if (Auth::id() === $task->created_by && isset($data['assignor_score'])) {
+            // score is already in $data['assignor_score'], no need to reassign
+        }
+        if (Auth::id() === $task->assigned_user_id && isset($data['assignee_score'])) {
+            // score is already in $data['assignee_score'], no need to reassign
+        }
+
+        // Handle image update
         if ($image) {
+            if ($task->image_path) {
+                Storage::disk('public')->deleteDirectory(dirname($task->image_path));
+            }
             $data['image_path'] = $image->store('task/' . Str::random(), 'public');
         }
+
         $task->update($data);
 
-        return to_route("tasks.index")->with("success", ("Task \"$task->name\" is updated"));
+        if ($request->wantsJson()) {
+            return response()->json(['message' => 'Task updated successfully']);
+        }
+
+        return to_route("tasks.index")->with("success", "Task \"$task->name\" is updated");
     }
 
     /**

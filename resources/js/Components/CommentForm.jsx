@@ -13,7 +13,11 @@ export default function CommentForm({ taskId, parentId = null }) {
     const submit = (e) => {
         e.preventDefault();
         post(route("comments.store"), {
-            onSuccess: () => reset("content"),
+            preserveScroll: true,
+            preserveState: false,
+            onSuccess: () => {
+                reset("content");
+            },
         });
     };
 
@@ -36,4 +40,4 @@ export default function CommentForm({ taskId, parentId = null }) {
             </div>
         </form>
     );
-} 
+}

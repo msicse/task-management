@@ -23,6 +23,10 @@ class Task extends Model
         'priority',
         'created_by',
         'updated_by',
+        'project_id',
+        'completed_at',
+        'assignor_score',
+        'assignee_score',
     ];
 
     public function project()
@@ -34,7 +38,6 @@ class Task extends Model
     {
         return $this->belongsTo(User::class, "assigned_user_id");
     }
-
 
     public function createdBy()
     {
@@ -48,7 +51,7 @@ class Task extends Model
 
     public function comments()
     {
-        return $this->hasMany(Comment::class);
+        return $this->hasMany(Comment::class)->with(['user', 'replies.user'])->latest();
     }
 
     public function files()
