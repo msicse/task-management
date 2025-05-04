@@ -9,41 +9,106 @@ import {
 import CommentForm from "@/Components/CommentForm";
 import FileUpload from "@/Components/FileUpload";
 import TaskFiles from "@/Components/TaskFiles";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import Alert from "@/Components/Alert";
 
-export default function Show({ auth, task, comments, files }) {
-
-    console.log("comments", comments);
+export default function Show({ auth, task, comments, files, success }) {
   const [replyingTo, setReplyingTo] = useState(null);
   const [updating, setUpdating] = useState(false);
+  const [timeSpent, setTimeSpent] = useState('');
+  const [showTimeSpentInput, setShowTimeSpentInput] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   const handleStatusChange = async (e) => {
+    const newStatus = e.target.value;
     setUpdating(true);
-    const form = new FormData();
-    form.append("status", e.target.value);
-    form.append("_method", "PUT");
 
     try {
-      await router.post(route("tasks.update", task.id), form);
+      // If changing to completed, show time spent input
+      if (newStatus === 'completed' && task.status !== 'completed') {
+        setShowTimeSpentInput(true);
+        return;
+      }
+
+      router.visit(route("tasks.update-details", task.id), {
+        method: 'put',
+        data: { status: newStatus },
+        preserveScroll: true,
+        onSuccess: (page) => {
+          setSuccessMessage(page.props.success);
+          setShowSuccess(true);
+          setUpdating(false);
+        },
+        onError: () => {
+          setUpdating(false);
+        }
+      });
     } catch (error) {
       console.error("Failed to update task status:", error);
+      setUpdating(false);
     }
-    setUpdating(false);
+  };
+
+  const handleTimeSpentSubmit = async () => {
+    setUpdating(true);
+    try {
+      router.visit(route("tasks.update-details", task.id), {
+        method: 'put',
+        data: {
+          status: 'completed',
+          time_spent: parseFloat(timeSpent)
+        },
+        preserveScroll: true,
+        onSuccess: (page) => {
+          setSuccessMessage(page.props.success);
+          setShowSuccess(true);
+          setShowTimeSpentInput(false);
+          setTimeSpent('');
+          setUpdating(false);
+        },
+        onError: () => {
+          setUpdating(false);
+        }
+      });
+    } catch (error) {
+      console.error("Failed to update task:", error);
+      setUpdating(false);
+    }
   };
 
   const handleScore = async (type, score) => {
     setUpdating(true);
-    const form = new FormData();
-    form.append(type, score);
-    form.append("_method", "PUT");
-
     try {
-      await router.post(route("tasks.update", task.id), form);
+      router.visit(route("tasks.update-details", task.id), {
+        method: 'put',
+        data: {
+          scoreType: type,
+          score: score
+        },
+        preserveScroll: true,
+        onSuccess: (page) => {
+          setSuccessMessage(page.props.success);
+          setShowSuccess(true);
+          setUpdating(false);
+        },
+        onError: () => {
+          setUpdating(false);
+        }
+      });
     } catch (error) {
       console.error("Failed to update task score:", error);
+      setUpdating(false);
     }
-    setUpdating(false);
   };
+
+  // Set initial success message from props if it exists
+  useEffect(() => {
+    if (success) {
+      setSuccessMessage(success);
+      setShowSuccess(true);
+    }
+  }, [success]);
 
   return (
     <AuthenticatedLayout
@@ -74,7 +139,14 @@ export default function Show({ auth, task, comments, files }) {
 
       <div className="py-2">
         <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-          {/* Task Header Card */}
+          {showSuccess && (
+            <Alert
+              message={successMessage}
+              type="success"
+              onClose={() => setShowSuccess(false)}
+            />
+          )}
+
           <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg mb-6">
             <div className="p-6">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between">
@@ -92,6 +164,42 @@ export default function Show({ auth, task, comments, files }) {
                     <option value="in_progress">In Progress</option>
                     <option value="completed">Completed</option>
                   </select>
+                  {showTimeSpentInput && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl">
+                        <h3 className="text-lg font-medium mb-4">Enter Time Spent</h3>
+                        <div className="mb-4">
+                          <input
+                            type="number"
+                            step="0.25"
+                            min="0"
+                            value={timeSpent}
+                            onChange={(e) => setTimeSpent(e.target.value)}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            placeholder="Hours spent on task"
+                          />
+                        </div>
+                        <div className="flex justify-end space-x-3">
+                          <button
+                            onClick={() => {
+                              setShowTimeSpentInput(false);
+                              setTimeSpent('');
+                            }}
+                            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={handleTimeSpentSubmit}
+                            disabled={!timeSpent}
+                            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                          >
+                            Complete Task
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   <span
                     className={`px-3 py-1 rounded-full text-sm font-medium ${
                       TASK_PRIORITY_CLASS_MAP[task.priority]
@@ -109,9 +217,7 @@ export default function Show({ auth, task, comments, files }) {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Column - Task Details */}
             <div className="lg:col-span-2 space-y-6">
-              {/* Task Details */}
               <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div className="p-6">
                   <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
@@ -218,7 +324,6 @@ export default function Show({ auth, task, comments, files }) {
                   </div>
                 </div>
               </div>
-              {/* Task Description */}
               <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div className="p-6">
                   <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
@@ -233,7 +338,6 @@ export default function Show({ auth, task, comments, files }) {
                 </div>
               </div>
 
-              {/* Task Files */}
               <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div className="p-6">
                   <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
@@ -247,7 +351,6 @@ export default function Show({ auth, task, comments, files }) {
               </div>
             </div>
 
-            {/* Right Column - Comments */}
             <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
               <div className="p-6">
                 <div className="mb-6">
@@ -289,7 +392,6 @@ export default function Show({ auth, task, comments, files }) {
                               {comment.content}
                             </p>
 
-                            {/* Sub-comments */}
                             {comment.replies?.length > 0 && (
                               <div className="mt-3 ml-4 pl-4 border-l-2 border-gray-200 dark:border-gray-700">
                                 {comment.replies.map((reply) => (
