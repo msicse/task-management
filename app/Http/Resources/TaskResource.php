@@ -29,6 +29,8 @@ class TaskResource extends JsonResource
             "factory_id" => $this->factory_id,
             "category_id" => $this->category_id,
             "assigned_user_id" => $this->assigned_user_id,
+            "creator_rating" => $this->creator_rating,
+            "assignee_rating" => $this->assignee_rating,
             "image_path" => $this->image_path ? Storage::url($this->image_path) : $this->image_path,
             "category" => $this->category ? ["id" => $this->category->id, "name" => $this->category->name] : null,
             "assignedUser" => $this->assignedUser ? new UserResource($this->assignedUser) : null,

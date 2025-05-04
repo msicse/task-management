@@ -25,8 +25,8 @@ class Task extends Model
         'updated_by',
         'project_id',
         'completed_at',
-        'assignor_score',
-        'assignee_score',
+        'creator_rating',
+        'assignee_rating',
     ];
 
     public function project()

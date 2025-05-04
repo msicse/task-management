@@ -22,8 +22,8 @@ return new class extends Migration
             $table->timestamp('due_date')->nullable();
             $table->timestamp('completed_at')->nullable();
             $table->longText('description')->nullable();
-            $table->string('assignor_score')->nullable();
-            $table->string('assignee_score')->nullable();
+            $table->unsignedTinyInteger('creator_rating')->nullable(); // Creator → Assignee
+            $table->unsignedTinyInteger('assignee_rating')->nullable(); // Assignee → Creator
             $table->string('image_path')->nullable();
             $table->foreignId('assigned_user_id')->constrained('users');
             $table->foreignId('created_by')->constrained('users');

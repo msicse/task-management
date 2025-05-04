@@ -13,26 +13,39 @@ import { useState, useEffect } from "react";
 import Alert from "@/Components/Alert";
 
 export default function Show({ auth, task, comments, files, success }) {
+  console.log("Task Details:", task);
+  console.log("Creator Rating:", task.creator_rating);
+  console.log("Assignee Rating:", task.assignee_rating);
+  console.log("Assigned User:", task.assigned_user_id);
+  console.log("CreatedBy :", task.createdBy.id);
+
   const [replyingTo, setReplyingTo] = useState(null);
   const [updating, setUpdating] = useState(false);
-  const [timeSpent, setTimeSpent] = useState('');
+  const [timeSpent, setTimeSpent] = useState("");
   const [showTimeSpentInput, setShowTimeSpentInput] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState("");
 
   const handleStatusChange = async (e) => {
     const newStatus = e.target.value;
+
+    // Prevent assignee from changing status if task is completed, unless the role is admin
+    if (task.status === "completed" && auth.user.id === task.assigned_user_id && auth.user.role !== "admin") {
+        alert("You cannot change the status of a completed task.");
+        return;
+    }
+
     setUpdating(true);
 
     try {
       // If changing to completed, show time spent input
-      if (newStatus === 'completed' && task.status !== 'completed') {
+      if (newStatus === "completed" && task.status !== "completed") {
         setShowTimeSpentInput(true);
         return;
       }
 
       router.visit(route("tasks.update-details", task.id), {
-        method: 'put',
+        method: "put",
         data: { status: newStatus },
         preserveScroll: true,
         onSuccess: (page) => {
@@ -42,7 +55,7 @@ export default function Show({ auth, task, comments, files, success }) {
         },
         onError: () => {
           setUpdating(false);
-        }
+        },
       });
     } catch (error) {
       console.error("Failed to update task status:", error);
@@ -54,22 +67,22 @@ export default function Show({ auth, task, comments, files, success }) {
     setUpdating(true);
     try {
       router.visit(route("tasks.update-details", task.id), {
-        method: 'put',
+        method: "put",
         data: {
-          status: 'completed',
-          time_spent: parseFloat(timeSpent)
+          status: "completed",
+          time_spent: parseFloat(timeSpent),
         },
         preserveScroll: true,
         onSuccess: (page) => {
           setSuccessMessage(page.props.success);
           setShowSuccess(true);
           setShowTimeSpentInput(false);
-          setTimeSpent('');
+          setTimeSpent("");
           setUpdating(false);
         },
         onError: () => {
           setUpdating(false);
-        }
+        },
       });
     } catch (error) {
       console.error("Failed to update task:", error);
@@ -81,10 +94,10 @@ export default function Show({ auth, task, comments, files, success }) {
     setUpdating(true);
     try {
       router.visit(route("tasks.update-details", task.id), {
-        method: 'put',
+        method: "put",
         data: {
           scoreType: type,
-          score: score
+          score: score,
         },
         preserveScroll: true,
         onSuccess: (page) => {
@@ -94,7 +107,7 @@ export default function Show({ auth, task, comments, files, success }) {
         },
         onError: () => {
           setUpdating(false);
-        }
+        },
       });
     } catch (error) {
       console.error("Failed to update task score:", error);
@@ -167,7 +180,9 @@ export default function Show({ auth, task, comments, files, success }) {
                   {showTimeSpentInput && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                       <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl">
-                        <h3 className="text-lg font-medium mb-4">Enter Time Spent</h3>
+                        <h3 className="text-lg font-medium mb-4">
+                          Enter Time Spent
+                        </h3>
                         <div className="mb-4">
                           <input
                             type="number"
@@ -183,7 +198,7 @@ export default function Show({ auth, task, comments, files, success }) {
                           <button
                             onClick={() => {
                               setShowTimeSpentInput(false);
-                              setTimeSpent('');
+                              setTimeSpent("");
                             }}
                             className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
                           >
@@ -254,8 +269,8 @@ export default function Show({ auth, task, comments, files, success }) {
                     </div>
                     {task.status === "completed" && (
                       <>
-                        {auth.user.id === task.created_by &&
-                          !task.assignor_score && (
+                        {auth.user.id === task.createdBy.id &&
+                          !task.creator_rating && (
                             <div>
                               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
                                 Rate Assignee
@@ -263,7 +278,7 @@ export default function Show({ auth, task, comments, files, success }) {
                               <select
                                 className="mt-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 disabled:opacity-50"
                                 onChange={(e) =>
-                                  handleScore("assignor_score", e.target.value)
+                                  handleScore("creator_rating", e.target.value)
                                 }
                                 disabled={updating}
                                 defaultValue=""
@@ -277,8 +292,9 @@ export default function Show({ auth, task, comments, files, success }) {
                               </select>
                             </div>
                           )}
+
                         {auth.user.id === task.assigned_user_id &&
-                          !task.assignee_score && (
+                          !task.assignee_rating && (
                             <div>
                               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
                                 Rate Task Creator
@@ -286,7 +302,7 @@ export default function Show({ auth, task, comments, files, success }) {
                               <select
                                 className="mt-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 disabled:opacity-50"
                                 onChange={(e) =>
-                                  handleScore("assignee_score", e.target.value)
+                                  handleScore("assignee_rating", e.target.value)
                                 }
                                 disabled={updating}
                                 defaultValue=""
@@ -300,20 +316,21 @@ export default function Show({ auth, task, comments, files, success }) {
                               </select>
                             </div>
                           )}
-                        {(task.assignor_score || task.assignee_score) && (
+                        {(task.creator_rating || task.assignee_rating) && (
                           <div>
                             <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
                               Scores
                             </p>
                             <div className="mt-1 space-y-1">
-                              {task.assignor_score && (
+                              {task.creator_rating  && auth.user.id === task.assigned_user_id &&  (
                                 <p className="text-gray-900 dark:text-gray-100">
-                                  Assignor's Score: {task.assignor_score}/5
+                                  Your Rating: {task.creator_rating}/5
                                 </p>
                               )}
-                              {task.assignee_score && (
+
+                              {task.assignee_rating && auth.user.id === task.createdBy.id && (
                                 <p className="text-gray-900 dark:text-gray-100">
-                                  Assignee's Score: {task.assignee_score}/5
+                                  Your Rating: {task.assignee_rating}/5
                                 </p>
                               )}
                             </div>
@@ -416,7 +433,7 @@ export default function Show({ auth, task, comments, files, success }) {
                                             {reply.user.name}
                                           </h4>
                                           <span className="text-xs text-gray-500 dark:text-gray-400">
-                                          {reply.created_at_human}
+                                            {reply.created_at_human}
                                           </span>
                                         </div>
                                         <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">

@@ -38,9 +38,22 @@ class TaskController extends Controller
         if (request("status")) {
             $query->where("status", request("status"));
         }
+        if (request("priority")) {
+            $query->where("priority", request("priority"));
+        }
+        if (request("assigned_to")) {
+            $query->where("assigned_user_id", request("assigned_to"));
+        }
+        if (request("category")) {
+            $query->where("category_id", request("category"));
+        }
         $tasks = $query->orderBy($shortField, $shortDirection)->paginate(10)->onEachSide(1);
+        $users = User::query()->orderBy('name', 'asc')->get();
+        $categories = Category::query()->orderBy('name', 'asc')->get();
         return inertia("Task/Index", [
             "tasks" => TaskResource::collection($tasks),
+            "users" => $users,
+            'categories' => Category::query()->orderBy('name', 'asc')->get(),
             'queryParams' => request()->query() ?: null,
             'success' => session('success'),
         ]);
@@ -87,7 +100,8 @@ class TaskController extends Controller
      */
     public function show(Task $task)
     {
-        $task->load(['assignedUser', 'createdBy', 'updatedBy', 'project']);
+
+        $task->load(['assignedUser', 'createdBy', 'updatedBy', 'category']);
 
         // Get comments with their replies and user information
         $comments = $task->comments()
@@ -202,7 +216,7 @@ class TaskController extends Controller
     {
         $validated = $request->validate([
             'status' => ['sometimes', 'required', Rule::in(['pending', 'in_progress', 'completed'])],
-            'scoreType' => ['sometimes', 'required', 'in:assignor_score,assignee_score'],
+            'scoreType' => ['sometimes', 'required', 'in:creator_rating,assignee_rating'],
             'score' => ['required_with:scoreType', 'integer', 'min:1', 'max:5'],
             'time_spent' => ['sometimes', 'required', 'numeric', 'min:0'],
         ]);
@@ -234,13 +248,13 @@ class TaskController extends Controller
             }
 
             // Verify user authorization for scoring
-            if ($validated['scoreType'] === 'assignor_score') {
+            if ($validated['scoreType'] === 'creator_rating') {
                 if (Auth::id() !== $task->created_by) {
-                    return response()->json(['error' => 'Unauthorized to give assignor score'], 403);
+                    return response()->json(['error' => 'Unauthorized to give creator rating'], 403);
                 }
-            } elseif ($validated['scoreType'] === 'assignee_score') {
+            } elseif ($validated['scoreType'] === 'assignee_rating') {
                 if (Auth::id() !== $task->assigned_user_id) {
-                    return response()->json(['error' => 'Unauthorized to give assignee score'], 403);
+                    return response()->json(['error' => 'Unauthorized to give assignee rating'], 403);
                 }
             }
 

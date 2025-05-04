@@ -21,6 +21,7 @@ export default function TaskForm3({
   categories,
   formType = "Create",
 }) {
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -256,7 +257,7 @@ export default function TaskForm3({
           id="task_due_date"
           type="date"
           name="due_date"
-          value={data.due_date}
+          value={data.due_date ? new Date(data.due_date).toISOString().split('T')[0] : ''}
           className="mt-1 block w-full"
           onChange={(e) => setData("due_date", e.target.value)}
         />
