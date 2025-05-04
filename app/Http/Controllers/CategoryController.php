@@ -61,7 +61,7 @@ class CategoryController extends Controller
     public function show(Category $category)
     {
         $category->load('tasks');
-        
+
         return inertia("Categories/Show", [
             "category" => $category,
             'success' => session('success'),
@@ -105,4 +105,4 @@ class CategoryController extends Controller
         return redirect()->route('categories.index')
             ->with('success', 'Category deleted successfully.');
     }
-} 
+}

@@ -15,9 +15,22 @@ class AdminUserTableSeeder extends Seeder
      */
     public function run(): void
     {
-        $role = Role::create(['name' => 'Admin']);
-        $permissions = Permission::pluck('id', 'id')->all();
-        $role->syncPermissions($permissions);
-        User::find(1)->assignRole([$role->id]);
+        // Create Admin role with all permissions
+        $adminRole = Role::create(['name' => 'Admin']);
+        $allPermissions = Permission::pluck('id', 'id')->all();
+        $adminRole->syncPermissions($allPermissions);
+
+        // Create Basic User role with limited task permissions
+        $userRole = Role::create(['name' => 'User']);
+        $userPermissions = Permission::whereIn('name', [
+            'task-create',
+            'task-view-own',
+            'task-update-own',
+        ])->get();
+        $userRole->syncPermissions($userPermissions);
+
+        // Assign roles to users
+        User::find(1)->assignRole([$adminRole->id]);
+        User::find(2)->assignRole([$userRole->id]);
     }
 }

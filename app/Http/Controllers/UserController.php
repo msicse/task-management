@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Department;
+use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
@@ -17,7 +19,7 @@ class UserController extends Controller
      */
     public function index()
     {
-        $users = User::with(['department', 'createdBy', 'updatedBy'])
+        $users = User::with(['department', 'createdBy', 'updatedBy', 'roles'])
             ->when(request('search'), function($query, $search) {
                 $query->where(function($query) use ($search) {
                     $query->where('name', 'like', "%{$search}%")
@@ -38,7 +40,8 @@ class UserController extends Controller
         return Inertia::render('User/Index', [
             'users' => $users,
             'departments' => Department::orderBy('name')->get(),
-            'filters' => request()->only(['search', 'department', 'status'])
+            'filters' => request()->only(['search', 'department', 'status']),
+            'success' => session('success')
         ]);
     }
 
@@ -48,7 +51,8 @@ class UserController extends Controller
     public function create()
     {
         return Inertia::render('User/Create', [
-            'departments' => Department::orderBy('name')->get()
+            'departments' => Department::orderBy('name')->get(),
+            'roles' => Role::orderBy('name')->get()
         ]);
     }
 
@@ -59,12 +63,15 @@ class UserController extends Controller
     {
         $data = $request->validated();
         $data['password'] = Hash::make($data['password']);
+        $roleId = $data['role_id'];
+        unset($data['role_id']);
 
         if ($request->hasFile('image')) {
             $data['image'] = $request->file('image')->store('users', 'public');
         }
 
-        User::create($data);
+        $user = User::create($data);
+        $user->assignRole($roleId);
 
         return redirect()->route('users.index')
             ->with('success', 'User created successfully.');
@@ -75,7 +82,7 @@ class UserController extends Controller
      */
     public function show(User $user)
     {
-        $user->load(['department', 'createdBy', 'updatedBy']);
+        $user->load(['department', 'createdBy', 'updatedBy', 'roles']);
         $tasks = $user->tasks()
             ->with(['assignedUser', 'createdBy', 'project'])
             ->latest()
@@ -94,8 +101,9 @@ class UserController extends Controller
     public function edit(User $user)
     {
         return Inertia::render('User/Edit', [
-            'user' => $user,
-            'departments' => Department::orderBy('name')->get()
+            'user' => $user->load('roles'),
+            'departments' => Department::orderBy('name')->get(),
+            'roles' => Role::orderBy('name')->get()
         ]);
     }
 
@@ -105,7 +113,9 @@ class UserController extends Controller
     public function update(UpdateUserRequest $request, User $user)
     {
         $data = $request->validated();
-        $data['updated_by'] = auth()->id();
+        $data['updated_by'] = Auth::id();
+        $roleId = $data['role_id'];
+        unset($data['role_id']);
 
         if ($request->filled('password')) {
             $data['password'] = Hash::make($data['password']);
@@ -118,6 +128,7 @@ class UserController extends Controller
         }
 
         $user->update($data);
+        $user->syncRoles([$roleId]);
 
         return redirect()->route('users.index')
             ->with('success', 'User updated successfully.');

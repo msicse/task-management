@@ -14,9 +14,6 @@ class DepartmentTableSeeder extends Seeder
     public function run(): void
     {
         Department::insert([
-            ['name' => 'Information Technology', 'short_name' => 'IT', 'slug' => 'it'],
-            ['name' => 'Engagement and Logistics', 'short_name' => 'admin', 'slug' => 'admin'],
-            ['name' => 'Remediation Programme Department', 'short_name' => 'RPD', 'slug' => 'rpd'],
             ["id" => "1", "name" => "Information Technology", "short_name" => "IT", "slug" => "it"],
             ["id" => "2", "name" => "Admin & Support", "short_name" => "ADMIN", "slug" => "admin-and-coordination"],
             ["id" => "3", "name" => "Remediation Programme Department", "short_name" => "RPD", "slug" => "remediation-case-handlers"],

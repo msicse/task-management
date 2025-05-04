@@ -6,7 +6,7 @@ import TextareaInput from "@/Components/TextareaInput";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, Link, useForm } from "@inertiajs/react";
 
-export default function Create({ auth, departments = [] }) {
+export default function Create({ auth, departments = [], roles = [] }) {
   const { data, setData, post, processing, errors, reset } = useForm({
     name: "",
     email: "",
@@ -24,6 +24,7 @@ export default function Create({ auth, departments = [] }) {
     about: "",
     image: null,
     department_id: "",
+    role_id: "",
   });
 
   const onSubmit = (e) => {
@@ -239,8 +240,8 @@ export default function Create({ auth, departments = [] }) {
                       onChange={(e) => setData("status", e.target.value)}
                       required
                     >
-                      <option value="1">Active</option>
-                      <option value="2">Inactive</option>
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
                     </SelectInput>
                     <InputError message={errors.status} className="mt-2" />
                   </div>
@@ -263,6 +264,26 @@ export default function Create({ auth, departments = [] }) {
                       ))}
                     </SelectInput>
                     <InputError message={errors.department_id} className="mt-2" />
+                  </div>
+
+                  <div>
+                    <InputLabel htmlFor="role_id" value="Role" />
+                    <SelectInput
+                      id="role_id"
+                      name="role_id"
+                      value={data.role_id}
+                      className="mt-1 block w-full"
+                      onChange={(e) => setData("role_id", e.target.value)}
+                      required
+                    >
+                      <option value="">Select Role</option>
+                      {roles?.map((role) => (
+                        <option key={role.id} value={role.name}>
+                          {role.name}
+                        </option>
+                      ))}
+                    </SelectInput>
+                    <InputError message={errors.role_id} className="mt-2" />
                   </div>
 
                   <div>

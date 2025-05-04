@@ -27,7 +27,7 @@ class StoreTaskRequest extends FormRequest
             "name" => ["required", "string", "max:255"],
             "description" => ["nullable", "string"], // Allow HTML content
             "due_date" => ["nullable", "date"],
-            "status" => ["required", Rule::in(['pending', 'in_progress', 'completed'])],
+            // "status" => ["required", Rule::in(['pending', 'in_progress', 'completed'])],
             "priority" => ["required", Rule::in(['low', 'medium', 'high'])],
             "factory_id" => ["nullable", "string", "max:255"],
             "category_id" => ["required", "exists:categories,id"],

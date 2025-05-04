@@ -67,6 +67,7 @@ class TaskController extends Controller
         $image = $data['image'] ?? null;
         $data['created_by'] = Auth::user()->id;
         $data['updated_by'] = Auth::user()->id;
+        $data['slug'] = Str::slug($data['name']);
 
         // Handle image upload
         if ($image) {
@@ -88,7 +89,7 @@ class TaskController extends Controller
 
         // Get comments with their replies and user information
         $comments = $task->comments()
-            //->whereNull('parent_id')  // Get only top-level comments
+            ->whereNull('parent_id')  // Get only top-level comments
             ->with(['user', 'replies'])  // Eager load relationships
             ->get();
 
@@ -124,11 +125,12 @@ class TaskController extends Controller
     public function edit(Task $task)
     {
         $projects = Project::query()->orderBy('name', 'asc')->get();
+        $categories = Category::query()->orderBy('name', 'asc')->get();
         $users = User::query()->orderBy('name', 'asc')->get();
 
         return inertia("Task/Edit", [
+            "categories" => $categories,
             "task" => new TaskResource($task),
-            "projects" => ProjectResource::collection($projects),
             "users" => UserCrudResource::collection($users),
         ]);
     }

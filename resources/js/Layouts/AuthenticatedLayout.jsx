@@ -10,6 +10,21 @@ export default function AuthenticatedLayout({ user, header, children }) {
   const [showingNavigationDropdown, setShowingNavigationDropdown] =
     useState(false);
 
+  // Helper function to check if user has permission
+  const hasPermission = (permission) => {
+    // Check direct permissions
+    const hasDirectPermission =
+      user?.permissions?.includes(permission) ?? false;
+
+    // Check role-based permissions
+    const hasRolePermission =
+      user?.roles?.some((role) =>
+        role.permissions?.some((p) => p.name === permission)
+      ) ?? false;
+
+    return hasRolePermission; //hasDirectPermission || hasRolePermission;
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 pt-16">
       <LoadingIndicator />
@@ -31,65 +46,70 @@ export default function AuthenticatedLayout({ user, header, children }) {
                   Dashboard
                 </NavLink>
               </div>
-              <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                <NavLink
-                  href={route("roles.index")}
-                  active={route().current("roles.*")}
-                >
-                  Roles
-                </NavLink>
-              </div>
-              <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                <NavLink
-                  href={route("departments.index")}
-                  active={route().current("departments.*")}
-                >
-                  Departments
-                </NavLink>
-              </div>
 
-              <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                <NavLink
-                  href={route("users.index")}
-                  active={route().current("users.*")}
-                >
-                  Users
-                </NavLink>
-              </div>
+              {hasPermission("role-list") && (
+                <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                  <NavLink
+                    href={route("roles.index")}
+                    active={route().current("roles.*")}
+                  >
+                    Roles
+                  </NavLink>
+                </div>
+              )}
+
+              {hasPermission("user-list") && (
+                <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                  <NavLink
+                    href={route("users.index")}
+                    active={route().current("users.*")}
+                  >
+                    Users
+                  </NavLink>
+                </div>
+              )}
 
               <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                 <NavLink
                   href={route("categories.index")}
                   active={route().current("categories.*")}
                 >
-                  Categories
-                </NavLink>
-              </div>
-              {/* <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                <NavLink
-                  href={route("projects.index")}
-                  active={route().current("projects.index")}
-                >
-                  Projects
-                </NavLink>
-              </div> */}
-              <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                <NavLink
-                  href={route("tasks.index")}
-                  active={route().current("tasks.*")}
-                >
-                  All Tasks
+                  All Categories
                 </NavLink>
               </div>
 
-              <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                <NavLink
-                  href={route("tasks.mytasks")}
-                  active={route().current("tasks.mytasks")}
-                >
-                  My Tasks
-                </NavLink>
-              </div>
+              {hasPermission("task-list") && (
+                <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                  <NavLink
+                    href={route("tasks.index")}
+                    active={route().current("tasks.*")}
+                  >
+                    All Tasks
+                  </NavLink>
+                </div>
+              )}
+
+              {hasPermission("task-create") && (
+                <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                  <NavLink
+                    href={route("tasks.create")}
+                    active={route().current("tasks.create")}
+                  >
+                    Create Task
+                  </NavLink>
+                </div>
+              )}
+
+              {hasPermission("task-view-own") && (
+                <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                  <NavLink
+                    href={route("tasks.mytasks")}
+                    active={route().current("tasks.mytasks")}
+                  >
+                    My Tasks
+                  </NavLink>
+                </div>
+              )}
             </div>
 
             <div className="hidden sm:flex sm:items-center sm:ms-6">

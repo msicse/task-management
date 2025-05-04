@@ -22,6 +22,15 @@ class PermissionTableSeeder extends Seeder
             'user-create',
             'user-edit',
             'user-delete',
+            'task-list',
+            'task-create',
+            'task-edit',
+            'task-delete',
+            'task-assign',
+            'task-view-own',
+            'task-update-own',
+            'assignee-score-create',
+            'assignor-score-create'
         ];
 
         foreach ($permissions as $permission) {

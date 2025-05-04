@@ -24,10 +24,10 @@ class TaskFileController extends Controller
                 $originalName = $file->getClientOriginalName();
                 $extension = $file->getClientOriginalExtension();
                 $fileName = Str::random(40) . '.' . $extension;
-                
+
                 // Store the file
                 $path = $file->storeAs('task-files/' . $task->id, $fileName, 'public');
-                
+
                 // Create database record
                 $taskFile = TaskFile::create([
                     'task_id' => $task->id,
@@ -38,7 +38,7 @@ class TaskFileController extends Controller
                     'mime_type' => $file->getMimeType(),
                     'size' => $file->getSize(),
                 ]);
-                
+
                 $uploadedFiles[] = $taskFile;
             }
         }
@@ -50,10 +50,10 @@ class TaskFileController extends Controller
     {
         // Delete the file from storage
         Storage::disk('public')->delete($file->path);
-        
+
         // Delete the database record
         $file->delete();
-        
+
         return back()->with('success', 'File deleted successfully.');
     }
 
@@ -61,4 +61,5 @@ class TaskFileController extends Controller
     {
         return Storage::disk('public')->download($file->path, $file->original_name);
     }
-} 
+}
+

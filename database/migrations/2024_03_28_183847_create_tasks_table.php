@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('factory_id')->nullable();
             $table->string('status')->default('pending');
             $table->string('priority');
+            $table->string('time_log')->nullable();
             $table->timestamp('due_date')->nullable();
             $table->timestamp('completed_at')->nullable();
             $table->longText('description')->nullable();

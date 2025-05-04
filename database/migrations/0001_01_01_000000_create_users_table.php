@@ -15,20 +15,23 @@ return new class extends Migration
 
             $table->id();
             $table->string('name');
-            $table->string('designation')->nullable();
             $table->string('email')->unique();
-            $table->string('employee_id')->unique();
+            $table->string('password');
+            $table->string('designation')->nullable();
+            $table->string('employee_id')->unique()->nullable();
             $table->string('phone')->nullable();
             $table->string('blood')->nullable();
             $table->enum('gender', ['male', 'female', 'other'])->nullable();
             $table->string('location')->nullable();
-            $table->date('date_of_join');
+            $table->date('date_of_join')->nullable();
             $table->date('date_of_resign')->nullable();
-            $table->boolean('status')->default(true);
+            $table->enum('status', ['active', 'inactive'])->default('active');
             $table->text('about')->nullable();
             $table->string('image')->nullable();
+            $table->foreignId('department_id')->nullable()->constrained()->onDelete('set null');
+            $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
+            $table->foreignId('updated_by')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
             $table->rememberToken();
             $table->timestamps();
         });

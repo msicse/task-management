@@ -46,7 +46,7 @@ export default function TasksTable({
   };
 
   const deleteTask = (task) => {
-    if (!window.confirm("Are you sure to delete?")) {
+    if (!window.confirm(`Are you sure you want to delete the task "${task.name}"?`)) {
       return;
     }
     router.delete(route("tasks.destroy", task.id));

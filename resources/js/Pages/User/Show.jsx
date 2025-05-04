@@ -4,8 +4,6 @@ import { USER_STATUS_CLASS_MAP, USER_STATUS_TEXT_MAP } from "@/constants.jsx";
 import TasksTable from "../Task/TasksTable";
 import { useState, useEffect } from "react";
 
-
-
 export default function Show({ auth, user, tasks, success }) {
     const [showSuccess, setShowSuccess] = useState(!!success);
 
@@ -16,7 +14,7 @@ export default function Show({ auth, user, tasks, success }) {
       }, [success]);
 
     const deleteUser = () => {
-        if (!window.confirm("Are you sure you want to delete this user?")) {
+        if (!window.confirm(`Are you sure you want to delete the user "${user.name}"?`)) {
           return;
         }
         router.delete(route("users.destroy", user.id), {
@@ -157,6 +155,14 @@ export default function Show({ auth, user, tasks, success }) {
                       </dt>
                       <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100">
                         {user.department ? user.department.name : "-"}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Role
+                      </dt>
+                      <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100">
+                        {user.roles && user.roles.length > 0 ? user.roles[0].name : "-"}
                       </dd>
                     </div>
                   </dl>

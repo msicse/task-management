@@ -2,15 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Resources\TaskResource;
 use App\Models\Task;
 use Illuminate\Http\Request;
+use App\Http\Resources\TaskResource;
+use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
 {
     public function index()
     {
-        $user = auth()->user();
+        $user = Auth::user();
 
         $totalPendingTasks = Task::query()->where("status", "pending")->count();
         $myPendingTasks = Task::query()->where("status", "pending")->where("assigned_user_id", $user->id)->count();

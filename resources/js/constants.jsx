@@ -29,11 +29,11 @@ export const TASK_PRIORITY_TEXT_MAP = {
   high: "High",
 };
 export const USER_STATUS_CLASS_MAP = {
-    1: 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100',
-    2: 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100'
+    active: 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100',
+    inactive: 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100'
 };
 
 export const USER_STATUS_TEXT_MAP = {
-    1: 'Active',
-    2: 'Inactive'
+    active: 'Active',
+    inactive: 'Inactive'
 };

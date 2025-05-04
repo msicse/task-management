@@ -29,15 +29,15 @@ class StoreUserRequest extends FormRequest
             'employee_id' => ['required', 'string', 'max:255', 'unique:users'],
             'phone' => ['required', 'string', 'max:20'],
             'blood' => ['required', 'string', 'max:10'],
-            'gender' => ['required', 'string', 'in:male,female,other'],
+            'gender' => ['required', 'in:male,female,other'],
             'location' => ['required', 'string', 'max:255'],
             'date_of_join' => ['required', 'date'],
-            'date_of_resign' => ['nullable', 'date', 'after:date_of_join'],
-            'status' => ['required', 'integer', 'in:1,2'],
+            'date_of_resign' => ['nullable', 'date', 'after_or_equal:date_of_join'],
+            'status' => ['required', 'in:active,inactive'],
             'about' => ['nullable', 'string'],
-            'image' => ['nullable', 'image', 'max:2048'],
+            'image' => ['nullable', 'image', 'max:1024'],
             'department_id' => ['required', 'exists:departments,id'],
+            'role_id' => ['required', 'exists:roles,name'],
         ];
-        // Password::min(8)->letters()->symbols(),
     }
 }

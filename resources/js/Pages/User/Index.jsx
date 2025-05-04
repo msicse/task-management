@@ -1,16 +1,24 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Pagination from '@/Components/Pagination';
 import TextInput from '@/Components/TextInput';
 import SelectInput from '@/Components/SelectInput';
 import TableHeading from "@/Components/TableHeading";
+import Alert from "@/Components/Alert";
 import {USER_STATUS_TEXT_MAP} from "@/constants.jsx";
 
-export default function Index({ auth, users, departments, filters }) {
+export default function Index({ auth, users, departments, filters, success }) {
     const [search, setSearch] = useState(filters.search || '');
     const [department, setDepartment] = useState(filters.department || '');
     const [status, setStatus] = useState(filters.status || '');
+    const [showSuccess, setShowSuccess] = useState(!!success);
+
+    useEffect(() => {
+        if (success) {
+            setShowSuccess(true);
+        }
+    }, [success]);
 
     const handleSearch = (e) => {
         e.preventDefault();
@@ -36,7 +44,7 @@ export default function Index({ auth, users, departments, filters }) {
     };
 
     const deleteUser = (user) => {
-        if(!window.confirm('Are you sure to delete?')){
+        if(!window.confirm(`Are you sure you want to delete the user "${user.name}"?`)){
             return;
         }
         router.delete(route('users.destroy', user.id));
@@ -51,6 +59,13 @@ export default function Index({ auth, users, departments, filters }) {
 
             <div className="py-2">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
+                    {showSuccess && (
+                        <Alert
+                            message={success}
+                            type="success"
+                            onClose={() => setShowSuccess(false)}
+                        />
+                    )}
                     <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                         <div className="p-6 text-gray-900 dark:text-gray-100">
                             <div className="flex justify-between items-center mb-6">
@@ -115,6 +130,9 @@ export default function Index({ auth, users, departments, filters }) {
                                             Status
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Role
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                             Actions
                                         </th>
                                     </tr>
@@ -146,18 +164,19 @@ export default function Index({ auth, users, departments, filters }) {
                                                 <div className="text-sm text-gray-500 dark:text-gray-400">{user.employee_id}</div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-gray-900 dark:text-gray-100">
-                                                    {user.department ? user.department.name : '-'}
-                                                </div>
+                                                {user.department ? user.department.name : '-'}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                                    user.status === 1
+                                                    user.status === 'active'
                                                         ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
                                                         : 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100'
                                                 }`}>
                                                     {USER_STATUS_TEXT_MAP[user.status]}
                                                 </span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                {user.roles && user.roles.length > 0 ? user.roles[0].name : '-'}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                                 <Link
@@ -172,14 +191,12 @@ export default function Index({ auth, users, departments, filters }) {
                                                 >
                                                     Edit
                                                 </Link>
-                                                <Link
-                                                    href={route('users.destroy', user.id)}
-                                                    method="delete"
-                                                    as="button"
+                                                <button
+                                                    onClick={() => deleteUser(user)}
                                                     className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                                                 >
                                                     Delete
-                                                </Link>
+                                                </button>
                                             </td>
                                         </tr>
                                     ))}

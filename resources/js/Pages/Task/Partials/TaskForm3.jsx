@@ -19,6 +19,7 @@ export default function TaskForm3({
   onSubmit,
   users,
   categories,
+  formType = "Create",
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -158,12 +159,14 @@ export default function TaskForm3({
   ];
 
   return (
-    <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-3"> {/* Increased gap from 2 to 3 */}
+    <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-3">
+      {" "}
+      {/* Increased gap from 2 to 3 */}
       <style jsx global>{`
         .editor-container {
           display: flex;
           flex-direction: column;
-          height: 210px !important; // Increased from 150px
+          height: 400px !important; // Increased from 150px
         }
         .editor-container .ql-container {
           flex: 1;
@@ -222,7 +225,6 @@ export default function TaskForm3({
           margin-top: 0.35rem; // Increased
         }
       `}</style>
-
       <div>
         <InputLabel htmlFor="task_factory_id" value="Factory ID" />
         <TextInput
@@ -235,7 +237,6 @@ export default function TaskForm3({
         />
         <InputError message={errors.factory_id} className="mt-2" />
       </div>
-
       <div>
         <InputLabel htmlFor="task_name" value="Subject" />
         <TextInput
@@ -249,7 +250,6 @@ export default function TaskForm3({
         />
         <InputError message={errors.name} className="mt-2" />
       </div>
-
       <div>
         <InputLabel htmlFor="task_due_date" value="Delivery Date" />
         <TextInput
@@ -262,7 +262,6 @@ export default function TaskForm3({
         />
         <InputError message={errors.due_date} className="mt-2" />
       </div>
-
       <div>
         <InputLabel htmlFor="task_assigned_user" value="Assigned User" />
         <Select
@@ -282,7 +281,6 @@ export default function TaskForm3({
         />
         <InputError message={errors.assigned_user_id} className="mt-2" />
       </div>
-
       <div>
         <InputLabel htmlFor="task_assigned_user" value="Category" />
         <Select
@@ -302,8 +300,7 @@ export default function TaskForm3({
         />
         <InputError message={errors.assigned_user_id} className="mt-2" />
       </div>
-
-      <div>
+      {/* <div>
         <InputLabel htmlFor="task_status" value="Status" />
         <Select
           id="task_status"
@@ -318,8 +315,7 @@ export default function TaskForm3({
           isSearchable={false}
         />
         <InputError message={errors.status} className="mt-2" />
-      </div>
-
+      </div> */}
       <div>
         <InputLabel htmlFor="task_priority" value="Priority" />
         <Select
@@ -337,7 +333,6 @@ export default function TaskForm3({
         />
         <InputError message={errors.priority} className="mt-2" />
       </div>
-
       <div className="col-span-2">
         <InputLabel htmlFor="task_description" value="Task Description" />
         <div className="mt-1 editor-container">
@@ -349,23 +344,26 @@ export default function TaskForm3({
             formats={formats}
             className="bg-white text-black h-full"
             style={{
-              height: "calc(210px - 42px)", // Increased height
+              height: "calc(450px - 42px)", // Increased height
               display: "flex",
               flexDirection: "column",
             }}
           />
         </div>
-        <InputError message={errors.description} className="mt-1" /> {/* Adjusted margin */}
+        <InputError message={errors.description} className="mt-1" />{" "}
+        {/* Adjusted margin */}
       </div>
-
-      <div className="flex items-center justify-end mt-3 col-span-2 space-x-2"> {/* Increased spacing */}
+      <div className="flex items-center justify-end mt-3 col-span-2 space-x-2">
+        {" "}
+        {/* Increased spacing */}
         <Link
           href={route("tasks.index")}
-          className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50" // Increased text and padding
+          className="px-3 py-1.5 text-sm bg-red-600 text-white rounded hover:bg-red-700 mr-2 disabled:opacity-50" // Increased text and padding
           disabled={isSubmitting}
         >
           Cancel
         </Link>
+
         <button
           type="submit"
           className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50 inline-flex items-center" // Increased text and padding
@@ -373,14 +371,30 @@ export default function TaskForm3({
         >
           {isSubmitting ? (
             <>
-              <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              <svg
+                className="animate-spin -ml-1 mr-2 h-5 w-5 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
               </svg>
-              Creating...
+              Processing...
             </>
           ) : (
-            'Create Task'
+            `${formType} Task`
           )}
         </button>
       </div>

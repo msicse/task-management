@@ -6,7 +6,7 @@ import TextareaInput from "@/Components/TextareaInput";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, Link, useForm } from "@inertiajs/react";
 
-export default function Edit({ auth, user, departments }) {
+export default function Edit({ auth, user, departments, roles }) {
   const { data, setData, put, processing, errors } = useForm({
     name: user.name,
     email: user.email,
@@ -24,6 +24,7 @@ export default function Edit({ auth, user, departments }) {
     about: user.about || "",
     image: null,
     department_id: user.department_id || "",
+    role_id: user.roles?.[0]?.id || "",
   });
 
   const submit = (e) => {
@@ -250,6 +251,26 @@ export default function Edit({ auth, user, departments }) {
                       ))}
                     </SelectInput>
                     <InputError message={errors.department_id} className="mt-2" />
+                  </div>
+
+                  <div>
+                    <InputLabel htmlFor="role_id" value="Role" />
+                    <SelectInput
+                      id="role_id"
+                      name="role_id"
+                      value={data.role_id}
+                      className="mt-1 block w-full"
+                      onChange={(e) => setData("role_id", e.target.value)}
+                      required
+                    >
+                      <option value="">Select Role</option>
+                      {roles?.map((role) => (
+                        <option key={role.id} value={role.name}>
+                          {role.name}
+                        </option>
+                      ))}
+                    </SelectInput>
+                    <InputError message={errors.role_id} className="mt-2" />
                   </div>
 
                   <div>
