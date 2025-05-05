@@ -165,7 +165,12 @@ export default function MyTasks({
                           {task.id}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                        <Link href={route("tasks.show", task.id)} className="hover:underline">{task.name}</Link>
+                          <Link
+                            href={route("tasks.show", task.id)}
+                            className="text-blue-600 hover:text-blue-900 hover:underline dark:text-blue-400 dark:hover:text-blue-300 mr-3"
+                          >
+                            {task.name}
+                          </Link>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {task.category.name}
@@ -184,7 +189,9 @@ export default function MyTasks({
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {task.completed_at ? task.completed_at : "Not completed yet"}
+                          {task.completed_at
+                            ? task.completed_at
+                            : "Not completed yet"}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span
@@ -198,7 +205,9 @@ export default function MyTasks({
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {new Date(task.due_date) < new Date() ? (
-                            <span className="text-red-600">Due date passed</span>
+                            <span className="text-red-600">
+                              Due date passed
+                            </span>
                           ) : (
                             task.due_date
                           )}

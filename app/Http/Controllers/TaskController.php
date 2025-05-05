@@ -33,7 +33,7 @@ class TaskController extends Controller
         $shortDirection = request("short_direction", 'desc');
 
         $user = Auth::user();
-        if (!$user->hasRole('admin')) { // Check if the user does not have the 'admin' role
+        if (!$user->hasRole('Admin')) { // Check if the user does not have the 'admin' role
             $query->where('created_by', $user->id);
         }
 

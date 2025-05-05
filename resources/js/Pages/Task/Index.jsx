@@ -150,7 +150,9 @@ export default function Index({
                       <TableHeading>ID</TableHeading>
                       <TableHeading>Name</TableHeading>
                       <TableHeading>Category</TableHeading>
-                      <TableHeading>Assigned By</TableHeading>
+                      {auth.user.hasRole && auth.user.hasRole("Admin") && (
+                        <TableHeading>Assigned By</TableHeading>
+                      )}
                       <TableHeading>Assigned To</TableHeading>
                       <TableHeading>Status</TableHeading>
                       <TableHeading>Completed</TableHeading>
@@ -166,20 +168,21 @@ export default function Index({
                           {task.id}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                        <Link
+                          <Link
                             href={route("tasks.show", task.id)}
                             className="text-blue-600 hover:text-blue-900 hover:underline dark:text-blue-400 dark:hover:text-blue-300 mr-3"
                           >
-                           {task.name}
+                            {task.name}
                           </Link>
-
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {task.category.name}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {task.createdBy.name}
-                        </td>
+                        {auth.user.hasRole && auth.user.hasRole("Admin") && (
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {task.createdBy.name}
+                          </td>
+                        )}
                         <td className="px-6 py-4 whitespace-nowrap">
                           {task.assignedUser.name}
                         </td>

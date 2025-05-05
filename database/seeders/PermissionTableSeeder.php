@@ -29,6 +29,10 @@ class PermissionTableSeeder extends Seeder
             'task-assign',
             'task-view-own',
             'task-update-own',
+            'category-list',
+            'category-create',
+            'category-edit',
+            'category-delete',
             'assignee-score-create',
             'assignor-score-create'
         ];

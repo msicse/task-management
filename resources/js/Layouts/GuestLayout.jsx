@@ -9,7 +9,7 @@ export default function Guest({ children }) {
             <div>
                 <Link href="/">
                     {/* <ApplicationLogo className="w-96 h-44 fill-current text-gray-500" /> */}
-                    <ApplicationLogo width="280px" />
+                    <ApplicationLogo width="300px" />
                 </Link>
             </div>
 
