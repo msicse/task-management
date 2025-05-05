@@ -32,6 +32,11 @@ class TaskController extends Controller
         $shortField = request("short_field", 'created_at');
         $shortDirection = request("short_direction", 'desc');
 
+        $user = Auth::user();
+        if (!$user->hasRole('admin')) { // Check if the user does not have the 'admin' role
+            $query->where('created_by', $user->id);
+        }
+
         if (request("name")) {
             $query->where("name", "like", "%" . request("name") . "%");
         }

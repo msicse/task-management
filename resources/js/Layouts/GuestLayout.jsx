@@ -8,7 +8,8 @@ export default function Guest({ children }) {
             <LoadingIndicator />
             <div>
                 <Link href="/">
-                    <ApplicationLogo className="w-20 h-20 fill-current text-gray-500" />
+                    {/* <ApplicationLogo className="w-96 h-44 fill-current text-gray-500" /> */}
+                    <ApplicationLogo width="280px" />
                 </Link>
             </div>
 
