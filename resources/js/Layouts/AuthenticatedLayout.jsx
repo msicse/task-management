@@ -104,8 +104,8 @@ export default function AuthenticatedLayout({ user, header, children }) {
               {hasPermission("task-view-own") && (
                 <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                   <NavLink
-                    href={route("mytasks")}
-                    active={route().current("mytasks")}
+                    href={route("task.mytasks")}
+                    active={route().current("task.mytasks")}
                   >
                     My Tasks
                   </NavLink>

@@ -24,7 +24,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('roles', RoleController::class);
     Route::resource('categories', CategoryController::class);
     Route::resource('projects', ProjectController::class);
-    Route::get('my-tasks', [TaskController::class, 'myTasks'])->name('mytasks');
+    Route::get('my-tasks', [TaskController::class, 'myTasks'])->name('task.mytasks');
     Route::resource('tasks', TaskController::class);
     Route::put('/tasks/{task}/details', [TaskController::class, 'updateTaskDetails'])->name('tasks.update-details');
     Route::resource('users', UserController::class);

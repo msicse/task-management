@@ -38,7 +38,7 @@ export default function MyTasks({
   const handleSearch = (e) => {
     e.preventDefault();
     router.get(
-      route("mytasks"),
+      route("task.mytasks"),
       { name: search, status, priority, assigned_to: assignedTo, category },
       {
         preserveState: true,
@@ -53,7 +53,7 @@ export default function MyTasks({
       header={
         <div className="flex justify-between items-center">
           <Link
-            href={route("mytasks")}
+            href={route("task.mytasks")}
             className="hover:underline hover:text-gray-600"
           >
             <h2 className="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
