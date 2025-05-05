@@ -311,8 +311,14 @@ class TaskController extends Controller
             $query->where("status", request("status"));
         }
         $tasks = $query->orderBy($shortField, $shortDirection)->paginate(10)->onEachSide(1);
-        return inertia("Task/Index", [
+
+        $tasks = $query->orderBy($shortField, $shortDirection)->paginate(10)->onEachSide(1);
+        $users = User::query()->orderBy('name', 'asc')->get();
+
+        return inertia("Task/MyTasks", [
             "tasks" => TaskResource::collection($tasks),
+            "users" => $users,
+            'categories' => Category::query()->orderBy('name', 'asc')->get(),
             'queryParams' => request()->query() ?: null,
             'success' => session('success'),
         ]);

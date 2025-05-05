@@ -13,7 +13,7 @@ import {
   TASK_STATUS_TEXT_MAP,
 } from "@/constants";
 
-export default function Index({
+export default function MyTasks({
   auth,
   tasks,
   categories,
@@ -38,7 +38,7 @@ export default function Index({
   const handleSearch = (e) => {
     e.preventDefault();
     router.get(
-      route("tasks.index"),
+      route("mytasks"),
       { name: search, status, priority, assigned_to: assignedTo, category },
       {
         preserveState: true,
@@ -53,8 +53,8 @@ export default function Index({
       header={
         <div className="flex justify-between items-center">
           <Link
-            href={route("tasks.index")}
-            className="hover:underline hover:text-white"
+            href={route("mytasks")}
+            className="hover:underline hover:text-gray-600"
           >
             <h2 className="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
               Tasks
@@ -116,7 +116,7 @@ export default function Index({
                     onChange={(e) => setAssignedTo(e.target.value)}
                     className="w-48"
                   >
-                    <option value="">All Assignees</option>
+                    <option value="">All AssignBy</option>
                     {users.map((user) => (
                       <option key={user.id} value={user.id}>
                         {user.name}
@@ -151,7 +151,6 @@ export default function Index({
                       <TableHeading>Name</TableHeading>
                       <TableHeading>Category</TableHeading>
                       <TableHeading>Assigned By</TableHeading>
-                      <TableHeading>Assigned To</TableHeading>
                       <TableHeading>Status</TableHeading>
                       <TableHeading>Completed</TableHeading>
                       <TableHeading>Priority</TableHeading>
@@ -166,22 +165,13 @@ export default function Index({
                           {task.id}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                        <Link
-                            href={route("tasks.show", task.id)}
-                            className="text-blue-600 hover:text-blue-900 hover:underline dark:text-blue-400 dark:hover:text-blue-300 mr-3"
-                          >
-                           {task.name}
-                          </Link>
-
+                        <Link href={route("tasks.show", task.id)} className="hover:underline">{task.name}</Link>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {task.category.name}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {task.createdBy.name}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {task.assignedUser.name}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span
@@ -194,7 +184,7 @@ export default function Index({
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {task.completed_at ? task.completed_at : "Not yet"}
+                          {task.completed_at ? task.completed_at : "Not completed yet"}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span
@@ -208,7 +198,7 @@ export default function Index({
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {new Date(task.due_date) < new Date() ? (
-                            <span className="text-red-600">Passed</span>
+                            <span className="text-red-600">Due date passed</span>
                           ) : (
                             task.due_date
                           )}

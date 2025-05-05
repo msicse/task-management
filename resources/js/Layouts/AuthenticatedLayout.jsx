@@ -69,15 +69,16 @@ export default function AuthenticatedLayout({ user, header, children }) {
                 </div>
               )}
 
-              <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                <NavLink
-                  href={route("categories.index")}
-                  active={route().current("categories.*")}
-                >
-                  All Categories
-                </NavLink>
-              </div>
-
+              {hasPermission("category-list") && (
+                <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                  <NavLink
+                    href={route("categories.index")}
+                    active={route().current("categories.*")}
+                  >
+                    All Categories
+                  </NavLink>
+                </div>
+              )}
               {hasPermission("task-list") && (
                 <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                   <NavLink
@@ -103,8 +104,8 @@ export default function AuthenticatedLayout({ user, header, children }) {
               {hasPermission("task-view-own") && (
                 <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                   <NavLink
-                    href={route("tasks.mytasks")}
-                    active={route().current("tasks.mytasks")}
+                    href={route("mytasks")}
+                    active={route().current("mytasks")}
                   >
                     My Tasks
                   </NavLink>
