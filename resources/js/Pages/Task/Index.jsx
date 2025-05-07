@@ -126,20 +126,23 @@ export default function Index({
       user={auth.user}
       header={
         <div className="flex justify-between items-center">
-          <Link
-            href={route("tasks.index")}
-            className="hover:underline hover:text-white"
-          >
-            <h2 className="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-              Tasks
-            </h2>
-          </Link>
-          <Link
-            href={route("tasks.create")}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-          >
-            Add Task
-          </Link>
+          <h2 className="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+            Tasks
+          </h2>
+          <div className="flex space-x-2">
+            <Link
+              href={route("tasks.import")}
+              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+            >
+              Import Tasks
+            </Link>
+            <Link
+              href={route("tasks.create")}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+            >
+              Create Task
+            </Link>
+          </div>
         </div>
       }
     >

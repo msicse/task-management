@@ -25,6 +25,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('categories', CategoryController::class);
     Route::resource('projects', ProjectController::class);
     Route::get('my-tasks', [TaskController::class, 'myTasks'])->name('task.mytasks');
+    // Task import routes
+Route::get('/tasks/import', [TaskController::class, 'showImportForm'])->name('tasks.import');
+Route::post('/tasks/import', [TaskController::class, 'import'])->name('tasks.import.process');
     Route::resource('tasks', TaskController::class);
     Route::put('/tasks/{task}/details', [TaskController::class, 'updateTaskDetails'])->name('tasks.update-details');
     Route::resource('users', UserController::class);
@@ -39,5 +42,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/task-files/{file}', [TaskFileController::class, 'destroy'])->name('task-files.destroy');
     Route::get('/task-files/{file}/download', [TaskFileController::class, 'download'])->name('task-files.download');
 });
+
+
 
 require __DIR__ . '/auth.php';

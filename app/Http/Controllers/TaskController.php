@@ -20,6 +20,8 @@ use App\Http\Resources\ProjectResource;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Requests\UpdateTaskRequest;
 use App\Http\Resources\UserCrudResource;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Imports\TaskImport;
 
 class TaskController extends Controller
 {
@@ -407,5 +409,31 @@ class TaskController extends Controller
             'queryParams' => request()->query() ?: null,
             'success' => session('success'),
         ]);
+    }
+
+    /**
+     * Handle bulk task import via Excel/CSV file
+     */
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,csv,xls|max:2048',
+        ]);
+
+        try {
+            Excel::import(new TaskImport, $request->file('file'));
+            
+            return redirect()->route('tasks.index')->with('success', 'Tasks imported successfully!');
+        } catch (\Exception $e) {
+            return redirect()->back()->withErrors(['error' => 'Failed to import tasks: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Show the task import form
+     */
+    public function showImportForm()
+    {
+        return inertia('Task/Import');
     }
 }
