@@ -59,6 +59,10 @@ class TaskFileController extends Controller
 
     public function download(TaskFile $file)
     {
+        if (!Storage::disk('public')->exists($file->path)) {
+            return back()->with('error', 'File not found on the server.');
+        }
+
         return Storage::disk('public')->download($file->path, $file->original_name);
     }
 }

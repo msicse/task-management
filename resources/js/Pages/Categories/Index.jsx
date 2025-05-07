@@ -8,9 +8,11 @@ import TextInput from "@/Components/TextInput";
 import SelectInput from "@/Components/SelectInput";
 import TableHeading from "@/Components/TableHeading";
 
-export default function Index({ auth, categories, queryParams = null, success }) {
+export default function Index({ auth, categories, queryParams = {}, success }) {
   const [showSuccess, setShowSuccess] = useState(!!success);
-  queryParams = {}
+  const [name, setName] = useState(queryParams.name || '');
+  const [sortField, setSortField] = useState(queryParams.sort_field || 'created_at');
+  const [sortDirection, setSortDirection] = useState(queryParams.sort_direction || 'desc');
 
   useEffect(() => {
     if (success) {
@@ -18,59 +20,37 @@ export default function Index({ auth, categories, queryParams = null, success })
     }
   }, [success]);
 
+  const handleSearch = (e) => {
+    e.preventDefault();
+
+    router.get(route("categories.index"), {
+      name,
+      sort_field: sortField,
+      sort_direction: sortDirection
+    }, {
+      preserveState: true,
+      preserveScroll: true,
+    });
+  };
+
   const sortChanged = (name) => {
-    if (name === queryParams.sort_field) {
-      queryParams.sort_direction =
-        queryParams.sort_direction === "asc" ? "desc" : "asc";
-    } else {
-      queryParams.sort_field = name;
-      queryParams.sort_direction = "asc";
-    }
-    router.get(route("categories.index"), queryParams);
-  };
-
-  const onSearch = (term) => {
-    router.get(
-      route("categories.index"),
-      { ...queryParams, name: term },
-      {
-        preserveState: true,
-        preserveScroll: true,
-        only: ["categories"],
-      }
-    );
-  };
-
-
-  const searchFieldChange = (name, value) => {
-    if (value) {
-      queryParams[name] = value;
-    } else {
-      delete queryParams[name];
-    }
-    router.get(route("categories.index"), queryParams);
-  };
-  const onKeyPress = (name, e) => {
-    if (e.key !== "Enter") return;
-
-    searchFieldChange(name, e.target.value);
-  };
-
-  const shortChanged = (name) => {
-    if (name === queryParams.short_field) {
-      if (queryParams.short_direction === "asc") {
-        queryParams.short_direction = "desc";
-      } else {
-        queryParams.short_direction = "asc";
-      }
-    } else {
-      queryParams.short_field = name;
-      queryParams.short_direction = "asc";
+    let newDirection = "asc";
+    if (name === sortField) {
+      newDirection = sortDirection === "asc" ? "desc" : "asc";
     }
 
-    router.get(route("categories.index"), queryParams);
-  };
+    setSortField(name);
+    setSortDirection(newDirection);
 
+    router.get(route("categories.index"), {
+      name,
+      sort_field: name,
+      sort_direction: newDirection
+    }, {
+      preserveState: true,
+      preserveScroll: true,
+    });
+  };
 
   const deleteCategory = (category) => {
     if (!window.confirm("Are you sure you want to delete this category?")) {
@@ -112,50 +92,48 @@ export default function Index({ auth, categories, queryParams = null, success })
                 >
                   Create Category
                 </Link>
-                <TextInput
-                  type="text"
-                  placeholder="Search categories..."
-                  defaultValue={queryParams.name}
-                  onBlur={(e) => searchFieldChange("name", e.target.value)}
-                  onKeyPress={(e) => onKeyPress("name", e)}
-                  className="w-64"
-                />
+
+                <form onSubmit={handleSearch} className="flex gap-4">
+                  <TextInput
+                    type="text"
+                    placeholder="Search categories..."
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    className="w-64"
+                  />
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+                  >
+                    Search
+                  </button>
+                </form>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                   <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                     <tr className="text-left">
-                      <th
-                        className="px-6 py-3 cursor-pointer"
-                        onClick={() => sortChanged("name")}
+                      <TableHeading
+                        name="name"
+                        shortable={true}
+                        short_field={sortField}
+                        short_direction={sortDirection}
+                        shortChanged={sortChanged}
                       >
-                        <div className="flex items-center">
-                          Name
-                          {queryParams?.sort_field === "name" && (
-                            <div>
-                              {queryParams?.sort_direction === "asc"
-                                ? "↑"
-                                : "↓"}
-                            </div>
-                          )}
-                        </div>
-                      </th>
-                      <th
-                        className="px-6 py-3 cursor-pointer"
-                        onClick={() => sortChanged("created_at")}
+                        Name
+                      </TableHeading>
+                      <TableHeading
+                        name="created_at"
+                        shortable={true}
+                        short_field={sortField}
+                        short_direction={sortDirection}
+                        shortChanged={sortChanged}
                       >
-                        <div className="flex items-center">
-                          Created Date
-                          {queryParams?.sort_field === "created_at" && (
-                            <div>
-                              {queryParams?.sort_direction === "asc"
-                                ? "↑"
-                                : "↓"}
-                            </div>
-                          )}
-                        </div>
-                      </th>
-                      <th className="px-6 py-3">Actions</th>
+                        Created Date
+                      </TableHeading>
+                      <TableHeading shortable={false}>
+                        Actions
+                      </TableHeading>
                     </tr>
                   </thead>
                   <tbody>
@@ -192,9 +170,9 @@ export default function Index({ auth, categories, queryParams = null, success })
                     ))}
                   </tbody>
                 </table>
-                {categories.meta && categories.meta.links && (
-                  <Pagination links={categories.meta.links} />
-                )}
+                <div className="mt-4">
+                  <Pagination links={categories.links} />
+                </div>
               </div>
             </div>
           </div>

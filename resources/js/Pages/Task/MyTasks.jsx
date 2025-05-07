@@ -27,7 +27,8 @@ export default function MyTasks({
   const [priority, setPriority] = useState(queryParams?.priority || "");
   const [assignedTo, setAssignedTo] = useState(queryParams?.assigned_to || "");
   const [category, setCategory] = useState(queryParams?.category || "");
-  console.log("tasks", tasks);
+  const [sortField, setSortField] = useState(queryParams?.sort_field || "created_at");
+  const [sortDirection, setSortDirection] = useState(queryParams?.sort_direction || "desc");
 
   useEffect(() => {
     if (success) {
@@ -39,7 +40,54 @@ export default function MyTasks({
     e.preventDefault();
     router.get(
       route("task.mytasks"),
-      { name: search, status, priority, assigned_to: assignedTo, category },
+      {
+        name: search,
+        status,
+        priority,
+        assigned_to: assignedTo,
+        category,
+        sort_field: sortField,
+        sort_direction: sortDirection
+      },
+      {
+        preserveState: true,
+        preserveScroll: true,
+      }
+    );
+  };
+
+  const deleteTask = (taskId) => {
+    if (!window.confirm("Are you sure you want to delete this task?")) {
+      return;
+    }
+    router.delete(route("tasks.destroy", taskId), {
+      preserveScroll: true,
+      onSuccess: () => {
+        setShowSuccess(true);
+      },
+    });
+  };
+
+  const sortChanged = (name) => {
+    let newDirection = "asc";
+    if (name === sortField) {
+      newDirection = sortDirection === "asc" ? "desc" : "asc";
+    }
+
+    setSortField(name);
+    setSortDirection(newDirection);
+
+    router.get(
+      route("task.mytasks"),
+      {
+        name: search,
+        status,
+        priority,
+        assigned_to: assignedTo,
+        category,
+        sort_field: name,
+        sort_direction: newDirection
+      },
       {
         preserveState: true,
         preserveScroll: true,
@@ -147,15 +195,79 @@ export default function MyTasks({
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                   <thead className="bg-gray-50 dark:bg-gray-700">
                     <tr>
-                      <TableHeading>ID</TableHeading>
-                      <TableHeading>Name</TableHeading>
-                      <TableHeading>Category</TableHeading>
-                      <TableHeading>Assigned By</TableHeading>
-                      <TableHeading>Status</TableHeading>
-                      <TableHeading>Completed</TableHeading>
-                      <TableHeading>Priority</TableHeading>
-                      <TableHeading>Due Date</TableHeading>
-                      <TableHeading>Action</TableHeading>
+                      <TableHeading
+                        name="id"
+                        shortable={true}
+                        short_field={sortField}
+                        short_direction={sortDirection}
+                        shortChanged={sortChanged}
+                      >
+                        ID
+                      </TableHeading>
+                      <TableHeading
+                        name="name"
+                        shortable={true}
+                        short_field={sortField}
+                        short_direction={sortDirection}
+                        shortChanged={sortChanged}
+                      >
+                        Name
+                      </TableHeading>
+                      <TableHeading
+                        name="category_id"
+                        shortable={true}
+                        short_field={sortField}
+                        short_direction={sortDirection}
+                        shortChanged={sortChanged}
+                      >
+                        Category
+                      </TableHeading>
+                      <TableHeading
+                        name="created_by"
+                        shortable={true}
+                        short_field={sortField}
+                        short_direction={sortDirection}
+                        shortChanged={sortChanged}
+                      >
+                        Assigned By
+                      </TableHeading>
+                      <TableHeading
+                        name="status"
+                        shortable={true}
+                        short_field={sortField}
+                        short_direction={sortDirection}
+                        shortChanged={sortChanged}
+                      >
+                        Status
+                      </TableHeading>
+                      <TableHeading
+                        name="completed_at"
+                        shortable={true}
+                        short_field={sortField}
+                        short_direction={sortDirection}
+                        shortChanged={sortChanged}
+                      >
+                        Completed
+                      </TableHeading>
+                      <TableHeading
+                        name="priority"
+                        shortable={true}
+                        short_field={sortField}
+                        short_direction={sortDirection}
+                        shortChanged={sortChanged}
+                      >
+                        Priority
+                      </TableHeading>
+                      <TableHeading
+                        name="due_date"
+                        shortable={true}
+                        short_field={sortField}
+                        short_direction={sortDirection}
+                        shortChanged={sortChanged}
+                      >
+                        Due Date
+                      </TableHeading>
+                      <TableHeading sortable={false}>Action</TableHeading>
                     </tr>
                   </thead>
                   <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">

@@ -111,13 +111,13 @@ export default function TaskFiles({ files }) {
                                             )}
 
                                             {/* Download button */}
-                                            <Link
+                                            <a
                                                 href={route('task-files.download', file.id)}
                                                 className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
                                                 title="Download file"
                                             >
                                                 <FaDownload className="w-4 h-4" />
-                                            </Link>
+                                            </a>
 
                                             {/* Delete button with confirmation */}
                                             {showDeleteConfirm === file.id ? (

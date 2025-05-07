@@ -1,10 +1,12 @@
+import { useState } from "react";
 import InputError from "@/Components/InputError";
 import InputLabel from "@/Components/InputLabel";
+import { Link } from "@inertiajs/react";
+import Select from "react-select";
 import TextInput from "@/Components/TextInput";
+import { formatDateForInput } from "@/utils";
 import { CKEditor } from "@ckeditor/ckeditor5-react";
 import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
-import { Link } from "@inertiajs/react";
-import Select from 'react-select';
 
 export default function TaskForm2({
     data,
@@ -145,7 +147,7 @@ export default function TaskForm2({
                     id="task_due_date"
                     type="date"
                     name="due_date"
-                    value={data.due_date}
+                    value={formatDateForInput(data.due_date)}
                     className="mt-1 block w-full"
                     onChange={(e) => setData("due_date", e.target.value)}
                 />

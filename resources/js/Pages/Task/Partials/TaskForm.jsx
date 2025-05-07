@@ -4,6 +4,7 @@ import SelectInput from "@/Components/SelectInput";
 import TextInput from "@/Components/TextInput";
 import { Link } from "@inertiajs/react";
 import { Editor } from "@tinymce/tinymce-react";
+import { formatDateForInput } from "@/utils";
 
 export default function TaskForm({
   data,
@@ -74,7 +75,7 @@ export default function TaskForm({
           id="task_due_date"
           type="date"
           name="due_date"
-          value={data.due_date}
+          value={formatDateForInput(data.due_date)}
           className="mt-1 block w-full"
           onChange={(e) => setData("due_date", e.target.value)}
         />

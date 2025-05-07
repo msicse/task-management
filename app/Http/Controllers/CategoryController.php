@@ -25,11 +25,11 @@ class CategoryController extends Controller
 
         $categories = $query->orderBy($sortField, $sortDirection)
             ->paginate(10)
-            ->onEachSide(1);
+            ->withQueryString();
 
         return inertia("Categories/Index", [
             "categories" => $categories,
-            'queryParams' => request()->query() ?: null,
+            'queryParams' => request()->only(['name', 'sort_field', 'sort_direction']),
             'success' => session('success'),
         ]);
     }

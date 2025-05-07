@@ -97,6 +97,27 @@ class TaskController extends Controller
         // Create the task
         $task = Task::create($data);
 
+        // Handle file uploads - fix to check for 'files' key directly
+        if ($request->hasFile('files')) {
+            $files = $request->file('files');
+            foreach ($files as $file) {
+                $originalName = $file->getClientOriginalName();
+
+                // Store file in public disk
+                $storagePath = $file->store('task_files/' . $task->id, 'public');
+
+                // Create file record with consistent field names
+                $task->files()->create([
+                    'user_id' => Auth::id(),
+                    'name' => pathinfo($originalName, PATHINFO_FILENAME),
+                    'original_name' => $originalName,
+                    'path' => $storagePath,
+                    'mime_type' => $file->getMimeType(),
+                    'size' => $file->getSize(),
+                ]);
+            }
+        }
+
         return to_route("tasks.index")->with("success", "Task has been created successfully");
     }
 
@@ -215,7 +236,7 @@ class TaskController extends Controller
     }
 
     /**
-     * Update task details including status, score, and time logging
+     * Update task details including status, score, time logging, and approval
      */
     public function updateTaskDetails(Request $request, Task $task)
     {
@@ -224,10 +245,27 @@ class TaskController extends Controller
             'scoreType' => ['sometimes', 'required', 'in:creator_rating,assignee_rating'],
             'score' => ['required_with:scoreType', 'integer', 'min:1', 'max:5'],
             'time_spent' => ['sometimes', 'required', 'numeric', 'min:0'],
+            'approved_at' => ['sometimes', 'nullable', 'date'],
         ]);
 
         $updates = [];
         $message = [];
+
+        // Handle task approval
+        if (isset($validated['approved_at'])) {
+            // Only creator can approve tasks
+            if (Auth::id() !== $task->created_by) {
+                return response()->json(['error' => 'Only the task creator can approve tasks'], 403);
+            }
+
+            // Task must be completed to be approved
+            if ($task->status !== 'completed') {
+                return response()->json(['error' => 'Only completed tasks can be approved'], 400);
+            }
+
+            $updates['approved_at'] = $validated['approved_at'];
+            $message[] = 'Task approved successfully';
+        }
 
         // Handle status update
         if (isset($validated['status'])) {
@@ -236,7 +274,7 @@ class TaskController extends Controller
                     return response()->json(['error' => 'Time spent must be provided when completing a task'], 422);
                 }
                 $updates['completed_at'] = now();
-                $updates['time_spent'] = $validated['time_spent'];
+                $updates['time_log'] = $validated['time_spent'];
                 $message[] = 'Task marked as completed';
             } elseif ($validated['status'] !== 'completed') {
                 $updates['completed_at'] = null;
@@ -254,11 +292,11 @@ class TaskController extends Controller
 
             // Verify user authorization for scoring
             if ($validated['scoreType'] === 'creator_rating') {
-                if (Auth::id() !== $task->created_by) {
+                if (Auth::id() !== $task->assigned_user_id) {
                     return response()->json(['error' => 'Unauthorized to give creator rating'], 403);
                 }
             } elseif ($validated['scoreType'] === 'assignee_rating') {
-                if (Auth::id() !== $task->assigned_user_id) {
+                if (Auth::id() !== $task->created_by) {
                     return response()->json(['error' => 'Unauthorized to give assignee rating'], 403);
                 }
             }
@@ -268,8 +306,8 @@ class TaskController extends Controller
         }
 
         // Update time spent independently if provided without completion
-        if (isset($validated['time_spent']) && !isset($updates['time_spent'])) {
-            $updates['time_spent'] = $validated['time_spent'];
+        if (isset($validated['time_spent']) && !isset($updates['time_log'])) {
+            $updates['time_log'] = $validated['time_spent'];
             $message[] = 'Time spent updated';
         }
 
@@ -306,8 +344,9 @@ class TaskController extends Controller
 
         $query = Task::query()->where('assigned_user_id', $user->id);
 
-        $shortField = request("short_field", 'created_at');
-        $shortDirection = request("short_direction", 'desc');
+        // Changed from shortField to sortField to match front-end parameter naming
+        $sortField = request("sort_field", 'created_at');
+        $sortDirection = request("sort_direction", 'desc');
 
         if (request("name")) {
             $query->where("name", "like", "%" . request("name") . "%");
@@ -315,9 +354,14 @@ class TaskController extends Controller
         if (request("status")) {
             $query->where("status", request("status"));
         }
-        $tasks = $query->orderBy($shortField, $shortDirection)->paginate(10)->onEachSide(1);
+        if (request("priority")) {
+            $query->where("priority", request("priority"));
+        }
+        if (request("category")) {
+            $query->where("category_id", request("category"));
+        }
 
-        $tasks = $query->orderBy($shortField, $shortDirection)->paginate(10)->onEachSide(1);
+        $tasks = $query->orderBy($sortField, $sortDirection)->paginate(10)->onEachSide(1);
         $users = User::query()->orderBy('name', 'asc')->get();
 
         return inertia("Task/MyTasks", [

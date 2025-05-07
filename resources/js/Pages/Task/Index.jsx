@@ -27,6 +27,9 @@ export default function Index({
   const [priority, setPriority] = useState(queryParams?.priority || "");
   const [assignedTo, setAssignedTo] = useState(queryParams?.assigned_to || "");
   const [category, setCategory] = useState(queryParams?.category || "");
+  const [sortField, setSortField] = useState(queryParams?.short_field || "created_at");
+  const [sortDirection, setSortDirection] = useState(queryParams?.short_direction || "desc");
+
   console.log("tasks", tasks);
 
   useEffect(() => {
@@ -39,7 +42,54 @@ export default function Index({
     e.preventDefault();
     router.get(
       route("tasks.index"),
-      { name: search, status, priority, assigned_to: assignedTo, category },
+      {
+        name: search,
+        status,
+        priority,
+        assigned_to: assignedTo,
+        category,
+        short_field: sortField,
+        short_direction: sortDirection
+      },
+      {
+        preserveState: true,
+        preserveScroll: true,
+      }
+    );
+  };
+
+  const deleteTask = (taskId) => {
+    if (!window.confirm("Are you sure you want to delete this task?")) {
+      return;
+    }
+    router.delete(route("tasks.destroy", taskId), {
+      preserveScroll: true,
+      onSuccess: () => {
+        setShowSuccess(true);
+      },
+    });
+  };
+
+  const shortChanged = (name) => {
+    let newDirection = "asc";
+    if (name === sortField) {
+      newDirection = sortDirection === "asc" ? "desc" : "asc";
+    }
+
+    setSortField(name);
+    setSortDirection(newDirection);
+
+    router.get(
+      route("tasks.index"),
+      {
+        name: search,
+        status,
+        priority,
+        assigned_to: assignedTo,
+        category,
+        short_field: name,
+        short_direction: newDirection
+      },
       {
         preserveState: true,
         preserveScroll: true,
@@ -64,7 +114,7 @@ export default function Index({
             href={route("tasks.create")}
             className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
           >
-            Create Task
+            Add Task
           </Link>
         </div>
       }
@@ -147,18 +197,90 @@ export default function Index({
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                   <thead className="bg-gray-50 dark:bg-gray-700">
                     <tr>
-                      <TableHeading>ID</TableHeading>
-                      <TableHeading>Name</TableHeading>
-                      <TableHeading>Category</TableHeading>
-                      {auth.user.hasRole && auth.user.hasRole("Admin") && (
-                        <TableHeading>Assigned By</TableHeading>
+                      <TableHeading
+                        name="id"
+                        short_field={sortField}
+                        short_direction={sortDirection}
+                        shortChanged={shortChanged}
+                      >
+                        ID
+                      </TableHeading>
+                      <TableHeading
+                        name="name"
+                        short_field={sortField}
+                        short_direction={sortDirection}
+                        shortChanged={shortChanged}
+                      >
+                        Name
+                      </TableHeading>
+                      <TableHeading
+                        name="category_id"
+                        short_field={sortField}
+                        short_direction={sortDirection}
+                        shortChanged={shortChanged}
+                      >
+                        Category
+                      </TableHeading>
+                      {auth.user.roles?.some(role => role.name === "Admin") && (
+                        <TableHeading
+                          name="created_by"
+                          short_field={sortField}
+                          short_direction={sortDirection}
+                          shortChanged={shortChanged}
+                        >
+                          Assigned By
+                        </TableHeading>
                       )}
-                      <TableHeading>Assigned To</TableHeading>
-                      <TableHeading>Status</TableHeading>
-                      <TableHeading>Completed</TableHeading>
-                      <TableHeading>Priority</TableHeading>
-                      <TableHeading>Due Date</TableHeading>
-                      <TableHeading>Action</TableHeading>
+                      <TableHeading
+                        name="assigned_user_id"
+                        short_field={sortField}
+                        short_direction={sortDirection}
+                        shortChanged={shortChanged}
+                      >
+                        Assigned To
+                      </TableHeading>
+                      <TableHeading
+                        name="status"
+                        short_field={sortField}
+                        short_direction={sortDirection}
+                        shortChanged={shortChanged}
+                      >
+                        Status
+                      </TableHeading>
+                      <TableHeading
+                        name="created_at"
+                        short_field={sortField}
+                        short_direction={sortDirection}
+                        shortChanged={shortChanged}
+                      >
+                        Created At
+                      </TableHeading>
+                      <TableHeading shortable={false}>Time Log</TableHeading>
+                      <TableHeading
+                        name="completed_at"
+                        short_field={sortField}
+                        short_direction={sortDirection}
+                        shortChanged={shortChanged}
+                      >
+                        Completed
+                      </TableHeading>
+                      <TableHeading
+                        name="priority"
+                        short_field={sortField}
+                        short_direction={sortDirection}
+                        shortChanged={shortChanged}
+                      >
+                        Priority
+                      </TableHeading>
+                      <TableHeading
+                        name="due_date"
+                        short_field={sortField}
+                        short_direction={sortDirection}
+                        shortChanged={shortChanged}
+                      >
+                        Due Date
+                      </TableHeading>
+                      <TableHeading shortable={false}>Action</TableHeading>
                     </tr>
                   </thead>
                   <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -178,7 +300,7 @@ export default function Index({
                         <td className="px-6 py-4 whitespace-nowrap">
                           {task.category.name}
                         </td>
-                        {auth.user.hasRole && auth.user.hasRole("Admin") && (
+                        {auth.user.roles?.some(role => role.name === "Admin") && (
                           <td className="px-6 py-4 whitespace-nowrap">
                             {task.createdBy.name}
                           </td>
@@ -195,6 +317,12 @@ export default function Index({
                           >
                             {TASK_STATUS_TEXT_MAP[task.status]}
                           </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {task.created_at}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {task.time_log ? `${task.time_log} hours` : "N/A"}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {task.completed_at ? task.completed_at : "Not yet"}
@@ -217,12 +345,6 @@ export default function Index({
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {/* <Link
-                            href={route("tasks.show", task.id)}
-                            className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-3"
-                          >
-                            View
-                          </Link> */}
                           <Link
                             href={route("tasks.edit", task.id)}
                             className="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300 mr-3"

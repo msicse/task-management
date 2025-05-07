@@ -8,6 +8,7 @@ import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import { useMemo } from "react";
 import ImageResize from "quill-image-resize-module-react";
+import { formatDateForInput } from "@/utils";
 
 // Register the image resize module
 ReactQuill.Quill.register("modules/imageResize", ImageResize);
@@ -20,6 +21,8 @@ export default function TaskForm3({
   users,
   categories,
   formType = "Create",
+  hideSubmitButton = false,
+  compactHeight = false,
 }) {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -61,8 +64,8 @@ export default function TaskForm3({
       backgroundColor: "white",
       border: "1px solid #D1D5DB !important",
       borderRadius: "0.375rem",
-      minHeight: "34px", // Increased from 24px
-      fontSize: "0.875rem", // Increased from 0.75rem
+      minHeight: compactHeight ? "30px" : "34px",
+      fontSize: compactHeight ? "0.8125rem" : "0.875rem",
       boxShadow: "none !important",
       outline: "none !important",
       padding: "0",
@@ -70,30 +73,30 @@ export default function TaskForm3({
     input: (provided) => ({
       ...provided,
       margin: "0",
-      fontSize: "0.875rem", // Increased
-      minHeight: "34px", // Increased
+      fontSize: compactHeight ? "0.8125rem" : "0.875rem",
+      minHeight: compactHeight ? "30px" : "34px",
       padding: "0",
     }),
     option: (provided, state) => ({
       ...provided,
-      fontSize: "0.875rem", // Increased
-      padding: "4px 8px", // Increased from 2px 6px
+      fontSize: compactHeight ? "0.8125rem" : "0.875rem",
+      padding: compactHeight ? "3px 8px" : "4px 8px",
       backgroundColor: state.isSelected ? "#4F46E5" : "white",
       color: state.isSelected ? "white" : "black",
     }),
     menu: (provided) => ({
       ...provided,
-      marginTop: "2px", // Increased
-      fontSize: "0.875rem", // Increased
+      marginTop: "2px",
+      fontSize: compactHeight ? "0.8125rem" : "0.875rem",
     }),
     valueContainer: (provided) => ({
       ...provided,
-      padding: "0 6px", // Increased from 0 4px
-      minHeight: "34px", // Increased
+      padding: "0 6px",
+      minHeight: compactHeight ? "30px" : "34px",
     }),
     dropdownIndicator: (provided) => ({
       ...provided,
-      padding: "3px", // Increased from 2px
+      padding: compactHeight ? "2px" : "3px",
     }),
     indicatorSeparator: () => ({
       display: "none",
@@ -160,48 +163,46 @@ export default function TaskForm3({
   ];
 
   return (
-    <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-3">
-      {" "}
-      {/* Increased gap from 2 to 3 */}
+    <form onSubmit={handleSubmit} className={`grid grid-cols-2 gap-${compactHeight ? "2" : "3"}`}>
       <style jsx global>{`
         .editor-container {
           display: flex;
           flex-direction: column;
-          height: 400px !important; // Increased from 150px
+          height: ${compactHeight ? "250px" : "400px"} !important;
         }
         .editor-container .ql-container {
           flex: 1;
           overflow-y: auto;
-          font-size: 0.875rem; // Increased
+          font-size: ${compactHeight ? "0.8125rem" : "0.875rem"};
         }
         .editor-container .ql-toolbar {
-          padding: 3px; // Increased
-          font-size: 0.875rem; // Increased
+          padding: ${compactHeight ? "2px" : "3px"};
+          font-size: ${compactHeight ? "0.8125rem" : "0.875rem"};
         }
         .editor-container .ql-toolbar button {
-          height: 24px; // Increased from 18px
-          width: 24px; // Increased from 18px
+          height: ${compactHeight ? "22px" : "24px"};
+          width: ${compactHeight ? "22px" : "24px"};
           padding: 0;
         }
         .editor-container .ql-toolbar .ql-picker {
-          height: 24px; // Increased from 18px
-          line-height: 24px; // Increased from 18px
+          height: ${compactHeight ? "22px" : "24px"};
+          line-height: ${compactHeight ? "22px" : "24px"};
         }
         .editor-container .ql-editor {
           min-height: 100%;
-          padding: 6px; // Increased from 4px
-          font-size: 0.875rem; // Increased
+          padding: ${compactHeight ? "4px" : "6px"};
+          font-size: ${compactHeight ? "0.8125rem" : "0.875rem"};
         }
         .ql-snow .ql-picker {
-          font-size: 0.875rem; // Increased
+          font-size: ${compactHeight ? "0.8125rem" : "0.875rem"};
         }
         /* Adjust input field heights */
         input[type="text"],
         input[type="date"],
         input[type="file"] {
-          height: 34px; // Increased from 24px
-          font-size: 0.875rem; // Increased
-          padding: 3px 6px; // Increased
+          height: ${compactHeight ? "30px" : "34px"};
+          font-size: ${compactHeight ? "0.8125rem" : "0.875rem"};
+          padding: ${compactHeight ? "2px 5px" : "3px 6px"};
         }
         /* Style the calendar icon for date inputs */
         input[type="date"]::-webkit-calendar-picker-indicator {
@@ -210,20 +211,20 @@ export default function TaskForm3({
         }
         /* Adjust label sizes */
         label {
-          font-size: 0.875rem; // Increased
-          margin-bottom: 2px; // Increased
-          line-height: 1.25; // Increased
+          font-size: ${compactHeight ? "0.8125rem" : "0.875rem"};
+          margin-bottom: ${compactHeight ? "1px" : "2px"};
+          line-height: 1.25;
         }
         /* Adjust error message size */
         .text-sm {
-          font-size: 0.8rem; // Increased
+          font-size: ${compactHeight ? "0.75rem" : "0.8rem"};
         }
         /* Adjust margins */
         .mt-1 {
-          margin-top: 0.25rem; // Increased
+          margin-top: ${compactHeight ? "0.2rem" : "0.25rem"};
         }
         .mt-2 {
-          margin-top: 0.35rem; // Increased
+          margin-top: ${compactHeight ? "0.3rem" : "0.35rem"};
         }
       `}</style>
       <div>
@@ -257,7 +258,7 @@ export default function TaskForm3({
           id="task_due_date"
           type="date"
           name="due_date"
-          value={data.due_date ? new Date(data.due_date).toISOString().split('T')[0] : ''}
+          value={formatDateForInput(data.due_date)}
           className="mt-1 block w-full"
           onChange={(e) => setData("due_date", e.target.value)}
         />
@@ -283,7 +284,7 @@ export default function TaskForm3({
         <InputError message={errors.assigned_user_id} className="mt-2" />
       </div>
       <div>
-        <InputLabel htmlFor="task_assigned_user" value="Category" />
+        <InputLabel htmlFor="category_id" value="Category" />
         <Select
           id="category_id"
           options={categoryOptions}
@@ -299,24 +300,8 @@ export default function TaskForm3({
           classNamePrefix="select"
           styles={customStyles}
         />
-        <InputError message={errors.assigned_user_id} className="mt-2" />
+        <InputError message={errors.category_id} className="mt-2" />
       </div>
-      {/* <div>
-        <InputLabel htmlFor="task_status" value="Status" />
-        <Select
-          id="task_status"
-          options={statusOptions}
-          value={
-            statusOptions.find((option) => option.value === data.status) || null
-          }
-          onChange={(option) => setData("status", option ? option.value : "")}
-          className="mt-1 no-focus-border"
-          classNamePrefix="select"
-          styles={customStyles}
-          isSearchable={false}
-        />
-        <InputError message={errors.status} className="mt-2" />
-      </div> */}
       <div>
         <InputLabel htmlFor="task_priority" value="Priority" />
         <Select
@@ -345,60 +330,59 @@ export default function TaskForm3({
             formats={formats}
             className="bg-white text-black h-full"
             style={{
-              height: "calc(450px - 42px)", // Increased height
+              height: compactHeight ? "calc(250px - 42px)" : "calc(450px - 42px)",
               display: "flex",
               flexDirection: "column",
             }}
           />
         </div>
-        <InputError message={errors.description} className="mt-1" />{" "}
-        {/* Adjusted margin */}
+        <InputError message={errors.description} className="mt-1" />
       </div>
-      <div className="flex items-center justify-end mt-3 col-span-2 space-x-2">
-        {" "}
-        {/* Increased spacing */}
-        <Link
-          href={route("tasks.index")}
-          className="px-3 py-1.5 text-sm bg-red-600 text-white rounded hover:bg-red-700 mr-2 disabled:opacity-50" // Increased text and padding
-          disabled={isSubmitting}
-        >
-          Cancel
-        </Link>
+      {!hideSubmitButton && (
+        <div className="flex items-center justify-end mt-3 col-span-2 space-x-2">
+          <Link
+            href={route("tasks.index")}
+            className={`px-3 py-${compactHeight ? "1" : "1.5"} text-sm bg-red-600 text-white rounded hover:bg-red-700 mr-2 disabled:opacity-50`}
+            disabled={isSubmitting}
+          >
+            Cancel
+          </Link>
 
-        <button
-          type="submit"
-          className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50 inline-flex items-center" // Increased text and padding
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? (
-            <>
-              <svg
-                className="animate-spin -ml-1 mr-2 h-5 w-5 text-white"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
-              Processing...
-            </>
-          ) : (
-            `${formType} Task`
-          )}
-        </button>
-      </div>
+          <button
+            type="submit"
+            className={`px-3 py-${compactHeight ? "1" : "1.5"} text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50 inline-flex items-center`}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <svg
+                  className="animate-spin -ml-1 mr-2 h-5 w-5 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Processing...
+              </>
+            ) : (
+              `${formType} Task`
+            )}
+          </button>
+        </div>
+      )}
     </form>
   );
 }

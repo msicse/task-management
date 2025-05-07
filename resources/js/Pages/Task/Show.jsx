@@ -22,9 +22,16 @@ export default function Show({ auth, task, comments, files, success }) {
   const [replyingTo, setReplyingTo] = useState(null);
   const [updating, setUpdating] = useState(false);
   const [timeSpent, setTimeSpent] = useState("");
+  const [taskRating, setTaskRating] = useState(5); // Default 5 stars
   const [showTimeSpentInput, setShowTimeSpentInput] = useState(false);
+  const [showApprovalPopup, setShowApprovalPopup] = useState(false); // New state for approval popup
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+
+  // Check if current user is the creator of this task
+  const isCreator = auth.user.id === task.createdBy.id;
+  // Check if task is completed but not yet approved
+  const isCompletedNotApproved = task.status === "completed" && !task.approved_at;
 
   const handleStatusChange = async (e) => {
     const newStatus = e.target.value;
@@ -66,11 +73,18 @@ export default function Show({ auth, task, comments, files, success }) {
   const handleTimeSpentSubmit = async () => {
     setUpdating(true);
     try {
+      // Determine the scoreType based on who is completing the task
+      // Creator will give rating to the assignee - assignee_rating
+      // Assignee will give rating to the creator - creator_rating
+      const scoreType = auth.user.id === task.assigned_user_id ? 'creator_rating' : null;
+
       router.visit(route("tasks.update-details", task.id), {
         method: "put",
         data: {
           status: "completed",
           time_spent: parseFloat(timeSpent),
+          scoreType: scoreType,
+          score: taskRating
         },
         preserveScroll: true,
         onSuccess: (page) => {
@@ -78,6 +92,7 @@ export default function Show({ auth, task, comments, files, success }) {
           setShowSuccess(true);
           setShowTimeSpentInput(false);
           setTimeSpent("");
+          setTaskRating(5);
           setUpdating(false);
         },
         onError: () => {
@@ -115,6 +130,35 @@ export default function Show({ auth, task, comments, files, success }) {
     }
   };
 
+  // New function to handle task approval
+  const handleApproval = async () => {
+    setUpdating(true);
+    try {
+      router.visit(route("tasks.update-details", task.id), {
+        method: "put",
+        data: {
+          approved_at: new Date().toISOString(),
+          scoreType: 'assignee_rating',
+          score: taskRating
+        },
+        preserveScroll: true,
+        onSuccess: (page) => {
+          setSuccessMessage(page.props.success || "Task approved successfully");
+          setShowSuccess(true);
+          setShowApprovalPopup(false);
+          setTaskRating(5);
+          setUpdating(false);
+        },
+        onError: () => {
+          setUpdating(false);
+        },
+      });
+    } catch (error) {
+      console.error("Failed to approve task:", error);
+      setUpdating(false);
+    }
+  };
+
   // Set initial success message from props if it exists
   useEffect(() => {
     if (success) {
@@ -122,6 +166,19 @@ export default function Show({ auth, task, comments, files, success }) {
       setShowSuccess(true);
     }
   }, [success]);
+
+  // Generate stars for the ratings dropdown
+  const renderRatingOptions = () => {
+    const options = [];
+    for (let i = 1; i <= 5; i++) {
+      options.push(
+        <option key={i} value={i}>
+          {i} {i === 1 ? 'Star' : 'Stars'}
+        </option>
+      );
+    }
+    return options;
+  };
 
   return (
     <AuthenticatedLayout
@@ -177,28 +234,63 @@ export default function Show({ auth, task, comments, files, success }) {
                     <option value="in_progress">In Progress</option>
                     <option value="completed">Completed</option>
                   </select>
+
+                  {/* Add Approve button for creators when task is completed */}
+                  {isCreator && isCompletedNotApproved && (
+                    <button
+                      onClick={() => setShowApprovalPopup(true)}
+                      disabled={updating}
+                      className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+                    >
+                      Approve
+                    </button>
+                  )}
+
+                  {/* Time spent popup */}
                   {showTimeSpentInput && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl">
-                        <h3 className="text-lg font-medium mb-4">
-                          Enter Time Spent
+                      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl max-w-md w-full">
+                        <h3 className="text-lg font-medium mb-4 text-gray-900 dark:text-gray-100">
+                          Complete Task
                         </h3>
-                        <div className="mb-4">
-                          <input
-                            type="number"
-                            step="0.25"
-                            min="0"
-                            value={timeSpent}
-                            onChange={(e) => setTimeSpent(e.target.value)}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                            placeholder="Hours spent on task"
-                          />
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              Time Spent (minutes)
+                            </label>
+                            <input
+                              type="number"
+                              step="0.25"
+                              min="0"
+                              value={timeSpent}
+                              onChange={(e) => setTimeSpent(e.target.value)}
+                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                              placeholder="Minutes spent on task"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              Rate This Task
+                            </label>
+                            <select
+                              value={taskRating}
+                              onChange={(e) => setTaskRating(parseInt(e.target.value))}
+                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            >
+                              {renderRatingOptions()}
+                            </select>
+                            <p className="mt-1 text-xs text-gray-500">
+                              Your rating helps improve task quality
+                            </p>
+                          </div>
                         </div>
-                        <div className="flex justify-end space-x-3">
+                        <div className="flex justify-end space-x-3 mt-6">
                           <button
                             onClick={() => {
                               setShowTimeSpentInput(false);
                               setTimeSpent("");
+                              setTaskRating(5);
                             }}
                             className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
                           >
@@ -215,6 +307,57 @@ export default function Show({ auth, task, comments, files, success }) {
                       </div>
                     </div>
                   )}
+
+                  {/* Approval popup */}
+                  {showApprovalPopup && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl max-w-md w-full">
+                        <h3 className="text-lg font-medium mb-4 text-gray-900 dark:text-gray-100">
+                          Approve Task
+                        </h3>
+                        <div className="space-y-4">
+                          <p className="text-gray-700 dark:text-gray-300">
+                            You are approving the completed task. Please rate the assignee's work.
+                          </p>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              Rate Assignee's Work
+                            </label>
+                            <select
+                              value={taskRating}
+                              onChange={(e) => setTaskRating(parseInt(e.target.value))}
+                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            >
+                              {renderRatingOptions()}
+                            </select>
+                            <p className="mt-1 text-xs text-gray-500">
+                              Your rating helps recognize good work
+                            </p>
+                          </div>
+
+                          <div className="flex justify-end space-x-3 mt-6">
+                            <button
+                              onClick={() => {
+                                setShowApprovalPopup(false);
+                                setTaskRating(5);
+                              }}
+                              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={handleApproval}
+                              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                            >
+                              Approve Task
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <span
                     className={`px-3 py-1 rounded-full text-sm font-medium ${
                       TASK_PRIORITY_CLASS_MAP[task.priority]
@@ -261,86 +404,93 @@ export default function Show({ auth, task, comments, files, success }) {
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Creation Date
+                      </p>
+                      <p className="mt-1 text-gray-900 dark:text-gray-100">
+                        {task.created_at
+                          ? new Date(task.created_at).toLocaleDateString()
+                          : "N/A"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Time Log
+                      </p>
+                      <p className="mt-1 text-gray-900 dark:text-gray-100">
+                        {task.time_log ? `${task.time_log} minutes` : "No time logged"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
                         Assigned To
                       </p>
                       <p className="mt-1 text-gray-900 dark:text-gray-100">
                         {task.assignedUser.name}
                       </p>
                     </div>
-                    {task.status === "completed" && (
-                      <>
-                        {auth.user.id === task.createdBy.id &&
-                          !task.creator_rating && (
-                            <div>
-                              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                                Rate Assignee
-                              </p>
-                              <select
-                                className="mt-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 disabled:opacity-50"
-                                onChange={(e) =>
-                                  handleScore("creator_rating", e.target.value)
-                                }
-                                disabled={updating}
-                                defaultValue=""
-                              >
-                                <option value="">Select Score</option>
-                                <option value="1">1 - Poor</option>
-                                <option value="2">2 - Fair</option>
-                                <option value="3">3 - Good</option>
-                                <option value="4">4 - Very Good</option>
-                                <option value="5">5 - Excellent</option>
-                              </select>
-                            </div>
-                          )}
-
-                        {auth.user.id === task.assigned_user_id &&
-                          !task.assignee_rating && (
-                            <div>
-                              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                                Rate Task Creator
-                              </p>
-                              <select
-                                className="mt-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 disabled:opacity-50"
-                                onChange={(e) =>
-                                  handleScore("assignee_rating", e.target.value)
-                                }
-                                disabled={updating}
-                                defaultValue=""
-                              >
-                                <option value="">Select Score</option>
-                                <option value="1">1 - Poor</option>
-                                <option value="2">2 - Fair</option>
-                                <option value="3">3 - Good</option>
-                                <option value="4">4 - Very Good</option>
-                                <option value="5">5 - Excellent</option>
-                              </select>
-                            </div>
-                          )}
-                        {(task.creator_rating || task.assignee_rating) && (
-                          <div>
-                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                              Scores
-                            </p>
-                            <div className="mt-1 space-y-1">
-                              {task.creator_rating  && auth.user.id === task.assigned_user_id &&  (
-                                <p className="text-gray-900 dark:text-gray-100">
-                                  Your Rating: {task.creator_rating}/5
-                                </p>
-                              )}
-
-                              {task.assignee_rating && auth.user.id === task.createdBy.id && (
-                                <p className="text-gray-900 dark:text-gray-100">
-                                  Your Rating: {task.assignee_rating}/5
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    )}
+                    <div>
+                      <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Category
+                      </p>
+                      <p className="mt-1 text-gray-900 dark:text-gray-100">
+                        {task.category ? task.category.name : "Uncategorized"}
+                      </p>
+                    </div>
+                    {/* Approval Status */}
+                    <div>
+                      <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Approval Status
+                      </p>
+                      <p className="mt-1 text-gray-900 dark:text-gray-100">
+                        {task.approved_at
+                          ? `Approved on ${new Date(task.approved_at).toLocaleDateString()}`
+                          : task.status === "completed"
+                            ? "Awaiting approval"
+                            : "Not applicable"}
+                      </p>
+                    </div>
+                    {/* Rating display based on user role */}
+                    <div>
+                      <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        {auth.user.id === task.assigned_user_id ? "Creator Rating" : "Assignee Rating"}
+                      </p>
+                      <p className="mt-1 text-gray-900 dark:text-gray-100">
+                        {auth.user.id === task.assigned_user_id
+                          ? (task.assignee_rating
+                              ? `${task.assignee_rating} Stars`
+                              : "Not rated yet")
+                          : (task.creator_rating
+                              ? `${task.creator_rating} Stars`
+                              : "Not rated yet")
+                        }
+                      </p>
+                    </div>
+                    {/* Visual star rating display */}
+                    <div>
+                      <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Rating
+                      </p>
+                      <div className="flex mt-1">
+                        {Array.from({ length: 5 }).map((_, index) => (
+                          <svg
+                            key={index}
+                            className={`w-5 h-5 ${
+                              index < (auth.user.id === task.assigned_user_id ? task.assignee_rating || 0 : task.creator_rating || 0)
+                                ? "text-yellow-400"
+                                : "text-gray-300"
+                            }`}
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          </svg>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
+
               <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div className="p-6">
                   <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">

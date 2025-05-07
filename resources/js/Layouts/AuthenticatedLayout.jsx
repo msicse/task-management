@@ -85,7 +85,9 @@ export default function AuthenticatedLayout({ user, header, children }) {
                     href={route("tasks.index")}
                     active={route().current("tasks.*")}
                   >
-                    All Tasks
+                    {user.roles?.some(role => role.name === "Admin")
+                      ? "All Tasks"
+                      : "Created Tasks"}
                   </NavLink>
                 </div>
               )}
@@ -96,7 +98,7 @@ export default function AuthenticatedLayout({ user, header, children }) {
                     href={route("tasks.create")}
                     active={route().current("tasks.create")}
                   >
-                    Create Task
+                    Add Task
                   </NavLink>
                 </div>
               )}

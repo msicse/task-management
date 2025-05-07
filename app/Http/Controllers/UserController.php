@@ -33,14 +33,34 @@ class UserController extends Controller
             ->when(request('status'), function($query, $status) {
                 $query->where('status', $status);
             })
-            ->latest()
+            ->when(request('sort_field') && request('sort_direction'), function($query) {
+                $sortField = request('sort_field');
+                $direction = request('sort_direction');
+
+                // Handle special sorting for department and role
+                if ($sortField === 'department_id') {
+                    $query->join('departments', 'users.department_id', '=', 'departments.id')
+                          ->orderBy('departments.name', $direction)
+                          ->select('users.*');
+                } else if ($sortField === 'role') {
+                    $query->leftJoin('model_has_roles', 'users.id', '=', 'model_has_roles.model_id')
+                          ->leftJoin('roles', 'model_has_roles.role_id', '=', 'roles.id')
+                          ->where('model_has_roles.model_type', 'App\\Models\\User')
+                          ->orderBy('roles.name', $direction)
+                          ->select('users.*');
+                } else {
+                    $query->orderBy($sortField, $direction);
+                }
+            }, function($query) {
+                $query->latest();
+            })
             ->paginate(10)
             ->withQueryString();
 
         return Inertia::render('User/Index', [
             'users' => $users,
             'departments' => Department::orderBy('name')->get(),
-            'filters' => request()->only(['search', 'department', 'status']),
+            'filters' => request()->only(['search', 'department', 'status', 'sort_field', 'sort_direction']),
             'success' => session('success')
         ]);
     }
