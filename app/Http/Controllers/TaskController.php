@@ -22,6 +22,9 @@ use App\Http\Requests\UpdateTaskRequest;
 use App\Http\Resources\UserCrudResource;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Imports\TaskImport;
+use PDF;
+use App\Exports\TasksExport;
+use Illuminate\Database\Eloquent\Builder;
 
 class TaskController extends Controller
 {
@@ -422,7 +425,7 @@ class TaskController extends Controller
 
         try {
             Excel::import(new TaskImport, $request->file('file'));
-            
+
             return redirect()->route('tasks.index')->with('success', 'Tasks imported successfully!');
         } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => 'Failed to import tasks: ' . $e->getMessage()]);
@@ -435,5 +438,166 @@ class TaskController extends Controller
     public function showImportForm()
     {
         return inertia('Task/Import');
+    }
+
+    /**
+     * Export tasks to Excel/CSV file
+     */
+    public function export(Request $request)
+    {
+        $query = Task::query();
+
+        $user = Auth::user();
+        if (!$user->hasRole('Admin')) {
+            $query->where('created_by', $user->id);
+        }
+
+        if ($request->filled('name')) {
+            $query->where('name', 'like', '%' . $request->input('name') . '%');
+        }
+        if ($request->filled('status')) {
+            $query->where('status', $request->input('status'));
+        }
+        if ($request->filled('priority')) {
+            $query->where('priority', $request->input('priority'));
+        }
+        if ($request->filled('assigned_to')) {
+            $query->where('assigned_user_id', $request->input('assigned_to'));
+        }
+        if ($request->filled('category')) {
+            $query->where('category_id', $request->input('category'));
+        }
+
+        $tasks = $query->get();
+
+        // Generate and return the Excel file
+        return Excel::download(new TasksExport($tasks), 'tasks_' . now()->format('Ymd_His') . '.xlsx');
+    }
+
+    /**
+     * Show the task export form
+     */
+    public function showExportForm()
+    {
+        $users = User::orderBy('name')->get();
+        $categories = Category::orderBy('name')->get();
+
+        return inertia('Task/Export', [
+            'users' => $users,
+            'categories' => $categories,
+        ]);
+    }
+
+    /**
+     * Show the reports page
+     */
+    public function showReportsPage()
+    {
+        $users = User::orderBy('name')->get();
+        $categories = Category::orderBy('name')->get();
+
+        return inertia('Task/Reports', [
+            'users' => $users,
+            'categories' => $categories,
+            'success' => session('success'),
+        ]);
+    }
+
+    /**
+     * Export tasks to Excel based on filters
+     */
+    public function exportExcel(Request $request)
+    {
+        $query = $this->getFilteredTasksQuery($request);
+        $tasks = $query->with(['category', 'assignedUser', 'createdBy'])->get();
+
+        // Generate and return the Excel file
+        return Excel::download(
+            new TasksExport($tasks),
+            'tasks_report_' . now()->format('Ymd_His') . '.xlsx'
+        );
+    }
+
+    /**
+     * Export tasks to PDF based on filters
+     */
+    public function exportPdf(Request $request)
+    {
+        $query = $this->getFilteredTasksQuery($request);
+        $tasks = $query->with(['category', 'assignedUser', 'createdBy'])->get();
+
+        $filters = $request->only(['name', 'status', 'priority', 'assigned_to', 'category', 'date_range']);
+
+        // Process date range if provided
+        if (!empty($filters['date_range']) && strpos($filters['date_range'], '|') !== false) {
+            list($startDate, $endDate) = explode('|', $filters['date_range']);
+            $filters['date_range'] = "From $startDate to $endDate";
+        }
+
+        $pdf = PDF::loadView('tasks.report_list', [
+            'tasks' => $tasks,
+            'filters' => $filters,
+        ]);
+
+        return $pdf->download('tasks_report_' . now()->format('Ymd_His') . '.pdf');
+    }
+
+    /**
+     * Generate a PDF report for the specified task.
+     */
+    public function generateTaskPdf(Task $task)
+    {
+        $task->load(['assignedUser', 'createdBy', 'updatedBy', 'category', 'comments.user', 'files']);
+
+        $pdf = PDF::loadView('tasks.report', [
+            'task' => $task,
+        ]);
+
+        return $pdf->download('task_report_' . $task->id . '.pdf');
+    }
+
+    /**
+     * Helper method to get filtered tasks query based on request parameters
+     */
+    private function getFilteredTasksQuery(Request $request)
+    {
+        $query = Task::query();
+
+        $user = Auth::user();
+        if (!$user->hasRole('Admin')) {
+            $query->where(function($q) use ($user) {
+                $q->where('created_by', $user->id)
+                  ->orWhere('assigned_user_id', $user->id);
+            });
+        }
+
+        if ($request->filled('name')) {
+            $query->where('name', 'like', '%' . $request->input('name') . '%');
+        }
+        if ($request->filled('status')) {
+            $query->where('status', $request->input('status'));
+        }
+        if ($request->filled('priority')) {
+            $query->where('priority', $request->input('priority'));
+        }
+        if ($request->filled('assigned_to')) {
+            $query->where('assigned_user_id', $request->input('assigned_to'));
+        }
+        if ($request->filled('category')) {
+            $query->where('category_id', $request->input('category'));
+        }
+
+        // Handle date range filtering
+        if ($request->filled('date_range') && strpos($request->input('date_range'), '|') !== false) {
+            list($startDate, $endDate) = explode('|', $request->input('date_range'));
+            if ($startDate) {
+                $query->whereDate('created_at', '>=', $startDate);
+            }
+            if ($endDate) {
+                $query->whereDate('created_at', '<=', $endDate);
+            }
+        }
+
+        return $query;
     }
 }

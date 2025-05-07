@@ -2,23 +2,23 @@ import { ChevronUpIcon, ChevronDownIcon } from "@heroicons/react/16/solid";
 // import { ChevronUpIcon, ChevronDownIcon } from "@heroicons/react"
 export default function TableHeading({
   name,
-  shortable = true,
-  short_field = null,
-  short_direction = null,
-  shortChanged = () => {},
+  sortable = true,
+  sort_field = null,
+  sort_direction = null,
+  sortChanged = () => {},
   children,
 }) {
   return (
-    <th onClick={(e) => shortChanged(name)}>
+    <th onClick={(e) => sortable && sortChanged(name)}>
       <div className="px-3 py-3 flex items-center justify-between gap-1 cursor-pointer">
         {children}
 
-        {shortable && (
+        {sortable && (
           <div>
             <ChevronUpIcon
               className={
                 "w-4" +
-                (short_field === name && short_direction === "asc"
+                (sort_field === name && sort_direction === "asc"
                   ? " text-white"
                   : "")
               }
@@ -27,7 +27,7 @@ export default function TableHeading({
             <ChevronDownIcon
               className={
                 "w-4 -mt-2 " +
-                (short_field === name && short_direction === "desc"
+                (sort_field === name && sort_direction === "desc"
                   ? "text-white"
                   : "")
               }

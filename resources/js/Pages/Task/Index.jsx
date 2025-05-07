@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import TableHeading from "@/Components/TableHeading";
 import TextInput from "@/Components/TextInput";
 import SelectInput from "@/Components/SelectInput";
+import SearchableSelect from "@/Components/SearchableSelect";
 import Pagination from "@/Components/Pagination";
 import {
   TASK_PRIORITY_CLASS_MAP,
@@ -28,8 +29,8 @@ export default function Index({
   const [priority, setPriority] = useState(queryParams?.priority || "");
   const [assignedTo, setAssignedTo] = useState(queryParams?.assigned_to || "");
   const [category, setCategory] = useState(queryParams?.category || "");
-  const [sortField, setSortField] = useState(queryParams?.short_field || "created_at");
-  const [sortDirection, setSortDirection] = useState(queryParams?.short_direction || "desc");
+  const [sortField, setSortField] = useState(queryParams?.sort_field || "created_at");
+  const [sortDirection, setSortDirection] = useState(queryParams?.sort_direction || "desc");
   const [perPage, setPerPage] = useState(queryParams?.per_page || 10);
 
 
@@ -49,8 +50,8 @@ export default function Index({
         priority,
         assigned_to: assignedTo,
         category,
-        short_field: sortField,
-        short_direction: sortDirection,
+        sort_field: sortField,
+        sort_direction: sortDirection,
         per_page: perPage,
       },
       {
@@ -72,7 +73,7 @@ export default function Index({
     });
   };
 
-  const shortChanged = (name) => {
+  const sortChanged = (name) => {
     let newDirection = "asc";
     if (name === sortField) {
       newDirection = sortDirection === "asc" ? "desc" : "asc";
@@ -89,8 +90,8 @@ export default function Index({
         priority,
         assigned_to: assignedTo,
         category,
-        short_field: name,
-        short_direction: newDirection,
+        sort_field: name,
+        sort_direction: newDirection,
         per_page: perPage,
       },
       {
@@ -110,8 +111,8 @@ export default function Index({
         priority,
         assigned_to: assignedTo,
         category,
-        short_field: sortField,
-        short_direction: sortDirection,
+        sort_field: sortField,
+        sort_direction: sortDirection,
         per_page: newPerPage,
       },
       {
@@ -130,6 +131,12 @@ export default function Index({
             Tasks
           </h2>
           <div className="flex space-x-2">
+            <Link
+              href={route("tasks.reports")}
+              className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+            >
+              Export Tasks
+            </Link>
             <Link
               href={route("tasks.import")}
               className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
@@ -159,155 +166,228 @@ export default function Index({
           )}
           <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
             <div className="p-6 text-gray-900 dark:text-gray-100">
-              <div className="flex justify-between items-center mb-6">
-                <form onSubmit={handleSearch} className="flex gap-4">
-                  <TextInput
-                    type="text"
-                    placeholder="Search tasks..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="w-64"
-                  />
-                  <SelectInput
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value)}
-                    className="w-48"
-                  >
-                    <option value="">All Status</option>
-                    <option value="pending">Pending</option>
-                    <option value="in_progress">In Progress</option>
-                    <option value="completed">Completed</option>
-                  </SelectInput>
-                  <SelectInput
-                    value={priority}
-                    onChange={(e) => setPriority(e.target.value)}
-                    className="w-48"
-                  >
-                    <option value="">All Priority</option>
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                  </SelectInput>
-                  <SelectInput
-                    value={assignedTo}
-                    onChange={(e) => setAssignedTo(e.target.value)}
-                    className="w-48"
-                  >
-                    <option value="">All Assignees</option>
-                    {users.map((user) => (
-                      <option key={user.id} value={user.id}>
-                        {user.name}
-                      </option>
-                    ))}
-                  </SelectInput>
-                  <SelectInput
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-48"
-                  >
-                    <option value="">All Categories</option>
-                    {categories.map((category) => (
-                      <option key={category.id} value={category.id}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </SelectInput>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
-                  >
-                    Search
-                  </button>
+              <div className="mb-6">
+                <form onSubmit={handleSearch} className="space-y-4">
+                  {/* Filter sections with collapsible UI */}
+                  <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg shadow-sm">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                      {/* Name search */}
+                      <div>
+                        <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Task Name
+                        </label>
+                        <TextInput
+                          id="name"
+                          type="text"
+                          placeholder="Search tasks..."
+                          value={search}
+                          onChange={(e) => setSearch(e.target.value)}
+                          className="w-full"
+                        />
+                      </div>
+
+                      {/* Status filter */}
+                      <div>
+                        <label htmlFor="status" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Status
+                        </label>
+                        <SelectInput
+                          id="status"
+                          value={status}
+                          onChange={(e) => setStatus(e.target.value)}
+                          className="w-full text-gray-800"
+                          options={[
+                            { value: "", label: "All Status" },
+                            { value: "pending", label: "Pending" },
+                            { value: "in_progress", label: "In Progress" },
+                            { value: "completed", label: "Completed" }
+                          ]}
+                        />
+                      </div>
+
+                      {/* Priority filter */}
+                      <div>
+                        <label htmlFor="priority" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Priority
+                        </label>
+                        <SelectInput
+                          id="priority"
+                          value={priority}
+                          onChange={(e) => setPriority(e.target.value)}
+                          className="w-full text-gray-800"
+                          options={[
+                            { value: "", label: "All Priority" },
+                            { value: "low", label: "Low" },
+                            { value: "medium", label: "Medium" },
+                            { value: "high", label: "High" }
+                          ]}
+                        />
+                      </div>
+
+                      {/* Assignee filter */}
+                      <div>
+                        <label htmlFor="assigned_to" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Assigned To
+                        </label>
+                        <SearchableSelect
+                          id="assigned_to"
+                          options={[
+                            { value: "", label: "All Assignees" },
+                            ...users.map((user) => ({ value: user.id, label: user.name }))
+                          ]}
+                          value={assignedTo}
+                          onChange={(e) => setAssignedTo(e.target.value)}
+                          placeholder="Search assignee..."
+                          isClearable
+                        />
+                      </div>
+
+                      {/* Category filter */}
+                      <div>
+                        <label htmlFor="category" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Category
+                        </label>
+                        <SearchableSelect
+                          id="category"
+                          options={[
+                            { value: "", label: "All Categories" },
+                            ...categories.map((category) => ({ value: category.id, label: category.name }))
+                          ]}
+                          value={category}
+                          onChange={(e) => setCategory(e.target.value)}
+                          placeholder="Search category..."
+                          isClearable
+                        />
+                      </div>
+                    </div>
+
+                    {/* Search and Reset buttons */}
+                    <div className="flex justify-end mt-4 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSearch("");
+                          setStatus("");
+                          setPriority("");
+                          setAssignedTo("");
+                          setCategory("");
+                          // Submit the form with empty values to reset filters
+                          router.get(
+                            route("tasks.index"),
+                            {
+                              sort_field: sortField,
+                              sort_direction: sortDirection,
+                              per_page: perPage,
+                            },
+                            {
+                              preserveState: true,
+                              preserveScroll: true,
+                            }
+                          );
+                        }}
+                        className="px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-25 transition ease-in-out duration-150"
+                      >
+                        Reset
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                      >
+                        Search
+                      </button>
+                    </div>
+                  </div>
                 </form>
               </div>
+
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                   <thead className="bg-gray-50 dark:bg-gray-700">
                     <tr>
                       <TableHeading
                         name="id"
-                        short_field={sortField}
-                        short_direction={sortDirection}
-                        shortChanged={shortChanged}
+                        sort_field={sortField}
+                        sort_direction={sortDirection}
+                        sortChanged={sortChanged}
                       >
                         ID
                       </TableHeading>
                       <TableHeading
                         name="name"
-                        short_field={sortField}
-                        short_direction={sortDirection}
-                        shortChanged={shortChanged}
+                        sort_field={sortField}
+                        sort_direction={sortDirection}
+                        sortChanged={sortChanged}
                       >
                         Name
                       </TableHeading>
                       <TableHeading
                         name="category_id"
-                        short_field={sortField}
-                        short_direction={sortDirection}
-                        shortChanged={shortChanged}
+                        sort_field={sortField}
+                        sort_direction={sortDirection}
+                        sortChanged={sortChanged}
                       >
                         Category
                       </TableHeading>
                       {auth.user.roles?.some(role => role.name === "Admin") && (
                         <TableHeading
                           name="created_by"
-                          short_field={sortField}
-                          short_direction={sortDirection}
-                          shortChanged={shortChanged}
+                          sort_field={sortField}
+                          sort_direction={sortDirection}
+                          sortChanged={sortChanged}
                         >
                           Assigned By
                         </TableHeading>
                       )}
                       <TableHeading
                         name="assigned_user_id"
-                        short_field={sortField}
-                        short_direction={sortDirection}
-                        shortChanged={shortChanged}
+                        sort_field={sortField}
+                        sort_direction={sortDirection}
+                        sortChanged={sortChanged}
                       >
                         Assigned To
                       </TableHeading>
                       <TableHeading
                         name="status"
-                        short_field={sortField}
-                        short_direction={sortDirection}
-                        shortChanged={shortChanged}
+                        sort_field={sortField}
+                        sort_direction={sortDirection}
+                        sortChanged={sortChanged}
                       >
                         Status
                       </TableHeading>
                       <TableHeading
                         name="created_at"
-                        short_field={sortField}
-                        short_direction={sortDirection}
-                        shortChanged={shortChanged}
+                        sort_field={sortField}
+                        sort_direction={sortDirection}
+                        sortChanged={sortChanged}
                       >
                         Created At
                       </TableHeading>
-                      <TableHeading shortable={false}>Time Log</TableHeading>
+                      <TableHeading sortable={false}>Time Log</TableHeading>
                       <TableHeading
                         name="completed_at"
-                        short_field={sortField}
-                        short_direction={sortDirection}
-                        shortChanged={shortChanged}
+                        sort_field={sortField}
+                        sort_direction={sortDirection}
+                        sortChanged={sortChanged}
                       >
                         Completed
                       </TableHeading>
                       <TableHeading
                         name="priority"
-                        short_field={sortField}
-                        short_direction={sortDirection}
-                        shortChanged={shortChanged}
+                        sort_field={sortField}
+                        sort_direction={sortDirection}
+                        sortChanged={sortChanged}
                       >
                         Priority
                       </TableHeading>
                       <TableHeading
                         name="due_date"
-                        short_field={sortField}
-                        short_direction={sortDirection}
-                        shortChanged={shortChanged}
+                        sort_field={sortField}
+                        sort_direction={sortDirection}
+                        sortChanged={sortChanged}
                       >
                         Due Date
                       </TableHeading>
-                      <TableHeading shortable={false}>Action</TableHeading>
+                      <TableHeading sortable={false}>Action</TableHeading>
                     </tr>
                   </thead>
                   <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -402,8 +482,9 @@ export default function Index({
                     priority,
                     assigned_to: assignedTo,
                     category,
-                    short_field: sortField,
-                    short_direction: sortDirection,
+                    sort_field: sortField,
+                    sort_direction: sortDirection,
+                    per_page: perPage,
                   }}
                 />
               </div>
