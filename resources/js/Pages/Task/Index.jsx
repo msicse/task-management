@@ -32,10 +32,6 @@ export default function Index({
   const [sortDirection, setSortDirection] = useState(queryParams?.short_direction || "desc");
   const [perPage, setPerPage] = useState(queryParams?.per_page || 10);
 
-  // Debug the pagination data
-  console.log("tasks", tasks);
-  console.log("links:", tasks.links);
-  console.log("meta:", tasks.meta);
 
   useEffect(() => {
     if (success) {

@@ -4,9 +4,6 @@ import { useState, useEffect } from "react";
 import { FaChevronLeft, FaChevronRight, FaAngleDoubleLeft, FaAngleDoubleRight } from "react-icons/fa";
 
 export default function Pagination({ links, meta = null, routeName = null, queryParams = {} }) {
-  // Debug pagination data
-  console.log("Pagination received links:", links);
-  console.log("Pagination received meta:", meta);
 
   // Default to 10 if perPage is not provided in meta
   const currentPerPage = meta?.per_page || 10;

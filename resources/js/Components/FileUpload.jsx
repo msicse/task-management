@@ -59,7 +59,8 @@ export default function FileUpload({ taskId }) {
             formData.append('files[]', file);
         });
 
-        post(route('task-files.store', taskId), {
+        post(route('task-files.store', taskId), formData, {
+            forceFormData: true,  // Force the use of FormData
             preserveScroll: true,
             onSuccess: () => {
                 reset();

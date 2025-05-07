@@ -165,7 +165,7 @@ export default function TaskForm3({
 
   return (
     <form onSubmit={handleSubmit} className={`grid grid-cols-2 gap-${compactHeight ? "2" : "3"}`}>
-      <style jsx global>{`
+      <style>{`
         .editor-container {
           display: flex;
           flex-direction: column;

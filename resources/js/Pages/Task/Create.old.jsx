@@ -6,63 +6,132 @@ import { useState, useRef } from "react";
 import InputError from "@/Components/InputError";
 import PrimaryButton from "@/Components/PrimaryButton";
 import { FaCloudUploadAlt, FaTimes, FaFileAlt, FaSpinner } from "react-icons/fa";
-import FileUpload from "@/Components/FileUpload";
 
 export default function Create({ auth, users, categories }) {
-
     const [selectedFiles, setSelectedFiles] = useState([]);
     const fileInputRef = useRef(null);
+    const [isDragging, setIsDragging] = useState(false);
+    const [fileErrors, setFileErrors] = useState(null);
 
     const { data, setData, post, errors, processing } = useForm({
-        name: "",
+        name: "Test File Upload",
         status: "pending",
-        description: "",
+        description: "This is a test description for the task.",
         due_date: "",
-        assigned_user_id: "",
-        factory_id: "",
-        category_id: "",
+        assigned_user_id: "1",
+        factory_id: "1111",
+        category_id: "1",
         priority: "medium",
-        files: [],
     });
 
     const handleFileChange = (e) => {
         const files = Array.from(e.target.files);
         setSelectedFiles(files);
-        setData('files', files);
+    };
+
+    const handleDrag = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+    };
+
+    const handleDragIn = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+            setIsDragging(true);
+        }
+    };
+
+    const handleDragOut = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(false);
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(false);
+
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            const files = Array.from(e.dataTransfer.files);
+            setSelectedFiles(files);
+            e.dataTransfer.clearData();
+        }
     };
 
     const removeFile = (index) => {
         const newFiles = [...selectedFiles];
         newFiles.splice(index, 1);
         setSelectedFiles(newFiles);
-        setData('files', newFiles);
     };
 
     const onSubmit = (e) => {
         e.preventDefault();
 
-        // Create FormData to handle files
         const formData = new FormData();
+        const filesToUpload = [...selectedFiles]; // Save files for later upload
 
-        // Add all task fields to FormData
+        // Append all task data
         Object.keys(data).forEach(key => {
-            if (key !== 'files') {
+            if (data[key]) {
                 formData.append(key, data[key]);
             }
         });
 
-        // Add files to FormData
-        selectedFiles.forEach(file => {
-            formData.append('files[]', file);
-        });
-
-        // Submit the form with files
         post(route("tasks.store"), formData, {
-            forceFormData: true,
-            preserveScroll: true,
+            onSuccess: (response) => {
+                // Get the created task ID from the response
+                const taskId = response?.props?.flash?.taskId;
+
+                // If we have files and a task ID, upload the files
+                if (filesToUpload.length > 0 && taskId) {
+                    uploadFilesForTask(taskId, filesToUpload);
+                } else {
+                    // Reset UI state
+                    resetFileInputs();
+                }
+            },
+            onError: (errors) => {
+                if (errors.files) {
+                    setFileErrors(errors.files);
+                }
+                console.error("Form submission errors:", errors);
+            }
         });
     };
 
+    // Function to upload files for a created task
+    const uploadFilesForTask = (taskId, files) => {
+        const fileFormData = new FormData();
+
+        // Append files to form data
+        files.forEach(file => {
+            fileFormData.append('files[]', file);
+        });
+
+        // Use the same endpoint as the FileUpload component
+        post(route('task-files.store', taskId), fileFormData, {
+            forceFormData: true,  // Force the use of FormData
+            preserveScroll: true,
+            onSuccess: () => {
+                resetFileInputs();
+                // Redirect to the task show page or index
+                router.visit(route("tasks.show", taskId));
+            },
+            onError: (errors) => {
+                console.error("File upload errors:", errors);
+            }
+        });
+    };
+
+    // Function to reset file input state
+    const resetFileInputs = () => {
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+        setSelectedFiles([]);
+    };
 
     return (
         <AuthenticatedLayout
@@ -118,49 +187,55 @@ export default function Create({ auth, users, categories }) {
                                             Attachments
                                         </h3>
                                         <div className="flex-grow">
-                                            <div className="flex items-center justify-center w-full">
-                                                <label
-                                                    htmlFor="dropzone-file"
-                                                    className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer border-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-600"
-                                                >
-                                                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                                        <FaCloudUploadAlt className="w-8 h-8 mb-4 text-gray-500 dark:text-gray-400" />
-                                                        <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                                                            <span className="font-semibold">Click to upload</span> or drag and drop
-                                                        </p>
-                                                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                                                            Excel, Word, PDF, or any other file (MAX. 10MB)
-                                                        </p>
-                                                    </div>
+                                            <div
+                                                className={`flex flex-col items-center justify-center w-full border-2 border-dashed rounded-lg cursor-pointer transition-colors duration-200 ease-in-out h-32
+                                                    ${isDragging
+                                                        ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                                                        : 'border-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-600'
+                                                    }`}
+                                                onDragEnter={handleDragIn}
+                                                onDragLeave={handleDragOut}
+                                                onDragOver={handleDrag}
+                                                onDrop={handleDrop}
+                                                onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                                            >
+                                                <div className="flex flex-col items-center justify-center p-3">
+                                                    <FaCloudUploadAlt className={`w-8 h-8 mb-2 transition-colors duration-200 ${isDragging ? 'text-indigo-500' : 'text-gray-500 dark:text-gray-400'}`} />
+                                                    <p className="mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                        <span className="font-semibold">Click to upload</span> or drag files
+                                                    </p>
                                                     <input
-                                                        id="dropzone-file"
+                                                        ref={fileInputRef}
                                                         type="file"
                                                         className="hidden"
                                                         multiple
                                                         onChange={handleFileChange}
-                                                        ref={fileInputRef}
                                                     />
-                                                </label>
+                                                </div>
                                             </div>
-                                            <InputError message={errors.files} className="mt-2" />
+                                            <InputError message={fileErrors} className="mt-1" />
 
                                             {selectedFiles.length > 0 && (
-                                                <div className="mt-4">
-                                                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                                        Selected Files:
+                                                <div className="mt-2">
+                                                    <h4 className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                                        {selectedFiles.length} {selectedFiles.length === 1 ? 'File' : 'Files'} Selected:
                                                     </h4>
-                                                    <ul className="space-y-2">
+                                                    <ul className="max-h-48 overflow-y-auto">
                                                         {selectedFiles.map((file, index) => (
-                                                            <li key={index} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded-md">
-                                                                <span className="text-sm text-gray-700 dark:text-gray-300 truncate">
-                                                                    {file.name}
-                                                                </span>
+                                                            <li key={index} className="flex items-center justify-between p-1 mb-1 bg-gray-50 dark:bg-gray-800 rounded-md border border-gray-200 dark:border-gray-700 text-xs">
+                                                                <div className="flex items-center space-x-1 truncate">
+                                                                    <FaFileAlt className="text-indigo-500 w-3 h-3" />
+                                                                    <span className="text-xs text-gray-700 dark:text-gray-300 truncate max-w-[180px]">
+                                                                        {file.name}
+                                                                    </span>
+                                                                </div>
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => removeFile(index)}
-                                                                    className="text-red-500 hover:text-red-700"
+                                                                    className="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                                                                    title="Remove file"
                                                                 >
-                                                                    <FaTimes className="w-4 h-4" />
+                                                                    <FaTimes className="w-3 h-3" />
                                                                 </button>
                                                             </li>
                                                         ))}

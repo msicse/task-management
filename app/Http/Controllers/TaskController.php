@@ -2,23 +2,24 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Resources\ProjectResource;
-use App\Http\Resources\UserCrudResource;
-use App\Models\Project;
-use App\Models\Task;
-use App\Http\Resources\TaskResource;
-use App\Http\Requests\StoreTaskRequest;
-use App\Http\Requests\UpdateTaskRequest;
-use App\Models\User;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
-use Inertia\Inertia;
-use App\Models\Category;
 use Carbon\Carbon;
-use App\Http\Resources\CommentResource;
+use App\Models\Task;
+use App\Models\User;
+use Inertia\Inertia;
+use App\Models\Project;
+use App\Models\Category;
+use App\Models\TaskFile;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use App\Http\Resources\TaskResource;
+use Illuminate\Support\Facades\Auth;
+use App\Http\Requests\StoreTaskRequest;
+use App\Http\Resources\CommentResource;
+use App\Http\Resources\ProjectResource;
+use Illuminate\Support\Facades\Storage;
+use App\Http\Requests\UpdateTaskRequest;
+use App\Http\Resources\UserCrudResource;
 
 class TaskController extends Controller
 {
@@ -114,28 +115,33 @@ class TaskController extends Controller
         // Create the task
         $task = Task::create($data);
 
-        // Handle file uploads - fix to check for 'files' key directly
+        // Handle file uploads if any
         if ($request->hasFile('files')) {
-            $files = $request->file('files');
-            foreach ($files as $file) {
+            foreach ($request->file('files') as $file) {
                 $originalName = $file->getClientOriginalName();
+                $extension = $file->getClientOriginalExtension();
+                $fileName = Str::random(40) . '.' . $extension;
 
-                // Store file in public disk
-                $storagePath = $file->store('task_files/' . $task->id, 'public');
+                // Store the file
+                $path = $file->storeAs('task-files/' . $task->id, $fileName, 'public');
 
-                // Create file record with consistent field names
-                $task->files()->create([
+                // Create database record
+                TaskFile::create([
+                    'task_id' => $task->id,
                     'user_id' => Auth::id(),
-                    'name' => pathinfo($originalName, PATHINFO_FILENAME),
+                    'name' => $fileName,
                     'original_name' => $originalName,
-                    'path' => $storagePath,
+                    'path' => $path,
                     'mime_type' => $file->getMimeType(),
                     'size' => $file->getSize(),
                 ]);
             }
         }
 
-        return to_route("tasks.index")->with("success", "Task has been created successfully");
+        return to_route("tasks.index")->with([
+            "success" => "Task has been created successfully",
+            "taskId" => $task->id
+        ]);
     }
 
     /**
