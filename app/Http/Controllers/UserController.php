@@ -19,6 +19,8 @@ class UserController extends Controller
      */
     public function index()
     {
+        $perPage = request('per_page', 10);
+
         $users = User::with(['department', 'createdBy', 'updatedBy', 'roles'])
             ->when(request('search'), function($query, $search) {
                 $query->where(function($query) use ($search) {
@@ -54,13 +56,13 @@ class UserController extends Controller
             }, function($query) {
                 $query->latest();
             })
-            ->paginate(10)
+            ->paginate($perPage)
             ->withQueryString();
 
         return Inertia::render('User/Index', [
             'users' => $users,
             'departments' => Department::orderBy('name')->get(),
-            'filters' => request()->only(['search', 'department', 'status', 'sort_field', 'sort_direction']),
+            'filters' => request()->only(['search', 'department', 'status', 'sort_field', 'sort_direction', 'per_page']),
             'success' => session('success')
         ]);
     }

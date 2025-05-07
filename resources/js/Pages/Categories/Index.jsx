@@ -13,6 +13,7 @@ export default function Index({ auth, categories, queryParams = {}, success }) {
   const [name, setName] = useState(queryParams.name || '');
   const [sortField, setSortField] = useState(queryParams.sort_field || 'created_at');
   const [sortDirection, setSortDirection] = useState(queryParams.sort_direction || 'desc');
+  const [perPage, setPerPage] = useState(queryParams.per_page || '10');
 
   useEffect(() => {
     if (success) {
@@ -26,7 +27,23 @@ export default function Index({ auth, categories, queryParams = {}, success }) {
     router.get(route("categories.index"), {
       name,
       sort_field: sortField,
-      sort_direction: sortDirection
+      sort_direction: sortDirection,
+      per_page: perPage
+    }, {
+      preserveState: true,
+      preserveScroll: true,
+    });
+  };
+
+  const handlePerPageChange = (e) => {
+    const newPerPage = e.target.value;
+    setPerPage(newPerPage);
+
+    router.get(route("categories.index"), {
+      name,
+      sort_field: sortField,
+      sort_direction: sortDirection,
+      per_page: newPerPage
     }, {
       preserveState: true,
       preserveScroll: true,
@@ -45,7 +62,8 @@ export default function Index({ auth, categories, queryParams = {}, success }) {
     router.get(route("categories.index"), {
       name,
       sort_field: name,
-      sort_direction: newDirection
+      sort_direction: newDirection,
+      per_page: perPage
     }, {
       preserveState: true,
       preserveScroll: true,
@@ -101,6 +119,17 @@ export default function Index({ auth, categories, queryParams = {}, success }) {
                     onChange={e => setName(e.target.value)}
                     className="w-64"
                   />
+                  <SelectInput
+                    className="w-32"
+                    value={perPage}
+                    onChange={handlePerPageChange}
+                  >
+                    <option value="5">5 per page</option>
+                    <option value="10">10 per page</option>
+                    <option value="25">25 per page</option>
+                    <option value="50">50 per page</option>
+                    <option value="100">100 per page</option>
+                  </SelectInput>
                   <button
                     type="submit"
                     className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
@@ -132,6 +161,9 @@ export default function Index({ auth, categories, queryParams = {}, success }) {
                         Created Date
                       </TableHeading>
                       <TableHeading shortable={false}>
+                        Tasks Count
+                      </TableHeading>
+                      <TableHeading shortable={false}>
                         Actions
                       </TableHeading>
                     </tr>
@@ -145,6 +177,9 @@ export default function Index({ auth, categories, queryParams = {}, success }) {
                         <td className="px-6 py-4">{category.name}</td>
                         <td className="px-6 py-4">
                           {new Date(category.created_at).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4">
+                          {category.tasks_count}
                         </td>
                         <td className="px-6 py-4">
                           <Link
@@ -170,7 +205,10 @@ export default function Index({ auth, categories, queryParams = {}, success }) {
                     ))}
                   </tbody>
                 </table>
-                <div className="mt-4">
+                <div className="mt-4 flex items-center justify-between">
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    Showing {categories.meta.from || 0} to {categories.meta.to || 0} of {categories.meta.total} entries
+                  </div>
                   <Pagination links={categories.links} />
                 </div>
               </div>

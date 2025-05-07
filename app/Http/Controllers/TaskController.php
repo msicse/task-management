@@ -29,8 +29,10 @@ class TaskController extends Controller
     {
         $query = Task::query();
 
-        $shortField = request("short_field", 'created_at');
-        $shortDirection = request("short_direction", 'desc');
+        // Consistent naming: sort_field instead of short_field
+        $sortField = request("sort_field", 'created_at');
+        $sortDirection = request("sort_direction", 'desc');
+        $perPage = request('per_page', 10); // Add per_page parameter with default of 10
 
         $user = Auth::user();
         if (!$user->hasRole('Admin')) { // Check if the user does not have the 'admin' role
@@ -52,13 +54,28 @@ class TaskController extends Controller
         if (request("category")) {
             $query->where("category_id", request("category"));
         }
-        $tasks = $query->orderBy($shortField, $shortDirection)->paginate(10)->onEachSide(1);
+
+        // Implement pagination with dynamic per_page parameter and consistent naming
+        $tasks = $query->orderBy($sortField, $sortDirection)
+            ->paginate($perPage)
+            ->withQueryString()
+            ->onEachSide(2);
+
+        // Fix for pagination not showing with fewer records than per_page
+        // Ensure that we always have pagination metadata even with few records
+        $tasks->setPath(request()->url());
+
         $users = User::query()->orderBy('name', 'asc')->get();
         $categories = Category::query()->orderBy('name', 'asc')->get();
+
+        // Use collection resource for proper pagination data formatting
+        $paginatedTasks = TaskResource::collection($tasks);
+        $paginatedTasks = $paginatedTasks->response()->getData(true);
+
         return inertia("Task/Index", [
-            "tasks" => TaskResource::collection($tasks),
+            "tasks" => $paginatedTasks,
             "users" => $users,
-            'categories' => Category::query()->orderBy('name', 'asc')->get(),
+            'categories' => $categories,
             'queryParams' => request()->query() ?: null,
             'success' => session('success'),
         ]);
@@ -344,9 +361,10 @@ class TaskController extends Controller
 
         $query = Task::query()->where('assigned_user_id', $user->id);
 
-        // Changed from shortField to sortField to match front-end parameter naming
+        // Consistent naming and parameters
         $sortField = request("sort_field", 'created_at');
         $sortDirection = request("sort_direction", 'desc');
+        $perPage = request('per_page', 10);
 
         if (request("name")) {
             $query->where("name", "like", "%" . request("name") . "%");
@@ -361,11 +379,23 @@ class TaskController extends Controller
             $query->where("category_id", request("category"));
         }
 
-        $tasks = $query->orderBy($sortField, $sortDirection)->paginate(10)->onEachSide(1);
+        $tasks = $query->orderBy($sortField, $sortDirection)
+            ->paginate($perPage)
+            ->withQueryString()
+            ->onEachSide(2);
+
+        // Fix for pagination not showing with fewer records than per_page
+        // Ensure that we always have pagination metadata even with few records
+        $tasks->setPath(request()->url());
+
         $users = User::query()->orderBy('name', 'asc')->get();
 
+        // Use collection resource for proper pagination data formatting
+        $paginatedTasks = TaskResource::collection($tasks);
+        $paginatedTasks = $paginatedTasks->response()->getData(true);
+
         return inertia("Task/MyTasks", [
-            "tasks" => TaskResource::collection($tasks),
+            "tasks" => $paginatedTasks,
             "users" => $users,
             'categories' => Category::query()->orderBy('name', 'asc')->get(),
             'queryParams' => request()->query() ?: null,

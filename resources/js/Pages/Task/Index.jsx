@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import TableHeading from "@/Components/TableHeading";
 import TextInput from "@/Components/TextInput";
 import SelectInput from "@/Components/SelectInput";
+import Pagination from "@/Components/Pagination";
 import {
   TASK_PRIORITY_CLASS_MAP,
   TASK_PRIORITY_TEXT_MAP,
@@ -29,8 +30,12 @@ export default function Index({
   const [category, setCategory] = useState(queryParams?.category || "");
   const [sortField, setSortField] = useState(queryParams?.short_field || "created_at");
   const [sortDirection, setSortDirection] = useState(queryParams?.short_direction || "desc");
+  const [perPage, setPerPage] = useState(queryParams?.per_page || 10);
 
+  // Debug the pagination data
   console.log("tasks", tasks);
+  console.log("links:", tasks.links);
+  console.log("meta:", tasks.meta);
 
   useEffect(() => {
     if (success) {
@@ -49,7 +54,8 @@ export default function Index({
         assigned_to: assignedTo,
         category,
         short_field: sortField,
-        short_direction: sortDirection
+        short_direction: sortDirection,
+        per_page: perPage,
       },
       {
         preserveState: true,
@@ -88,7 +94,29 @@ export default function Index({
         assigned_to: assignedTo,
         category,
         short_field: name,
-        short_direction: newDirection
+        short_direction: newDirection,
+        per_page: perPage,
+      },
+      {
+        preserveState: true,
+        preserveScroll: true,
+      }
+    );
+  };
+
+  const handlePerPageChange = (newPerPage) => {
+    setPerPage(newPerPage);
+    router.get(
+      route("tasks.index"),
+      {
+        name: search,
+        status,
+        priority,
+        assigned_to: assignedTo,
+        category,
+        short_field: sortField,
+        short_direction: sortDirection,
+        per_page: newPerPage,
       },
       {
         preserveState: true,
@@ -362,6 +390,23 @@ export default function Index({
                     ))}
                   </tbody>
                 </table>
+              </div>
+
+              <div className="mt-6 px-2">
+                <Pagination
+                  links={tasks.meta.links}
+                  meta={tasks.meta}
+                  routeName="tasks.index"
+                  queryParams={{
+                    name: search,
+                    status,
+                    priority,
+                    assigned_to: assignedTo,
+                    category,
+                    short_field: sortField,
+                    short_direction: sortDirection,
+                  }}
+                />
               </div>
             </div>
           </div>

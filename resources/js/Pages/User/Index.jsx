@@ -17,6 +17,7 @@ export default function Index({ auth, users, departments, filters, success }) {
   const [sortDirection, setSortDirection] = useState(
     filters.sort_direction || "asc"
   );
+  const [perPage, setPerPage] = useState(filters.per_page || "10");
 
   useEffect(() => {
     if (success) {
@@ -34,6 +35,28 @@ export default function Index({ auth, users, departments, filters, success }) {
         status,
         sort_field: sortField,
         sort_direction: sortDirection,
+        per_page: perPage,
+      },
+      {
+        preserveState: true,
+        preserveScroll: true,
+      }
+    );
+  };
+
+  const handlePerPageChange = (e) => {
+    const newPerPage = e.target.value;
+    setPerPage(newPerPage);
+
+    router.get(
+      route("users.index"),
+      {
+        search,
+        department,
+        status,
+        sort_field: sortField,
+        sort_direction: sortDirection,
+        per_page: newPerPage,
       },
       {
         preserveState: true,
@@ -138,6 +161,17 @@ export default function Index({ auth, users, departments, filters, success }) {
                     <option value="">All Status</option>
                     <option value="1">Active</option>
                     <option value="2">Inactive</option>
+                  </SelectInput>
+                  <SelectInput
+                    className="w-32"
+                    value={perPage}
+                    onChange={handlePerPageChange}
+                  >
+                    <option value="5">5 per page</option>
+                    <option value="10">10 per page</option>
+                    <option value="25">25 per page</option>
+                    <option value="50">50 per page</option>
+                    <option value="100">100 per page</option>
                   </SelectInput>
                   <button
                     type="submit"
@@ -273,7 +307,10 @@ export default function Index({ auth, users, departments, filters, success }) {
                 </tbody>
               </table>
 
-              <div className="mt-4">
+              <div className="mt-4 flex items-center justify-between">
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  Showing {users.from || 0} to {users.to || 0} of {users.total || 0} entries
+                </div>
                 <Pagination links={users.links} />
               </div>
             </div>

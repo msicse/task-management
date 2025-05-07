@@ -18,18 +18,52 @@ class CategoryController extends Controller
 
         $sortField = request("sort_field", 'created_at');
         $sortDirection = request("sort_direction", 'desc');
+        $perPage = request('per_page', 10); // Add per_page parameter with default of 10
 
         if (request("name")) {
             $query->where("name", "like", "%" . request("name") . "%");
         }
 
+        // Update pagination to match TaskController approach
         $categories = $query->orderBy($sortField, $sortDirection)
-            ->paginate(10)
-            ->withQueryString();
+            ->paginate($perPage)
+            ->withQueryString()
+            ->onEachSide(2);
+
+        // Fix for pagination not showing with fewer records than per_page
+        // Ensure that we always have pagination metadata even with few records
+        $categories->setPath(request()->url());
+
+        // Format paginated data consistently
+        $paginatedCategories = $categories->through(function ($category) {
+            return [
+                'id' => $category->id,
+                'name' => $category->name,
+                'description' => $category->description,
+                'created_at' => $category->created_at,
+                'updated_at' => $category->updated_at,
+                'tasks_count' => $category->tasks()->count(),
+            ];
+        });
+
+        // Get paginated data with metadata
+        $formattedData = [
+            'data' => $paginatedCategories->items(),
+            'links' => $categories->links()->toHtml(),
+            'meta' => [
+                'current_page' => $categories->currentPage(),
+                'from' => $categories->firstItem(),
+                'last_page' => $categories->lastPage(),
+                'path' => $categories->path(),
+                'per_page' => $categories->perPage(),
+                'to' => $categories->lastItem(),
+                'total' => $categories->total(),
+            ],
+        ];
 
         return inertia("Categories/Index", [
-            "categories" => $categories,
-            'queryParams' => request()->only(['name', 'sort_field', 'sort_direction']),
+            "categories" => $formattedData,
+            'queryParams' => request()->only(['name', 'sort_field', 'sort_direction', 'per_page']),
             'success' => session('success'),
         ]);
     }

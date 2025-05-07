@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import TableHeading from "@/Components/TableHeading";
 import TextInput from "@/Components/TextInput";
 import SelectInput from "@/Components/SelectInput";
+import Pagination from "@/Components/Pagination";
 import {
   TASK_PRIORITY_CLASS_MAP,
   TASK_PRIORITY_TEXT_MAP,
@@ -29,6 +30,7 @@ export default function MyTasks({
   const [category, setCategory] = useState(queryParams?.category || "");
   const [sortField, setSortField] = useState(queryParams?.sort_field || "created_at");
   const [sortDirection, setSortDirection] = useState(queryParams?.sort_direction || "desc");
+  const [perPage, setPerPage] = useState(queryParams?.per_page || 10);
 
   useEffect(() => {
     if (success) {
@@ -47,7 +49,8 @@ export default function MyTasks({
         assigned_to: assignedTo,
         category,
         sort_field: sortField,
-        sort_direction: sortDirection
+        sort_direction: sortDirection,
+        per_page: perPage
       },
       {
         preserveState: true,
@@ -86,7 +89,8 @@ export default function MyTasks({
         assigned_to: assignedTo,
         category,
         sort_field: name,
-        sort_direction: newDirection
+        sort_direction: newDirection,
+        per_page: perPage
       },
       {
         preserveState: true,
@@ -348,6 +352,23 @@ export default function MyTasks({
                     ))}
                   </tbody>
                 </table>
+              </div>
+              <div className="mt-6 px-2">
+                <Pagination
+                  links={tasks.meta.links}
+                  meta={tasks.meta}
+                  routeName="task.mytasks"
+                  queryParams={{
+                    name: search,
+                    status,
+                    priority,
+                    assigned_to: assignedTo,
+                    category,
+                    sort_field: sortField,
+                    sort_direction: sortDirection,
+                    per_page: perPage
+                  }}
+                />
               </div>
             </div>
           </div>

@@ -1,10 +1,44 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ApplicationLogo from "@/Components/ApplicationLogo";
 import Dropdown from "@/Components/Dropdown";
 import NavLink from "@/Components/NavLink";
 import ResponsiveNavLink from "@/Components/ResponsiveNavLink";
 import { Link } from "@inertiajs/react";
 import LoadingIndicator from "@/Components/LoadingIndicator";
+// Import React Icons
+import { FaSun, FaMoon, FaChevronDown, FaBars, FaTimes } from "react-icons/fa";
+
+// Theme toggle component for light/dark mode
+function ThemeToggle() {
+  const [isDarkMode, setIsDarkMode] = useState(
+    document.documentElement.classList.contains("dark")
+  );
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
+  }, [isDarkMode]);
+
+  return (
+    <button
+      onClick={() => setIsDarkMode(!isDarkMode)}
+      type="button"
+      className="px-3 py-2 mr-2 text-sm font-medium rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none transition ease-in-out duration-150"
+      aria-label="Toggle dark mode"
+    >
+      {isDarkMode ? (
+        <FaSun className="w-5 h-5" />
+      ) : (
+        <FaMoon className="w-5 h-5" />
+      )}
+    </button>
+  );
+}
 
 export default function AuthenticatedLayout({ user, header, children }) {
   const [showingNavigationDropdown, setShowingNavigationDropdown] =
@@ -85,7 +119,7 @@ export default function AuthenticatedLayout({ user, header, children }) {
                     href={route("tasks.index")}
                     active={route().current("tasks.*")}
                   >
-                    {user.roles?.some(role => role.name === "Admin")
+                    {user.roles?.some((role) => role.name === "Admin")
                       ? "All Tasks"
                       : "Created Tasks"}
                   </NavLink>
@@ -116,28 +150,36 @@ export default function AuthenticatedLayout({ user, header, children }) {
             </div>
 
             <div className="hidden sm:flex sm:items-center sm:ms-6">
-              <div className="ms-3 relative">
+              {/* Theme Toggle Button */}
+              <ThemeToggle />
+
+              <div className="ms-1 relative">
                 <Dropdown>
                   <Dropdown.Trigger>
-                    <span className="inline-flex rounded-md">
+                    <span className="inline-flex items-center rounded-md">
+                      {/* User Avatar */}
+                      <div className="mr-3 flex-shrink-0">
+                        {user.image ? (
+                          <img
+                            src={user.image}
+                            alt={user.name}
+                            className="h-8 w-8 rounded-full object-cover border border-gray-200 dark:border-gray-600"
+                          />
+                        ) : (
+                          <div className="h-8 w-8 rounded-full bg-indigo-600 flex items-center justify-center">
+                            <span className="text-sm font-medium text-white">
+                              {user.name.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                        )}
+                      </div>
                       <button
                         type="button"
                         className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none transition ease-in-out duration-150"
                       >
                         {user.name}
 
-                        <svg
-                          className="ms-2 -me-0.5 h-4 w-4"
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
+                        <FaChevronDown className="ms-2 -me-0.5 h-4 w-4" />
                       </button>
                     </span>
                   </Dropdown.Trigger>
@@ -167,31 +209,11 @@ export default function AuthenticatedLayout({ user, header, children }) {
                 }
                 className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-900 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-900 focus:text-gray-500 dark:focus:text-gray-400 transition duration-150 ease-in-out"
               >
-                <svg
-                  className="h-6 w-6"
-                  stroke="currentColor"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    className={
-                      !showingNavigationDropdown ? "inline-flex" : "hidden"
-                    }
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                  <path
-                    className={
-                      showingNavigationDropdown ? "inline-flex" : "hidden"
-                    }
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
+                {!showingNavigationDropdown ? (
+                  <FaBars className="h-6 w-6" />
+                ) : (
+                  <FaTimes className="h-6 w-6" />
+                )}
               </button>
             </div>
           </div>
@@ -212,16 +234,67 @@ export default function AuthenticatedLayout({ user, header, children }) {
           </div>
 
           <div className="pt-4 pb-1 border-t border-gray-200 dark:border-gray-600">
-            <div className="px-4">
-              <div className="font-medium text-base text-gray-800 dark:text-gray-200">
-                {user.name}
+            <div className="px-4 flex items-center">
+              {/* User Avatar for mobile */}
+              <div className="mr-3 flex-shrink-0">
+                {user.image ? (
+                  <img
+                    src={user.image}
+                    alt={user.name}
+                    className="h-10 w-10 rounded-full object-cover border border-gray-200 dark:border-gray-600"
+                  />
+                ) : (
+                  <div className="h-10 w-10 rounded-full bg-indigo-600 flex items-center justify-center">
+                    <span className="text-sm font-medium text-white">
+                      {user.name.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                )}
               </div>
-              <div className="font-medium text-sm text-gray-500">
-                {user.email}
+              <div>
+                <div className="font-medium text-base text-gray-800 dark:text-gray-200">
+                  {user.name}
+                </div>
+                <div className="font-medium text-sm text-gray-500">
+                  {user.email}
+                </div>
               </div>
             </div>
 
-            <div className="mt-3 space-y-1">
+            <div className="mt-3 space-y-1 px-4">
+              {/* Theme toggle for mobile */}
+              <div className="py-2 flex items-center">
+                <span className="text-gray-600 dark:text-gray-300 text-sm mr-2">
+                  Theme:
+                </span>
+                <button
+                  onClick={() => {
+                    const isDarkMode = !document.documentElement.classList.contains(
+                      "dark"
+                    );
+                    if (isDarkMode) {
+                      document.documentElement.classList.add("dark");
+                      localStorage.setItem("theme", "dark");
+                    } else {
+                      document.documentElement.classList.remove("dark");
+                      localStorage.setItem("theme", "light");
+                    }
+                  }}
+                  className="flex items-center px-2 py-1 rounded-md bg-gray-100 dark:bg-gray-700"
+                >
+                  <span className="mr-2 text-sm">
+                    {document.documentElement.classList.contains("dark")
+                      ? "Light"
+                      : "Dark"}
+                  </span>
+                  {document.documentElement.classList.contains("dark") ? (
+                    <FaSun className="w-4 h-4" />
+                  ) : (
+                    <FaMoon className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+
               <ResponsiveNavLink href={route("profile.edit")}>
                 Profile
               </ResponsiveNavLink>
