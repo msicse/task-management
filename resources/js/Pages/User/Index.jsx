@@ -144,7 +144,7 @@ export default function Index({ auth, users, departments, filters, success }) {
                   <SelectInput
                     value={department}
                     onChange={(e) => setDepartment(e.target.value)}
-                    className="w-48"
+                    className="w-48 text-gray-800"
                   >
                     <option value="">All Departments</option>
                     {departments.map((dept) => (
@@ -156,14 +156,14 @@ export default function Index({ auth, users, departments, filters, success }) {
                   <SelectInput
                     value={status}
                     onChange={(e) => setStatus(e.target.value)}
-                    className="w-48"
+                    className="w-48 text-gray-800"
                   >
                     <option value="">All Status</option>
-                    <option value="1">Active</option>
-                    <option value="2">Inactive</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
                   </SelectInput>
                   <SelectInput
-                    className="w-32"
+                    className="w-32 text-gray-800"
                     value={perPage}
                     onChange={handlePerPageChange}
                   >
@@ -187,50 +187,50 @@ export default function Index({ auth, users, departments, filters, success }) {
                   <tr>
                     <TableHeading
                       name="name"
-                      shortable={true}
-                      short_field={sortField}
-                      short_direction={sortDirection}
-                      shortChanged={sortChanged}
+                      sortable={true}
+                      sort_field={sortField}
+                      sort_direction={sortDirection}
+                      sortChanged={sortChanged}
                     >
                       Name
                     </TableHeading>
                     <TableHeading
                       name="email"
-                      shortable={true}
-                      short_field={sortField}
-                      short_direction={sortDirection}
-                      shortChanged={sortChanged}
+                      sortable={true}
+                      sort_field={sortField}
+                      sort_direction={sortDirection}
+                      sortChanged={sortChanged}
                     >
                       Email
                     </TableHeading>
                     <TableHeading
                       name="department_id"
-                      shortable={true}
-                      short_field={sortField}
-                      short_direction={sortDirection}
-                      shortChanged={sortChanged}
+                      sortable={true}
+                      sort_field={sortField}
+                      sort_direction={sortDirection}
+                      sortChanged={sortChanged}
                     >
                       Department
                     </TableHeading>
                     <TableHeading
                       name="status"
-                      shortable={true}
-                      short_field={sortField}
-                      short_direction={sortDirection}
-                      shortChanged={sortChanged}
+                      sortable={true}
+                      sort_field={sortField}
+                      sort_direction={sortDirection}
+                      sortChanged={sortChanged}
                     >
                       Status
                     </TableHeading>
                     <TableHeading
                       name="role"
-                      shortable={true}
-                      short_field={sortField}
-                      short_direction={sortDirection}
-                      shortChanged={sortChanged}
+                      sortable={true}
+                      sort_field={sortField}
+                      sort_direction={sortDirection}
+                      sortChanged={sortChanged}
                     >
                       Role
                     </TableHeading>
-                    <TableHeading shortable={false}>Actions</TableHeading>
+                    <TableHeading sortable={false}>Actions</TableHeading>
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">

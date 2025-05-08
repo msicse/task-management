@@ -13,6 +13,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\TaskFileController;
+use App\Http\Controllers\NotificationController;
 
 Route::redirect('/', '/dashboard');
 
@@ -38,6 +39,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('tasks', TaskController::class);
     Route::put('/tasks/{task}/details', [TaskController::class, 'updateTaskDetails'])->name('tasks.update-details');
     Route::resource('users', UserController::class);
+
+    // Notification routes
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/notifications/all', [NotificationController::class, 'showAll'])->name('notifications.show-all');
+    Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
+    Route::post('/notifications/{id}/mark-as-read', [NotificationController::class, 'markAsRead'])->name('notifications.mark-as-read');
+    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
+
+    // API routes for notifications
+    Route::get('/api/notifications/all', [NotificationController::class, 'getAllNotifications']);
 });
 
 Route::middleware('auth')->group(function () {

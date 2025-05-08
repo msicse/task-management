@@ -1,4 +1,4 @@
-import { ChevronUpIcon, ChevronDownIcon } from "@heroicons/react/16/solid";
+import { ChevronUpIcon, ChevronDownIcon } from "@heroicons/react/24/solid";
 // import { ChevronUpIcon, ChevronDownIcon } from "@heroicons/react"
 export default function TableHeading({
   name,
@@ -17,10 +17,10 @@ export default function TableHeading({
           <div>
             <ChevronUpIcon
               className={
-                "w-4" +
+                "w-4 " +
                 (sort_field === name && sort_direction === "asc"
-                  ? " text-white"
-                  : "")
+                  ? "text-blue-500"
+                  : "text-gray-400")
               }
             />
 
@@ -28,8 +28,8 @@ export default function TableHeading({
               className={
                 "w-4 -mt-2 " +
                 (sort_field === name && sort_direction === "desc"
-                  ? "text-white"
-                  : "")
+                  ? "text-blue-500"
+                  : "text-gray-400")
               }
             />
           </div>

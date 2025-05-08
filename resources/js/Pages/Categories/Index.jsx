@@ -50,18 +50,18 @@ export default function Index({ auth, categories, queryParams = {}, success }) {
     });
   };
 
-  const sortChanged = (name) => {
+  const sortChanged = (fieldName) => {
     let newDirection = "asc";
-    if (name === sortField) {
+    if (fieldName === sortField) {
       newDirection = sortDirection === "asc" ? "desc" : "asc";
     }
 
-    setSortField(name);
+    setSortField(fieldName);
     setSortDirection(newDirection);
 
     router.get(route("categories.index"), {
-      name,
-      sort_field: name,
+      name, // This is the search term
+      sort_field: fieldName, // This is the column to sort by
       sort_direction: newDirection,
       per_page: perPage
     }, {
@@ -120,7 +120,7 @@ export default function Index({ auth, categories, queryParams = {}, success }) {
                     className="w-64"
                   />
                   <SelectInput
-                    className="w-32"
+                    className="w-32 text-gray-800"
                     value={perPage}
                     onChange={handlePerPageChange}
                   >
@@ -144,26 +144,26 @@ export default function Index({ auth, categories, queryParams = {}, success }) {
                     <tr className="text-left">
                       <TableHeading
                         name="name"
-                        shortable={true}
-                        short_field={sortField}
-                        short_direction={sortDirection}
-                        shortChanged={sortChanged}
+                        sortable={true}
+                        sort_field={sortField}
+                        sort_direction={sortDirection}
+                        sortChanged={sortChanged}
                       >
                         Name
                       </TableHeading>
                       <TableHeading
                         name="created_at"
-                        shortable={true}
-                        short_field={sortField}
-                        short_direction={sortDirection}
-                        shortChanged={sortChanged}
+                        sortable={true}
+                        sort_field={sortField}
+                        sort_direction={sortDirection}
+                        sortChanged={sortChanged}
                       >
                         Created Date
                       </TableHeading>
-                      <TableHeading shortable={false}>
+                      <TableHeading sortable={false}>
                         Tasks Count
                       </TableHeading>
-                      <TableHeading shortable={false}>
+                      <TableHeading sortable={false}>
                         Actions
                       </TableHeading>
                     </tr>

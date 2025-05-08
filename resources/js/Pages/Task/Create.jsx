@@ -70,12 +70,12 @@ export default function Create({ auth, users, categories }) {
             header={
                 <div className="flex justify-between items-center">
                     <h2 className="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-                        Create New Task
+                        Add New Task
                     </h2>
                     <div>
                         <button
                             onClick={() => router.visit(route("tasks.index"))}
-                            className="px-4 py-1 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-all duration-200"
+                            className="px-4 py-1 bg-red-500 text-gray-200 rounded-md hover:bg-red-700 transition-all duration-200"
                         >
                             Cancel
                         </button>

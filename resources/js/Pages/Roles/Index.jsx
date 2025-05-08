@@ -34,16 +34,16 @@ export default function Index({ auth, roles, queryParams = null, success }) {
     searchFieldChange(name, e.target.value);
   };
 
-  const shortChanged = (name) => {
-    if (name === queryParams.short_field) {
-      if (queryParams.short_direction === "asc") {
-        queryParams.short_direction = "desc";
+  const sortChanged = (name) => {
+    if (name === queryParams.sort_field) {
+      if (queryParams.sort_direction === "asc") {
+        queryParams.sort_direction = "desc";
       } else {
-        queryParams.short_direction = "asc";
+        queryParams.sort_direction = "asc";
       }
     } else {
-      queryParams.short_field = name;
-      queryParams.short_direction = "asc";
+      queryParams.sort_field = name;
+      queryParams.sort_direction = "asc";
     }
 
     router.get(route("roles.index"), queryParams);
@@ -104,27 +104,27 @@ export default function Index({ auth, roles, queryParams = null, success }) {
                     <tr>
                       <TableHeading
                         name="id"
-                        short_field={queryParams.short_field}
-                        short_direction={queryParams.short_direction}
-                        shortChanged={shortChanged}
+                        sort_field={queryParams.sort_field}
+                        sort_direction={queryParams.sort_direction}
+                        sortChanged={sortChanged}
                       >
                         ID
                       </TableHeading>
                       <TableHeading
                         name="name"
-                        short_field={queryParams.short_field}
-                        short_direction={queryParams.short_direction}
-                        shortChanged={shortChanged}
+                        sort_field={queryParams.sort_field}
+                        sort_direction={queryParams.sort_direction}
+                        sortChanged={sortChanged}
                       >
                         Name
                       </TableHeading>
                       <TableHeading
                         name="created_at"
-                        short_field={queryParams.short_field}
-                        short_direction={queryParams.short_direction}
-                        shortChanged={shortChanged}
+                        sort_field={queryParams.sort_field}
+                        sort_direction={queryParams.sort_direction}
+                        sortChanged={sortChanged}
                       >
-                        Createed At
+                        Created At
                       </TableHeading>
 
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">

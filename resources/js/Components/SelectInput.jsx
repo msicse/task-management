@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useRef } from 'react';
 
 export default forwardRef(function SelectInput(
-    { className = '', disabled = false, options = [], ...props },
+    { className = '', disabled = false, options = [], children, ...props },
     ref
 ) {
     const select = ref ? ref : useRef();
@@ -22,7 +22,7 @@ export default forwardRef(function SelectInput(
             ref={select}
             disabled={disabled}
         >
-            {options.map((option, index) => (
+            {children || options.map((option, index) => (
                 <option key={index} value={option.value}>
                     {option.label}
                 </option>

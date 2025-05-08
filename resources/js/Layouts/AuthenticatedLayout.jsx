@@ -7,6 +7,7 @@ import { Link } from "@inertiajs/react";
 import LoadingIndicator from "@/Components/LoadingIndicator";
 // Import React Icons
 import { FaSun, FaMoon, FaChevronDown, FaBars, FaTimes } from "react-icons/fa";
+import NotificationDropdown from "@/Components/Notifications/NotificationDropdown";
 
 // Theme toggle component for light/dark mode
 function ThemeToggle() {
@@ -28,14 +29,16 @@ function ThemeToggle() {
     <button
       onClick={() => setIsDarkMode(!isDarkMode)}
       type="button"
-      className="px-3 py-2 mr-2 text-sm font-medium rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none transition ease-in-out duration-150"
+      className="flex items-center text-sm font-medium text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200 focus:outline-none transition duration-150 ease-in-out"
       aria-label="Toggle dark mode"
     >
-      {isDarkMode ? (
-        <FaSun className="w-5 h-5" />
-      ) : (
-        <FaMoon className="w-5 h-5" />
-      )}
+      <div className="relative">
+        {isDarkMode ? (
+          <FaSun className="text-gray-400 dark:text-gray-400 text-lg" />
+        ) : (
+          <FaMoon className="text-gray-400 dark:text-gray-400 text-lg" />
+        )}
+      </div>
     </button>
   );
 }
@@ -150,8 +153,13 @@ export default function AuthenticatedLayout({ user, header, children }) {
             </div>
 
             <div className="hidden sm:flex sm:items-center sm:ms-6">
+              {/* Notifications Dropdown */}
+              <NotificationDropdown />
+
               {/* Theme Toggle Button */}
-              <ThemeToggle />
+              <div className="mx-4">
+                <ThemeToggle />
+              </div>
 
               <div className="ms-1 relative">
                 <Dropdown>
@@ -262,6 +270,11 @@ export default function AuthenticatedLayout({ user, header, children }) {
             </div>
 
             <div className="mt-3 space-y-1 px-4">
+              {/* Notifications Link for Mobile */}
+              <ResponsiveNavLink href={route("notifications.show-all")}>
+                Notifications
+              </ResponsiveNavLink>
+
               {/* Theme toggle for mobile */}
               <div className="py-2 flex items-center">
                 <span className="text-gray-600 dark:text-gray-300 text-sm mr-2">

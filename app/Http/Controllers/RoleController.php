@@ -17,14 +17,14 @@ class RoleController extends Controller
     {
         $query = Role::query();
 
-        $shortField = request("short_field", 'created_at');
-        $shortDirection = request("short_direction", 'desc');
+        $sortField = request("sort_field", 'created_at');
+        $sortDirection = request("sort_direction", 'desc');
 
         if (request("name")) {
             $query->where("name", "like", "%" . request("name") . "%");
         }
 
-        $roles = $query->orderBy($shortField, $shortDirection)->paginate(10)->onEachSide(1);
+        $roles = $query->orderBy($sortField, $sortDirection)->paginate(10)->onEachSide(1);
 
         return inertia("Roles/Index", [
             "roles" => $roles,

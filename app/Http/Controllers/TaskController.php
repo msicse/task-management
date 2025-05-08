@@ -25,6 +25,10 @@ use App\Imports\TaskImport;
 use PDF;
 use App\Exports\TasksExport;
 use Illuminate\Database\Eloquent\Builder;
+use App\Notifications\TaskAssignedNotification;
+use App\Notifications\TaskStatusUpdatedNotification;
+use App\Notifications\TaskCompletedNotification;
+use App\Notifications\TaskApprovedNotification;
 
 class TaskController extends Controller
 {
@@ -108,8 +112,9 @@ class TaskController extends Controller
     {
         $data = $request->validated();
         $image = $data['image'] ?? null;
-        $data['created_by'] = Auth::user()->id;
-        $data['updated_by'] = Auth::user()->id;
+        $currentUser = Auth::user();
+        $data['created_by'] = $currentUser->id;
+        $data['updated_by'] = $currentUser->id;
         $data['slug'] = Str::slug($data['name']);
 
         // Handle image upload
@@ -140,6 +145,14 @@ class TaskController extends Controller
                     'mime_type' => $file->getMimeType(),
                     'size' => $file->getSize(),
                 ]);
+            }
+        }
+
+        // Notify the assigned user about the new task
+        if (isset($data['assigned_user_id'])) {
+            $assignedUser = User::find($data['assigned_user_id']);
+            if ($assignedUser && $assignedUser->id !== $currentUser->id) {
+                $assignedUser->notify(new TaskAssignedNotification($task, $currentUser));
             }
         }
 
@@ -213,7 +226,12 @@ class TaskController extends Controller
     {
         $data = $request->validated();
         $image = $data['image'] ?? null;
-        $data['updated_by'] = Auth::user()->id;
+        $currentUser = Auth::user();
+        $data['updated_by'] = $currentUser->id;
+
+        // Store original values for comparison
+        $previousStatus = $task->status;
+        $previousAssignedUserId = $task->assigned_user_id;
 
         // Handle status change and completion date
         if (isset($data['status'])) {
@@ -241,6 +259,39 @@ class TaskController extends Controller
         }
 
         $task->update($data);
+
+        // Send notifications based on what changed
+
+        // 1. If task was reassigned to a new user
+        if (isset($data['assigned_user_id']) && $data['assigned_user_id'] != $previousAssignedUserId) {
+            $assignedUser = User::find($data['assigned_user_id']);
+            if ($assignedUser && $assignedUser->id !== $currentUser->id) {
+                $assignedUser->notify(new TaskAssignedNotification($task, $currentUser));
+            }
+        }
+
+        // 2. If status was changed
+        if (isset($data['status']) && $data['status'] !== $previousStatus) {
+            // Notify task creator if they didn't make the change
+            if ($task->created_by !== $currentUser->id) {
+                $creator = User::find($task->created_by);
+                $creator->notify(new TaskStatusUpdatedNotification($task, $currentUser, $previousStatus));
+            }
+
+            // Notify assigned user if they didn't make the change
+            if ($task->assigned_user_id !== $currentUser->id) {
+                $assignedUser = User::find($task->assigned_user_id);
+                $assignedUser->notify(new TaskStatusUpdatedNotification($task, $currentUser, $previousStatus));
+            }
+
+            // If task was completed, send completion notification to the creator
+            if ($data['status'] === 'completed' && $previousStatus !== 'completed') {
+                $creator = User::find($task->created_by);
+                if ($creator && $creator->id !== $currentUser->id) {
+                    $creator->notify(new TaskCompletedNotification($task, $currentUser, $data['time_log'] ?? null));
+                }
+            }
+        }
 
         if ($request->wantsJson()) {
             return response()->json(['message' => 'Task updated successfully']);
@@ -278,11 +329,15 @@ class TaskController extends Controller
 
         $updates = [];
         $message = [];
+        $currentUser = Auth::user();
+
+        // Store original status for notifications
+        $previousStatus = $task->status;
 
         // Handle task approval
         if (isset($validated['approved_at'])) {
             // Only creator can approve tasks
-            if (Auth::id() !== $task->created_by) {
+            if ($currentUser->id !== $task->created_by) {
                 return response()->json(['error' => 'Only the task creator can approve tasks'], 403);
             }
 
@@ -320,11 +375,11 @@ class TaskController extends Controller
 
             // Verify user authorization for scoring
             if ($validated['scoreType'] === 'creator_rating') {
-                if (Auth::id() !== $task->assigned_user_id) {
+                if ($currentUser->id !== $task->assigned_user_id) {
                     return response()->json(['error' => 'Unauthorized to give creator rating'], 403);
                 }
             } elseif ($validated['scoreType'] === 'assignee_rating') {
-                if (Auth::id() !== $task->created_by) {
+                if ($currentUser->id !== $task->created_by) {
                     return response()->json(['error' => 'Unauthorized to give assignee rating'], 403);
                 }
             }
@@ -341,6 +396,50 @@ class TaskController extends Controller
 
         if (!empty($updates)) {
             $task->update($updates);
+
+            // Send notifications based on what was updated
+
+            // 1. Send status change notification
+            if (isset($updates['status']) && $updates['status'] !== $previousStatus) {
+                // Notify relevant users about status change
+                if ($task->created_by !== $currentUser->id) {
+                    $creator = User::find($task->created_by);
+                    if ($creator) {
+                        $creator->notify(new TaskStatusUpdatedNotification($task, $currentUser, $previousStatus));
+                    }
+                }
+
+                if ($task->assigned_user_id !== $currentUser->id) {
+                    $assignedUser = User::find($task->assigned_user_id);
+                    if ($assignedUser) {
+                        $assignedUser->notify(new TaskStatusUpdatedNotification($task, $currentUser, $previousStatus));
+                    }
+                }
+
+                // If task was just completed, send completion notification to creator
+                if ($updates['status'] === 'completed' && $previousStatus !== 'completed') {
+                    // Notify the task creator about completion if they didn't make the update
+                    if ($task->created_by !== $currentUser->id) {
+                        $creator = User::find($task->created_by);
+                        if ($creator) {
+                            $creator->notify(new TaskCompletedNotification($task, $currentUser, $updates['time_log'] ?? null));
+                        }
+                    }
+                }
+            }
+
+            // 2. Send task approval notification
+            if (isset($updates['approved_at'])) {
+                // Notify the assigned user about task approval
+                $assignedUser = User::find($task->assigned_user_id);
+                if ($assignedUser && $assignedUser->id !== $currentUser->id) {
+                    $assignedUser->notify(new TaskApprovedNotification(
+                        $task,
+                        $currentUser,
+                        $updates['assignee_rating'] ?? $task->assignee_rating
+                    ));
+                }
+            }
 
             $successMessage = implode(', ', $message);
 

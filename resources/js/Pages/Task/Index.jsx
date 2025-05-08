@@ -32,6 +32,7 @@ export default function Index({
   const [sortField, setSortField] = useState(queryParams?.sort_field || "created_at");
   const [sortDirection, setSortDirection] = useState(queryParams?.sort_direction || "desc");
   const [perPage, setPerPage] = useState(queryParams?.per_page || 10);
+  const [isFilterExpanded, setIsFilterExpanded] = useState(false);
 
 
   useEffect(() => {
@@ -54,6 +55,29 @@ export default function Index({
         sort_direction: sortDirection,
         per_page: perPage,
       },
+      {
+        preserveState: true,
+        preserveScroll: true,
+      }
+    );
+  };
+
+  const resetFilters = () => {
+    setSearch("");
+    setStatus("");
+    setPriority("");
+    setAssignedTo("");
+    setCategory("");
+
+    // Reset to default sort and pagination
+    setSortField("created_at");
+    setSortDirection("desc");
+    setPerPage(10);
+
+    // Navigate to the route without query params
+    router.get(
+      route("tasks.index"),
+      {},
       {
         preserveState: true,
         preserveScroll: true,
@@ -122,6 +146,11 @@ export default function Index({
     );
   };
 
+  // Function to toggle filter visibility
+  const toggleFilters = () => {
+    setIsFilterExpanded(!isFilterExpanded);
+  };
+
   return (
     <AuthenticatedLayout
       user={auth.user}
@@ -147,7 +176,7 @@ export default function Index({
               href={route("tasks.create")}
               className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
             >
-              Create Task
+              Add Task
             </Link>
           </div>
         </div>
@@ -166,18 +195,40 @@ export default function Index({
           )}
           <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
             <div className="p-6 text-gray-900 dark:text-gray-100">
+              {/* Filter Section - Redesigned */}
               <div className="mb-6">
-                <form onSubmit={handleSearch} className="space-y-4">
-                  {/* Filter sections with collapsible UI */}
-                  <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg shadow-sm">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-                      {/* Name search */}
-                      <div>
-                        <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <div className="flex justify-between items-center mb-3">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-semibold">Filters</h3>
+                    <button
+                      onClick={toggleFilters}
+                      className="text-sm text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                    >
+                      {isFilterExpanded ? "Hide filters" : "Show filters"}
+                    </button>
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={resetFilters}
+                      className="px-3 py-1.5 border border-red-500 text-red-500 rounded-md hover:bg-red-500 hover:text-white transition-colors duration-300 flex items-center gap-1 text-sm"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                      Reset
+                    </button>
+                  </div>
+                </div>
+
+                {isFilterExpanded && (
+                  <form onSubmit={handleSearch} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg shadow-inner">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+                      <div className="space-y-2">
+                        <label htmlFor="search" className="block text-sm font-medium">
                           Task Name
                         </label>
                         <TextInput
-                          id="name"
+                          id="search"
                           type="text"
                           placeholder="Search tasks..."
                           value={search}
@@ -186,9 +237,8 @@ export default function Index({
                         />
                       </div>
 
-                      {/* Status filter */}
-                      <div>
-                        <label htmlFor="status" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      <div className="space-y-2">
+                        <label htmlFor="status" className="block text-sm font-medium">
                           Status
                         </label>
                         <SelectInput
@@ -196,18 +246,16 @@ export default function Index({
                           value={status}
                           onChange={(e) => setStatus(e.target.value)}
                           className="w-full text-gray-800"
-                          options={[
-                            { value: "", label: "All Status" },
-                            { value: "pending", label: "Pending" },
-                            { value: "in_progress", label: "In Progress" },
-                            { value: "completed", label: "Completed" }
-                          ]}
-                        />
+                        >
+                          <option value="">All Status</option>
+                          <option value="pending">Pending</option>
+                          <option value="in_progress">In Progress</option>
+                          <option value="completed">Completed</option>
+                        </SelectInput>
                       </div>
 
-                      {/* Priority filter */}
-                      <div>
-                        <label htmlFor="priority" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      <div className="space-y-2">
+                        <label htmlFor="priority" className="block text-sm font-medium">
                           Priority
                         </label>
                         <SelectInput
@@ -215,22 +263,20 @@ export default function Index({
                           value={priority}
                           onChange={(e) => setPriority(e.target.value)}
                           className="w-full text-gray-800"
-                          options={[
-                            { value: "", label: "All Priority" },
-                            { value: "low", label: "Low" },
-                            { value: "medium", label: "Medium" },
-                            { value: "high", label: "High" }
-                          ]}
-                        />
+                        >
+                          <option value="">All Priority</option>
+                          <option value="low">Low</option>
+                          <option value="medium">Medium</option>
+                          <option value="high">High</option>
+                        </SelectInput>
                       </div>
 
-                      {/* Assignee filter */}
-                      <div>
-                        <label htmlFor="assigned_to" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      <div className="space-y-2">
+                        <label htmlFor="assignedTo" className="block text-sm font-medium">
                           Assigned To
                         </label>
                         <SearchableSelect
-                          id="assigned_to"
+                          id="assignedTo"
                           options={[
                             { value: "", label: "All Assignees" },
                             ...users.map((user) => ({ value: user.id, label: user.name }))
@@ -242,9 +288,8 @@ export default function Index({
                         />
                       </div>
 
-                      {/* Category filter */}
-                      <div>
-                        <label htmlFor="category" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      <div className="space-y-2">
+                        <label htmlFor="category" className="block text-sm font-medium">
                           Category
                         </label>
                         <SearchableSelect
@@ -259,46 +304,72 @@ export default function Index({
                           isClearable
                         />
                       </div>
+
+                      <div className="space-y-2">
+                        <label htmlFor="perPage" className="block text-sm font-medium">
+                          Items Per Page
+                        </label>
+                        <SelectInput
+                          id="perPage"
+                          value={perPage}
+                          onChange={(e) => setPerPage(e.target.value)}
+                          className="w-full text-gray-800"
+                        >
+                          <option value="5">5</option>
+                          <option value="10">10</option>
+                          <option value="25">25</option>
+                          <option value="50">50</option>
+                          <option value="100">100</option>
+                        </SelectInput>
+                      </div>
                     </div>
 
-                    {/* Search and Reset buttons */}
-                    <div className="flex justify-end mt-4 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSearch("");
-                          setStatus("");
-                          setPriority("");
-                          setAssignedTo("");
-                          setCategory("");
-                          // Submit the form with empty values to reset filters
-                          router.get(
-                            route("tasks.index"),
-                            {
-                              sort_field: sortField,
-                              sort_direction: sortDirection,
-                              per_page: perPage,
-                            },
-                            {
-                              preserveState: true,
-                              preserveScroll: true,
-                            }
-                          );
-                        }}
-                        className="px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-25 transition ease-in-out duration-150"
-                      >
-                        Reset
-                      </button>
+                    <div className="flex justify-end">
                       <button
                         type="submit"
-                        className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors duration-300 flex items-center gap-1"
                       >
-                        Search
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                        </svg>
+                        Apply Filters
                       </button>
                     </div>
+                  </form>
+                )}
+
+                {/* Quick filter bar - visible when filters are collapsed */}
+                {!isFilterExpanded && (
+                  <div className="flex items-center gap-3 overflow-x-auto pb-2">
+                    <div className="flex-shrink-0">
+                      <TextInput
+                        type="text"
+                        placeholder="Quick search..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="w-64"
+                      />
+                    </div>
+                    <button
+                      onClick={handleSearch}
+                      className="px-3 py-1.5 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors duration-300 flex-shrink-0"
+                    >
+                      Search
+                    </button>
+                    {(search || status || priority || assignedTo || category) && (
+                      <div className="text-sm text-gray-500">
+                        <span className="mr-1">Active filters:</span>
+                        {search && <span className="px-2 py-1 bg-gray-200 dark:bg-gray-600 rounded-full text-xs mr-1">{search}</span>}
+                        {status && <span className="px-2 py-1 bg-gray-200 dark:bg-gray-600 rounded-full text-xs mr-1">{status}</span>}
+                        {priority && <span className="px-2 py-1 bg-gray-200 dark:bg-gray-600 rounded-full text-xs mr-1">{priority}</span>}
+                        {assignedTo && <span className="px-2 py-1 bg-gray-200 dark:bg-gray-600 rounded-full text-xs mr-1">Assigned</span>}
+                        {category && <span className="px-2 py-1 bg-gray-200 dark:bg-gray-600 rounded-full text-xs mr-1">Category</span>}
+                      </div>
+                    )}
                   </div>
-                </form>
+                )}
               </div>
+              {/* End of Filter Section */}
 
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
