@@ -524,18 +524,24 @@ export default function Index({
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <Link
-                            href={route("tasks.edit", task.id)}
-                            className="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300 mr-3"
-                          >
-                            Edit
-                          </Link>
-                          <button
-                            onClick={() => deleteTask(task.id)}
-                            className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                          >
-                            Delete
-                          </button>
+                          {(auth.user.id === task.created_by ||
+                           auth.user.roles?.some(role => ["Admin", "Manager"].includes(role.name))) && (
+                            <Link
+                              href={route("tasks.edit", task.id)}
+                              className="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300 mr-3"
+                            >
+                              Edit
+                            </Link>
+                          )}
+                          {(auth.user.id === task.created_by ||
+                           auth.user.roles?.some(role => ["Admin"].includes(role.name))) && (
+                            <button
+                              onClick={() => deleteTask(task.id)}
+                              className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                            >
+                              Delete
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}

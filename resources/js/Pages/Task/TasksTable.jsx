@@ -4,9 +4,11 @@ import { TASK_STATUS_CLASS_MAP, TASK_STATUS_TEXT_MAP } from "@/constants.jsx";
 import TextInput from "@/Components/TextInput";
 import SelectInput from "@/Components/SelectInput";
 import TableHeading from "@/Components/TableHeading";
+import { canPerformTaskAction } from "@/utils/permissions";
 
 export default function TasksTable({
   tasks,
+  user,
   queryParams = null,
   hideProjectColumn = false,
   hideUserColumn = false,
@@ -52,6 +54,21 @@ export default function TasksTable({
     router.delete(route("tasks.destroy", task.id));
   };
 
+  // Determine if user can view task details based on permissions
+  const canViewTask = (task) => {
+    return canPerformTaskAction(user, task, 'view');
+  };
+
+  // Determine if user can edit a task based on permissions
+  const canEditTask = (task) => {
+    return canPerformTaskAction(user, task, 'edit');
+  };
+
+  // Determine if user can delete a task based on permissions
+  const canDeleteTask = (task) => {
+    return canPerformTaskAction(user, task, 'delete');
+  };
+
   return (
     <>
       <div className="overflow-auto">
@@ -66,7 +83,6 @@ export default function TasksTable({
               >
                 ID
               </TableHeading>
-
 
               <TableHeading
                 name="name"
@@ -192,18 +208,22 @@ export default function TasksTable({
                   <td className="px-3 py-2">{task.assignedUser ? task.assignedUser.name : '-'}</td>
                 )}
                 <td className="px-3 py-2">
-                  <Link
-                    href={route("tasks.edit", task.id)}
-                    className="font-medium text-blue-600 dark:text-blue-500 hover:underline mx-1"
-                  >
-                    Edit
-                  </Link>
-                  <button
-                    onClick={(e) => deleteTask(task)}
-                    className="font-medium text-red-600 dark:text-red-500 hover:underline mx-1"
-                  >
-                    Delete
-                  </button>
+                  {canEditTask(task) && (
+                    <Link
+                      href={route("tasks.edit", task.id)}
+                      className="font-medium text-blue-600 dark:text-blue-500 hover:underline mx-1"
+                    >
+                      Edit
+                    </Link>
+                  )}
+                  {canDeleteTask(task) && (
+                    <button
+                      onClick={(e) => deleteTask(task)}
+                      className="font-medium text-red-600 dark:text-red-500 hover:underline mx-1"
+                    >
+                      Delete
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}

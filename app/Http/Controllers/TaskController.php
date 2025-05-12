@@ -22,7 +22,7 @@ use App\Http\Requests\UpdateTaskRequest;
 use App\Http\Resources\UserCrudResource;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Imports\TaskImport;
-use PDF;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use App\Exports\TasksExport;
 use Illuminate\Database\Eloquent\Builder;
 use App\Notifications\TaskAssignedNotification;
@@ -32,11 +32,88 @@ use App\Notifications\TaskApprovedNotification;
 
 class TaskController extends Controller
 {
+    // Permission map for all controller methods
+    protected $permissionMap = [
+        'index' => 'task-list',
+        'show' => 'task-view',
+        'create' => 'task-create',
+        'store' => 'task-create',
+        'edit' => 'task-edit',
+        'update' => 'task-edit',
+        'destroy' => 'task-delete',
+        'myTasks' => 'task-view-own',
+        'showImportForm' => 'task-import',
+        'import' => 'task-import',
+        'showReportsPage' => 'task-reports',
+        'exportExcel' => 'task-export',
+        'exportPdf' => 'task-export',
+        'generateTaskPdf' => 'task-generate-pdf',
+        'updateTaskDetails' => 'task-complete|task-approve',
+    ];
+
+    /**
+     * Check if user has the given permissions
+     * @param string|array $permissions
+     * @return bool
+     */
+    protected function checkPermission($permissions)
+    {
+        $user = Auth::user();
+
+        if (is_string($permissions)) {
+            $permissions = explode('|', $permissions);
+        }
+
+        foreach ($permissions as $permission) {
+            if ($user->hasPermissionTo($permission)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Authorize the action based on the current method
+     * @throws \Illuminate\Auth\Access\AuthorizationException
+     */
+    protected function authorizeAction($method = null)
+    {
+        // Get the called method name if not provided
+        if (!$method) {
+            $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
+            $method = $backtrace[1]['function'] ?? null;
+        }
+
+        // Check if method has permissions defined
+        if (isset($this->permissionMap[$method])) {
+            $permissions = $this->permissionMap[$method];
+
+            if (!$this->checkPermission($permissions)) {
+                abort(403, 'Unauthorized action. You do not have the necessary permissions.');
+            }
+        }
+    }
+
+    /**
+     * Authorize the action based on specific permissions
+     * @param string|array $permissions
+     * @throws \Illuminate\Auth\Access\AuthorizationException
+     */
+    protected function authorizePermission($permissions)
+    {
+        if (!$this->checkPermission($permissions)) {
+            abort(403, 'Unauthorized action. You do not have the necessary permissions.');
+        }
+    }
+
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
+        $this->authorizeAction();
+
         $query = Task::query();
 
         // Consistent naming: sort_field instead of short_field
@@ -102,6 +179,8 @@ class TaskController extends Controller
      */
     public function create()
     {
+        $this->authorizeAction();
+
         $categories = Category::query()->orderBy('name', 'asc')->get();
         $users = User::query()->orderBy('name', 'asc')->get();
 
@@ -116,6 +195,8 @@ class TaskController extends Controller
      */
     public function store(StoreTaskRequest $request)
     {
+        $this->authorizeAction();
+
         $data = $request->validated();
         $image = $data['image'] ?? null;
         $currentUser = Auth::user();
@@ -173,6 +254,15 @@ class TaskController extends Controller
      */
     public function show(Task $task)
     {
+        $this->authorizeAction();
+
+        // Additional check for viewing own tasks
+        if (!Auth::user()->can('task-view') &&
+            Auth::user()->can('task-view-own') &&
+            Auth::id() !== $task->created_by &&
+            Auth::id() !== $task->assigned_user_id) {
+            abort(403, 'You can only view your own tasks');
+        }
 
         $task->load(['assignedUser', 'createdBy', 'updatedBy', 'category']);
 
@@ -214,6 +304,15 @@ class TaskController extends Controller
      */
     public function edit(Task $task)
     {
+        $this->authorizeAction();
+
+        // Additional check for editing own tasks
+        if (!Auth::user()->can('task-edit') &&
+            Auth::user()->can('task-update-own') &&
+            Auth::id() !== $task->created_by) {
+            abort(403, 'You can only edit your own tasks');
+        }
+
         $projects = Project::query()->orderBy('name', 'asc')->get();
         $categories = Category::query()->orderBy('name', 'asc')->get();
         $users = User::query()->orderBy('name', 'asc')->get();
@@ -230,6 +329,15 @@ class TaskController extends Controller
      */
     public function update(UpdateTaskRequest $request, Task $task)
     {
+        $this->authorizeAction();
+
+        // Additional check for updating own tasks
+        if (!Auth::user()->can('task-edit') &&
+            Auth::user()->can('task-update-own') &&
+            Auth::id() !== $task->created_by) {
+            abort(403, 'You can only update tasks you created');
+        }
+
         $data = $request->validated();
         $image = $data['image'] ?? null;
         $currentUser = Auth::user();
@@ -311,6 +419,14 @@ class TaskController extends Controller
      */
     public function destroy(Task $task)
     {
+        $this->authorizeAction();
+
+        // Only Admin or task creator with delete permission can delete tasks
+        $user = Auth::user();
+        if (!$user->hasRole('Admin') && $task->created_by !== $user->id) {
+            abort(403, 'You can only delete tasks you created');
+        }
+
         $name = $task->name;
         $task->delete();
         if ($task->image_path) {
@@ -325,6 +441,8 @@ class TaskController extends Controller
      */
     public function updateTaskDetails(Request $request, Task $task)
     {
+        $this->authorizeAction();
+
         $validated = $request->validate([
             'status' => ['sometimes', 'required', Rule::in(['pending', 'in_progress', 'completed'])],
             'scoreType' => ['sometimes', 'required', 'in:creator_rating,assignee_rating'],
@@ -342,9 +460,14 @@ class TaskController extends Controller
 
         // Handle task approval
         if (isset($validated['approved_at'])) {
-            // Only creator can approve tasks
-            if ($currentUser->id !== $task->created_by) {
-                return response()->json(['error' => 'Only the task creator can approve tasks'], 403);
+            // Check if user has task-approve permission
+            if (!$currentUser->can('task-approve')) {
+                return response()->json(['error' => 'You do not have permission to approve tasks'], 403);
+            }
+
+            // Only creator or admin/manager can approve tasks
+            if ($currentUser->id !== $task->created_by && !$currentUser->hasRole(['Admin', 'Manager'])) {
+                return response()->json(['error' => 'Only the task creator or a manager can approve tasks'], 403);
             }
 
             // Task must be completed to be approved (status is stored as "completed" in the database)
@@ -358,16 +481,46 @@ class TaskController extends Controller
 
         // Handle status update
         if (isset($validated['status'])) {
+            // Mark as completed - requires task-complete permission
             if ($validated['status'] === 'completed' && $task->status !== 'completed') {
+                // Check permission to complete tasks
+                if (!$currentUser->can('task-complete')) {
+                    return response()->json(['error' => 'You do not have permission to complete tasks'], 403);
+                }
+
+                // Only assigned user, creator, or manager can mark as complete
+                if ($currentUser->id !== $task->assigned_user_id &&
+                    $currentUser->id !== $task->created_by &&
+                    !$currentUser->hasRole(['Admin', 'Manager'])) {
+                    return response()->json(['error' => 'Only the assigned user, task creator, or a manager can mark a task as complete'], 403);
+                }
+
                 if (!$request->filled('time_spent')) {
                     return response()->json(['error' => 'Time spent must be provided when completing a task'], 422);
                 }
                 $updates['completed_at'] = now();
                 $updates['time_log'] = $validated['time_spent'];
                 $message[] = 'Task marked as completed';
-            } elseif ($validated['status'] !== 'completed') {
+            }
+            // Change from completed to another status - requires higher permission
+            elseif ($validated['status'] !== 'completed' && $task->status === 'completed') {
+                // Only admin/manager/creator can change from completed
+                if (!$currentUser->hasRole(['Admin', 'Manager']) && $currentUser->id !== $task->created_by) {
+                    return response()->json(['error' => 'Only a manager or the task creator can change a completed task status'], 403);
+                }
+
                 $updates['completed_at'] = null;
             }
+            // Regular status update - check edit permission
+            else {
+                // Check if user has edit permission or is updating own task
+                if (!$currentUser->can('task-edit') &&
+                    (!$currentUser->can('task-update-own') || $currentUser->id !== $task->created_by) &&
+                    $currentUser->id !== $task->assigned_user_id) {
+                    return response()->json(['error' => 'You do not have permission to update this task status'], 403);
+                }
+            }
+
             $updates['status'] = $validated['status'];
             $message[] = 'Status updated';
         }
@@ -377,6 +530,27 @@ class TaskController extends Controller
             // Verify task is completed before allowing scoring
             if ($task->status !== 'completed' && (!isset($validated['status']) || $validated['status'] !== 'completed')) {
                 return response()->json(['error' => 'Can only score completed tasks'], 400);
+            }
+
+            // Check permissions for scoring based on type
+            if ($validated['scoreType'] === 'creator_rating') {
+                if (!$currentUser->can('assignee-score-create')) {
+                    return response()->json(['error' => 'You do not have permission to rate the task creator'], 403);
+                }
+
+                // Only task assignee can rate the creator
+                if ($currentUser->id !== $task->assigned_user_id && !$currentUser->hasRole('Admin')) {
+                    return response()->json(['error' => 'Only the assigned user can rate the task creator'], 403);
+                }
+            } else if ($validated['scoreType'] === 'assignee_rating') {
+                if (!$currentUser->can('assignor-score-create')) {
+                    return response()->json(['error' => 'You do not have permission to rate the task assignee'], 403);
+                }
+
+                // Only task creator can rate the assignee
+                if ($currentUser->id !== $task->created_by && !$currentUser->hasRole('Admin')) {
+                    return response()->json(['error' => 'Only the task creator can rate the assignee'], 403);
+                }
             }
 
             // Verify user authorization for scoring
@@ -470,6 +644,8 @@ class TaskController extends Controller
 
     public function myTasks()
     {
+        $this->authorizeAction();
+
         $user = Auth::user();
         if (!$user) {
             return redirect()->route('login');
@@ -530,6 +706,8 @@ class TaskController extends Controller
      */
     public function import(Request $request)
     {
+        $this->authorizeAction();
+
         $request->validate([
             'file' => 'required|file|mimes:xlsx,csv,xls|max:2048',
         ]);
@@ -548,6 +726,8 @@ class TaskController extends Controller
      */
     public function showImportForm()
     {
+        $this->authorizeAction();
+
         return inertia('Task/Import');
     }
 
@@ -590,12 +770,16 @@ class TaskController extends Controller
      */
     public function showExportForm()
     {
+        $this->authorizeAction();
+
         $users = User::orderBy('name')->get();
         $categories = Category::orderBy('name')->get();
 
-        return inertia('Task/Export', [
+        // Use Reports page instead if Export page doesn't exist
+        return inertia('Task/Reports', [
             'users' => $users,
             'categories' => $categories,
+            'exportMode' => true,
         ]);
     }
 
@@ -604,6 +788,8 @@ class TaskController extends Controller
      */
     public function showReportsPage()
     {
+        $this->authorizeAction();
+
         $users = User::orderBy('name')->get();
         $categories = Category::orderBy('name')->get();
 
@@ -619,6 +805,8 @@ class TaskController extends Controller
      */
     public function exportExcel(Request $request)
     {
+        $this->authorizeAction();
+
         $query = $this->getFilteredTasksQuery($request);
         $tasks = $query->with(['category', 'assignedUser', 'createdBy'])->get();
 
@@ -634,6 +822,8 @@ class TaskController extends Controller
      */
     public function exportPdf(Request $request)
     {
+        $this->authorizeAction();
+
         $query = $this->getFilteredTasksQuery($request);
         $tasks = $query->with(['category', 'assignedUser', 'createdBy'])->get();
 
@@ -658,6 +848,16 @@ class TaskController extends Controller
      */
     public function generateTaskPdf(Task $task)
     {
+        $this->authorizeAction();
+
+        // Check if user has permission to view this task
+        $currentUser = Auth::user();
+        if (!$currentUser->can('task-view') &&
+            !($currentUser->can('task-view-own') &&
+              ($currentUser->id === $task->created_by || $currentUser->id === $task->assigned_user_id))) {
+            abort(403, 'You do not have permission to generate PDF for this task');
+        }
+
         $task->load(['assignedUser', 'createdBy', 'updatedBy', 'category', 'comments.user', 'files']);
 
         $pdf = PDF::loadView('tasks.report', [
@@ -675,7 +875,25 @@ class TaskController extends Controller
         $query = Task::query();
 
         $user = Auth::user();
-        if (!$user->hasRole('Admin')) {
+
+        // Apply permission-based filtering
+        if ($user->can('task-list')) {
+            // If user has task-list permission but is not an Admin,
+            // they can still see all tasks but not from other departments
+            if (!$user->hasRole('Admin') && $user->hasRole(['Manager', 'Team Leader'])) {
+                // TODO: Add department-based filtering here if needed
+                // For now, managers and team leaders can see all tasks
+            }
+            // Regular employees with task-list see only their tasks
+            else if (!$user->hasRole(['Admin', 'Manager', 'Team Leader'])) {
+                $query->where(function($q) use ($user) {
+                    $q->where('created_by', $user->id)
+                      ->orWhere('assigned_user_id', $user->id);
+                });
+            }
+        }
+        // Users with only task-view-own permission can only see their own tasks
+        else if ($user->can('task-view-own')) {
             $query->where(function($q) use ($user) {
                 $q->where('created_by', $user->id)
                   ->orWhere('assigned_user_id', $user->id);

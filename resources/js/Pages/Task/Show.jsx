@@ -11,6 +11,7 @@ import FileUpload from "@/Components/FileUpload";
 import TaskFiles from "@/Components/TaskFiles";
 import { useState, useEffect } from "react";
 import Alert from "@/Components/Alert";
+import { hasPermission, canPerformTaskAction, isCreator, isAssigned } from "@/utils/permissions";
 
 export default function Show({ auth, task, comments, files, success }) {
   console.log("Task Details:", task);
@@ -33,11 +34,19 @@ export default function Show({ auth, task, comments, files, success }) {
   const [successMessage, setSuccessMessage] = useState("");
 
   // Check if current user is the creator of this task
-  const isCreator = auth.user.id === task.createdBy.id;
+  const userIsCreator = isCreator(auth.user, task);
+  // Check if current user is the assignee of this task
+  const userIsAssigned = isAssigned(auth.user, task);
   // Check if task is completed but not yet approved - works with both "completed" and "waiting_for_approval" statuses
   const isCompletedNotApproved = (task.status === "completed" || task.status === "waiting_for_approval") && !task.approved_at;
 
-  console.log("Is Creator:", isCreator);
+  // Permission checks for various task actions
+  const canEdit = canPerformTaskAction(auth.user, task, 'edit');
+  const canDelete = canPerformTaskAction(auth.user, task, 'delete');
+  const canApprove = canPerformTaskAction(auth.user, task, 'approve');
+  const canComplete = canPerformTaskAction(auth.user, task, 'complete');
+
+  console.log("Is Creator:", userIsCreator);
   console.log("Is Completed Not Approved:", isCompletedNotApproved);
   console.log("Status Check:", task.status === "completed" || task.status === "waiting_for_approval");
   console.log("Approval Check:", !task.approved_at);
@@ -45,17 +54,28 @@ export default function Show({ auth, task, comments, files, success }) {
   const handleStatusChange = async (e) => {
     const newStatus = e.target.value;
 
-    // Prevent assignee from changing status if task is completed, unless the role is admin
-    if (task.status === "completed" && auth.user.id === task.assigned_user_id && auth.user.role !== "admin") {
-        alert("You cannot change the status of a completed task.");
-        return;
+    // Check if user has permission to change status
+    if (!canEdit && !canComplete) {
+      alert("You do not have permission to change the task status.");
+      return;
+    }
+
+    // Prevent changing status if task is completed, unless the user can approve tasks
+    if (task.status === "completed" && !canApprove) {
+      alert("You cannot change the status of a completed task.");
+      return;
     }
 
     setUpdating(true);
 
     try {
-      // If changing to completed, show time spent input
+      // If changing to completed, verify permission and show time spent input
       if (newStatus === "completed" && task.status !== "completed") {
+        if (!canComplete) {
+          alert("You do not have permission to mark this task as completed.");
+          setUpdating(false);
+          return;
+        }
         setShowTimeSpentInput(true);
         return;
       }
@@ -80,6 +100,12 @@ export default function Show({ auth, task, comments, files, success }) {
   };
 
   const handleTimeSpentSubmit = async () => {
+    // Verify permission to complete task
+    if (!canComplete) {
+      alert("You do not have permission to complete this task.");
+      return;
+    }
+
     setUpdating(true);
     try {
       // Determine the scoreType based on who is completing the task
@@ -88,7 +114,7 @@ export default function Show({ auth, task, comments, files, success }) {
 
       // If user is the assignee, they rate the creator's task (creator_rating)
       // If user is the creator, they rate the assignee's work (assignee_rating)
-      const scoreType = auth.user.id === task.assigned_user_id ? 'creator_rating' : 'assignee_rating';
+      const scoreType = userIsAssigned ? 'creator_rating' : 'assignee_rating';
 
       router.visit(route("tasks.update-details", task.id), {
         method: "put",
@@ -201,12 +227,26 @@ export default function Show({ auth, task, comments, files, success }) {
             Task Details
           </h2>
           <div className="flex space-x-3">
-            <Link
-              href={route("tasks.edit", task.id)}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-            >
-              Edit Task
-            </Link>
+            {canEdit && (
+              <Link
+                href={route("tasks.edit", task.id)}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+              >
+                Edit Task
+              </Link>
+            )}
+            {canDelete && (
+              <button
+                onClick={() => {
+                  if(confirm('Are you sure you want to delete this task?')) {
+                    router.delete(route("tasks.destroy", task.id));
+                  }
+                }}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+              >
+                Delete Task
+              </button>
+            )}
             <Link
               href={route("tasks.index")}
               className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
@@ -239,7 +279,12 @@ export default function Show({ auth, task, comments, files, success }) {
                   <select
                     value={task.status === "waiting_for_approval" ? "completed" : task.status}
                     onChange={handleStatusChange}
-                    disabled={updating || (task.status === "completed" && !task.approved_at && !isCreator)}
+                    disabled={
+                      updating ||
+                      (!canEdit && !canComplete) ||
+                      // Only allow status change if it's not completed or user can approve
+                      (task.status === "completed" && !task.approved_at && !canApprove)
+                    }
                     className="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 disabled:opacity-50"
                   >
                     <option value="pending">Pending</option>
@@ -248,7 +293,7 @@ export default function Show({ auth, task, comments, files, success }) {
                   </select>
 
                   {/* Add Approve button for creators when task is completed */}
-                  {isCreator && isCompletedNotApproved ? (
+                  {canApprove && isCompletedNotApproved ? (
                     <button
                       onClick={() => setShowApprovalPopup(true)}
                       disabled={updating}
@@ -257,7 +302,7 @@ export default function Show({ auth, task, comments, files, success }) {
                       Approve
                     </button>
                   ) : (
-                    isCreator && (
+                    canEdit && (
                       <span className="text-xs text-gray-500 italic">
                         {task.status !== "completed" && task.status !== "waiting_for_approval"
                           ? "(Task must be completed to approve)"

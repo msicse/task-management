@@ -13,6 +13,7 @@ import {
   TASK_STATUS_CLASS_MAP,
   TASK_STATUS_TEXT_MAP,
 } from "@/constants";
+import { canPerformTaskAction, isCreator, isAssigned } from "@/utils/permissions";
 
 export default function MyTasks({
   auth,
@@ -478,24 +479,34 @@ export default function MyTasks({
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {/* <Link
+                          <Link
                             href={route("tasks.show", task.id)}
                             className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-3"
                           >
                             View
-                          </Link> */}
-                          <Link
-                            href={route("tasks.edit", task.id)}
-                            className="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300 mr-3"
-                          >
-                            Edit
                           </Link>
-                          <button
-                            onClick={() => deleteTask(task.id)}
-                            className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                          >
-                            Delete
-                          </button>
+
+                          {/* Only show edit button if user created the task or has admin/manager role */}
+                          {(auth.user.id === task.created_by ||
+                            auth.user.roles?.some(role => ["Admin", "Manager"].includes(role.name))) && (
+                            <Link
+                              href={route("tasks.edit", task.id)}
+                              className="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300 mr-3"
+                            >
+                              Edit
+                            </Link>
+                          )}
+
+                          {/* Only show delete button if user created the task or is admin */}
+                          {(auth.user.id === task.created_by ||
+                            auth.user.roles?.some(role => ["Admin"].includes(role.name))) && (
+                            <button
+                              onClick={() => deleteTask(task.id)}
+                              className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                            >
+                              Delete
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}
