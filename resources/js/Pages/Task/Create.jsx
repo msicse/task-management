@@ -8,6 +8,7 @@ import PrimaryButton from "@/Components/PrimaryButton";
 import { FaCloudUploadAlt, FaTimes, FaFileAlt, FaSpinner } from "react-icons/fa";
 import FileUpload from "@/Components/FileUpload";
 
+
 export default function Create({ auth, users, categories }) {
 
     const [selectedFiles, setSelectedFiles] = useState([]);
@@ -106,6 +107,7 @@ export default function Create({ auth, users, categories }) {
                                             hideSubmitButton={true}
                                             compactHeight={true}
                                         />
+
                                     </div>
                                 </div>
                             </div>

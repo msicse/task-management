@@ -155,12 +155,12 @@ const Reports = ({ auth, categories, users, success }) => {
                                 </div>
                             </div>
 
-                            <div className="mt-8 bg-blue-50 p-4 rounded-lg border border-blue-200">
+                            {/* <div className="mt-8 bg-blue-50 p-4 rounded-lg border border-blue-200">
                                 <h4 className="font-semibold text-gray-800 mb-2">Individual Task Reports</h4>
                                 <p className="text-gray-600">
                                     You can also generate PDF reports for individual tasks by going to the task detail page and clicking the "Generate Report" button.
                                 </p>
-                            </div>
+                            </div> */}
                         </div>
                     </div>
                 </div>

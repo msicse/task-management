@@ -106,13 +106,14 @@ export default function AuthenticatedLayout({ user, header, children }) {
                 </div>
               )}
 
+
               {hasPermission("category-list") && (
                 <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                   <NavLink
                     href={route("categories.index")}
                     active={route().current("categories.*")}
                   >
-                    All Categories
+                    Categories
                   </NavLink>
                 </div>
               )}

@@ -12,11 +12,13 @@ export const TASK_STATUS_CLASS_MAP = {
   pending: "bg-amber-500",
   in_progress: "bg-blue-500",
   completed: "bg-green-500",
+  waiting_for_approval: "bg-purple-500",
 };
 export const TASK_STATUS_TEXT_MAP = {
   pending: "Pending",
   in_progress: "In Progress",
   completed: "Completed",
+  waiting_for_approval: "Awaiting Approval",
 };
 export const TASK_PRIORITY_CLASS_MAP = {
   low: "bg-gray-600",

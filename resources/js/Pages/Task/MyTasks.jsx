@@ -219,6 +219,7 @@ export default function MyTasks({
                           <option value="pending">Pending</option>
                           <option value="in_progress">In Progress</option>
                           <option value="completed">Completed</option>
+                          <option value="waiting_for_approval">Awaiting Approval</option>
                         </SelectInput>
                       </div>
 
@@ -446,10 +447,10 @@ export default function MyTasks({
                           <span
                             className={
                               "px-2 py-1 rounded text-white " +
-                              TASK_STATUS_CLASS_MAP[task.status]
+                              TASK_STATUS_CLASS_MAP[task.status === "completed" && !task.approved_at ? "waiting_for_approval" : task.status]
                             }
                           >
-                            {TASK_STATUS_TEXT_MAP[task.status]}
+                            {TASK_STATUS_TEXT_MAP[task.status === "completed" && !task.approved_at ? "waiting_for_approval" : task.status]}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">

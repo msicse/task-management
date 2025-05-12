@@ -25,7 +25,7 @@ class TaskResource extends JsonResource
             "due_date" => $this->due_date ? (new Carbon($this->due_date))->format("d-m-Y") : null,
             "completed_at" => $this->completed_at ? (new Carbon($this->completed_at))->format("d-m-Y") : null,
             "approved_at" => $this->approved_at ? (new Carbon($this->approved_at))->format("d-m-Y") : null,
-            "status" => $this->status,
+            "status" => ($this->status === "completed" && !$this->approved_at) ? "waiting_for_approval" : $this->status,
             "priority" => $this->priority,
             "time_log" => $this->time_log,
             "factory_id" => $this->factory_id,

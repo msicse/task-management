@@ -26,7 +26,10 @@
         "@ckeditor/ckeditor5-react": "^9.5.0",
         "@heroicons/react": "^2.2.0",
         "@tinymce/tinymce-react": "^6.1.0",
+        "quill": "^2.0.3",
+        "quill-better-table": "^1.2.10",
         "quill-image-resize-module-react": "^3.0.0",
+        "quill-paste-smart": "^2.0.0",
         "react-icons": "^5.5.0",
         "react-quill": "^2.0.0",
         "react-select": "^5.10.1"

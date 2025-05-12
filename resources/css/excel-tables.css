@@ -1,0 +1,54 @@
+/* Excel table styles */
+.ql-editor table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-bottom: 1em;
+}
+
+.ql-editor td, .ql-editor th {
+    border: 1px solid #ddd;
+    padding: 8px;
+}
+
+.ql-editor tr:nth-child(even) {
+    background-color: #f8f8f8;
+}
+
+.ql-editor th {
+    padding-top: 12px;
+    padding-bottom: 12px;
+    text-align: left;
+    background-color: #f3f4f6;
+    color: black;
+    font-weight: bold;
+}
+
+/* Excel paste support */
+.ql-clipboard {
+    left: 50%;
+    top: 50%;
+}
+
+/* Preserve Excel specific formatting */
+[data-excel-paste] {
+    white-space: pre-wrap;
+}
+
+/* Better table module styles */
+.quill-better-table {
+    width: 100%;
+}
+
+.quill-better-table td {
+    position: relative;
+    border: 1px solid #000;
+    padding: 6px 8px;
+}
+
+.quill-better-table th {
+    position: relative;
+    border: 1px solid #000;
+    padding: 6px 8px;
+    background-color: #f3f4f6;
+    font-weight: bold;
+}

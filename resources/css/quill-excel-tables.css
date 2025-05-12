@@ -1,0 +1,89 @@
+/* Quill Excel Table Styles */
+
+/* Basic table structure */
+.ql-editor table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1em 0;
+}
+
+.ql-editor table td,
+.ql-editor table th {
+  border: 1px solid #ddd;
+  padding: 8px;
+  min-width: 2em;
+  position: relative;
+}
+
+/* Styling for table cells */
+.ql-editor table th {
+  padding-top: 10px;
+  padding-bottom: 10px;
+  background-color: #f2f2f2;
+  color: #333;
+  font-weight: bold;
+  text-align: left;
+}
+
+.ql-editor table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.ql-editor table tr:hover {
+  background-color: #f1f1f1;
+}
+
+/* Excel-specific styling */
+.ql-editor [data-excel-paste="true"] {
+  width: auto;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.ql-editor [data-excel-paste="true"] td {
+  white-space: normal;
+  word-break: normal;
+}
+
+/* Better table module styles */
+.quill-better-table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1em 0;
+}
+
+.quill-better-table td,
+.quill-better-table th {
+  border: 1px solid #ddd;
+  padding: 8px;
+  min-width: 2em;
+  position: relative;
+}
+
+.quill-better-table th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+}
+
+/* Table toolbar */
+.quill-better-table-wrapper .qlbt-operation-menu {
+  background-color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.quill-better-table-wrapper .qlbt-operation-menu .qlbt-operation-menu-item {
+  cursor: pointer;
+  padding: 8px 12px;
+  font-size: 14px;
+}
+
+.quill-better-table-wrapper .qlbt-operation-menu .qlbt-operation-menu-item:hover {
+  background-color: #f2f2f2;
+}
+
+/* Custom styling for merged cells */
+.ql-editor td[rowspan],
+.ql-editor td[colspan] {
+  background-color: rgba(245, 247, 249, 0.5);
+}

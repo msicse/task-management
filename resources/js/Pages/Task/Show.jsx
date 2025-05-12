@@ -14,6 +14,10 @@ import Alert from "@/Components/Alert";
 
 export default function Show({ auth, task, comments, files, success }) {
   console.log("Task Details:", task);
+  console.log("Task Status:", task.status);
+  console.log("Task Status Type:", typeof task.status);
+  console.log("Completed At:", task.completed_at);
+  console.log("Approved At:", task.approved_at);
   console.log("Creator Rating:", task.creator_rating);
   console.log("Assignee Rating:", task.assignee_rating);
   console.log("Assigned User:", task.assigned_user_id);
@@ -30,8 +34,13 @@ export default function Show({ auth, task, comments, files, success }) {
 
   // Check if current user is the creator of this task
   const isCreator = auth.user.id === task.createdBy.id;
-  // Check if task is completed but not yet approved
-  const isCompletedNotApproved = task.status === "completed" && !task.approved_at;
+  // Check if task is completed but not yet approved - works with both "completed" and "waiting_for_approval" statuses
+  const isCompletedNotApproved = (task.status === "completed" || task.status === "waiting_for_approval") && !task.approved_at;
+
+  console.log("Is Creator:", isCreator);
+  console.log("Is Completed Not Approved:", isCompletedNotApproved);
+  console.log("Status Check:", task.status === "completed" || task.status === "waiting_for_approval");
+  console.log("Approval Check:", !task.approved_at);
 
   const handleStatusChange = async (e) => {
     const newStatus = e.target.value;
@@ -76,7 +85,10 @@ export default function Show({ auth, task, comments, files, success }) {
       // Determine the scoreType based on who is completing the task
       // Creator will give rating to the assignee - assignee_rating
       // Assignee will give rating to the creator - creator_rating
-      const scoreType = auth.user.id === task.assigned_user_id ? 'creator_rating' : null;
+
+      // If user is the assignee, they rate the creator's task (creator_rating)
+      // If user is the creator, they rate the assignee's work (assignee_rating)
+      const scoreType = auth.user.id === task.assigned_user_id ? 'creator_rating' : 'assignee_rating';
 
       router.visit(route("tasks.update-details", task.id), {
         method: "put",
@@ -225,9 +237,9 @@ export default function Show({ auth, task, comments, files, success }) {
                     {task.name}
                   </h1>
                   <select
-                    value={task.status}
+                    value={task.status === "waiting_for_approval" ? "completed" : task.status}
                     onChange={handleStatusChange}
-                    disabled={updating}
+                    disabled={updating || (task.status === "completed" && !task.approved_at && !isCreator)}
                     className="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 disabled:opacity-50"
                   >
                     <option value="pending">Pending</option>
@@ -236,7 +248,7 @@ export default function Show({ auth, task, comments, files, success }) {
                   </select>
 
                   {/* Add Approve button for creators when task is completed */}
-                  {isCreator && isCompletedNotApproved && (
+                  {isCreator && isCompletedNotApproved ? (
                     <button
                       onClick={() => setShowApprovalPopup(true)}
                       disabled={updating}
@@ -244,6 +256,16 @@ export default function Show({ auth, task, comments, files, success }) {
                     >
                       Approve
                     </button>
+                  ) : (
+                    isCreator && (
+                      <span className="text-xs text-gray-500 italic">
+                        {task.status !== "completed" && task.status !== "waiting_for_approval"
+                          ? "(Task must be completed to approve)"
+                          : task.approved_at
+                            ? "(Already approved)"
+                            : "(Approval button not showing)"}
+                      </span>
+                    )
                   )}
 
                   {/* Time spent popup */}

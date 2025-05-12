@@ -53,7 +53,13 @@ class TaskController extends Controller
             $query->where("name", "like", "%" . request("name") . "%");
         }
         if (request("status")) {
-            $query->where("status", request("status"));
+            if (request("status") === "waiting_for_approval") {
+                // Find tasks with status "completed" but approved_at is null
+                $query->where("status", "completed")
+                      ->whereNull("approved_at");
+            } else {
+                $query->where("status", request("status"));
+            }
         }
         if (request("priority")) {
             $query->where("priority", request("priority"));
@@ -341,8 +347,8 @@ class TaskController extends Controller
                 return response()->json(['error' => 'Only the task creator can approve tasks'], 403);
             }
 
-            // Task must be completed to be approved
-            if ($task->status !== 'completed') {
+            // Task must be completed to be approved (status is stored as "completed" in the database)
+            if ($task->status !== 'completed' || !$task->completed_at) {
                 return response()->json(['error' => 'Only completed tasks can be approved'], 400);
             }
 
@@ -480,7 +486,13 @@ class TaskController extends Controller
             $query->where("name", "like", "%" . request("name") . "%");
         }
         if (request("status")) {
-            $query->where("status", request("status"));
+            if (request("status") === "waiting_for_approval") {
+                // Find tasks with status "completed" but approved_at is null
+                $query->where("status", "completed")
+                      ->whereNull("approved_at");
+            } else {
+                $query->where("status", request("status"));
+            }
         }
         if (request("priority")) {
             $query->where("priority", request("priority"));
