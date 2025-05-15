@@ -11,6 +11,13 @@ export default function UpdateProfileInformation({ mustVerifyEmail, status, clas
     const { data, setData, patch, errors, processing, recentlySuccessful } = useForm({
         name: user.name,
         email: user.email,
+        designation: user.designation || '',
+        employee_id: user.employee_id || '',
+        phone: user.phone || '',
+        blood: user.blood || '',
+        gender: user.gender || '',
+        location: user.location || '',
+        about: user.about || '',
     });
 
     const submit = (e) => {
@@ -21,18 +28,9 @@ export default function UpdateProfileInformation({ mustVerifyEmail, status, clas
 
     return (
         <section className={className}>
-            <header>
-                <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">Profile Information</h2>
-
-                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                    Update your account's profile information and email address.
-                </p>
-            </header>
-
-            <form onSubmit={submit} className="mt-6 space-y-6">
+            <form onSubmit={submit} className="space-y-4">
                 <div>
                     <InputLabel htmlFor="name" value="Name" />
-
                     <TextInput
                         id="name"
                         className="mt-1 block w-full"
@@ -42,13 +40,11 @@ export default function UpdateProfileInformation({ mustVerifyEmail, status, clas
                         isFocused
                         autoComplete="name"
                     />
-
-                    <InputError className="mt-2" message={errors.name} />
+                    <InputError className="mt-1 text-xs" message={errors.name} />
                 </div>
 
                 <div>
                     <InputLabel htmlFor="email" value="Email" />
-
                     <TextInput
                         id="email"
                         type="email"
@@ -58,8 +54,7 @@ export default function UpdateProfileInformation({ mustVerifyEmail, status, clas
                         required
                         autoComplete="username"
                     />
-
-                    <InputError className="mt-2" message={errors.email} />
+                    <InputError className="mt-1 text-xs" message={errors.email} />
                 </div>
 
                 {mustVerifyEmail && user.email_verified_at === null && (
@@ -82,7 +77,100 @@ export default function UpdateProfileInformation({ mustVerifyEmail, status, clas
                             </div>
                         )}
                     </div>
-                )}
+                )}                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <InputLabel htmlFor="designation" value="Designation" />
+                        <TextInput
+                            id="designation"
+                            className="mt-1 block w-full"
+                            value={data.designation}
+                            onChange={(e) => setData('designation', e.target.value)}
+                        />
+                        <InputError className="mt-1 text-xs" message={errors.designation} />
+                    </div>
+
+                    <div>
+                        <InputLabel htmlFor="employee_id" value="Employee ID" />
+                        <TextInput
+                            id="employee_id"
+                            className="mt-1 block w-full"
+                            value={data.employee_id}
+                            onChange={(e) => setData('employee_id', e.target.value)}
+                        />
+                        <InputError className="mt-1 text-xs" message={errors.employee_id} />
+                    </div>
+                </div>
+
+                <div>
+                    <InputLabel htmlFor="phone" value="Phone" />
+                    <TextInput
+                        id="phone"
+                        className="mt-1 block w-full"
+                        value={data.phone}
+                        onChange={(e) => setData('phone', e.target.value)}
+                    />
+                    <InputError className="mt-1 text-xs" message={errors.phone} />
+                </div><div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <InputLabel htmlFor="blood" value="Blood Group" />
+                        <select
+                            id="blood"
+                            className="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm"
+                            value={data.blood}
+                            onChange={(e) => setData('blood', e.target.value)}
+                        >
+                            <option value="">Select Blood Group</option>
+                            <option value="A+">A+</option>
+                            <option value="A-">A-</option>
+                            <option value="B+">B+</option>
+                            <option value="B-">B-</option>
+                            <option value="AB+">AB+</option>
+                            <option value="AB-">AB-</option>
+                            <option value="O+">O+</option>
+                            <option value="O-">O-</option>
+                        </select>
+                        <InputError className="mt-2" message={errors.blood} />
+                    </div>
+
+                    <div>
+                        <InputLabel htmlFor="gender" value="Gender" />
+                        <select
+                            id="gender"
+                            className="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm"
+                            value={data.gender}
+                            onChange={(e) => setData('gender', e.target.value)}
+                        >
+                            <option value="">Select Gender</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                            <option value="other">Other</option>
+                        </select>
+                        <InputError className="mt-2" message={errors.gender} />
+                    </div>
+                </div>                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <InputLabel htmlFor="location" value="Location" />
+                        <TextInput
+                            id="location"
+                            className="mt-1 block w-full"
+                            value={data.location}
+                            onChange={(e) => setData('location', e.target.value)}
+                        />
+                        <InputError className="mt-1 text-xs" message={errors.location} />
+                    </div>
+
+                    <div>
+                        <InputLabel htmlFor="about" value="About" />
+                        <textarea
+                            id="about"
+                            className="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm"
+                            value={data.about}
+                            onChange={(e) => setData('about', e.target.value)}
+                            rows="2"
+                        ></textarea>
+                        <InputError className="mt-1 text-xs" message={errors.about} />
+                    </div>
+                </div>
 
                 <div className="flex items-center gap-4">
                     <PrimaryButton disabled={processing}>Save</PrimaryButton>
