@@ -12,8 +12,10 @@ import TaskFiles from "@/Components/TaskFiles";
 import { useState, useEffect } from "react";
 import Alert from "@/Components/Alert";
 import { hasPermission, canPerformTaskAction, isCreator, isAssigned } from "@/utils/permissions";
+import { formatDateTime } from "@/utils/dateFormat";
 
 export default function Show({ auth, task, comments, files, success }) {
+
   console.log("Task Details:", task);
   console.log("Task Status:", task.status);
   console.log("Task Status Type:", typeof task.status);
@@ -435,7 +437,7 @@ export default function Show({ auth, task, comments, files, success }) {
                 </div>
                 <div className="mt-4 md:mt-0 text-sm text-gray-500 dark:text-gray-400">
                   Created by {task.createdBy.name} on{" "}
-                  {new Date(task.created_at).toLocaleDateString()}
+                  {formatDateTime(task.created_at)}
                 </div>
               </div>
             </div>
@@ -455,7 +457,7 @@ export default function Show({ auth, task, comments, files, success }) {
                       </p>
                       <p className="mt-1 text-gray-900 dark:text-gray-100">
                         {task.due_date
-                          ? new Date(task.due_date).toLocaleDateString()
+                          ? formatDateTime(task.due_date)
                           : "No due date set"}
                       </p>
                     </div>
@@ -465,7 +467,7 @@ export default function Show({ auth, task, comments, files, success }) {
                       </p>
                       <p className="mt-1 text-gray-900 dark:text-gray-100">
                         {task.completed_at
-                          ? new Date(task.completed_at).toLocaleDateString()
+                          ? formatDateTime(task.completed_at)
                           : "Not completed yet"}
                       </p>
                     </div>
@@ -475,7 +477,7 @@ export default function Show({ auth, task, comments, files, success }) {
                       </p>
                       <p className="mt-1 text-gray-900 dark:text-gray-100">
                         {task.created_at
-                          ? new Date(task.created_at).toLocaleDateString()
+                          ? formatDateTime(task.created_at)
                           : "N/A"}
                       </p>
                     </div>
@@ -510,7 +512,7 @@ export default function Show({ auth, task, comments, files, success }) {
                       </p>
                       <p className="mt-1 text-gray-900 dark:text-gray-100">
                         {task.approved_at
-                          ? `Approved on ${new Date(task.approved_at).toLocaleDateString()}`
+                          ? `Approved on ${formatDateTime(task.approved_at)}`
                           : task.status === "completed"
                             ? "Awaiting approval"
                             : "Not applicable"}
@@ -618,8 +620,7 @@ export default function Show({ auth, task, comments, files, success }) {
                                 {comment.user.name}
                               </h4>
                               <span className="text-xs text-gray-500 dark:text-gray-400">
-                                {comment.created_at}
-                                {comment.created_at_human}
+                                {comment.created_at} ({comment.created_at_human})
                               </span>
                             </div>
                             <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">
@@ -650,7 +651,7 @@ export default function Show({ auth, task, comments, files, success }) {
                                             {reply.user.name}
                                           </h4>
                                           <span className="text-xs text-gray-500 dark:text-gray-400">
-                                            {reply.created_at_human}
+                                            {reply.created_at} ({reply.created_at_human})
                                           </span>
                                         </div>
                                         <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">

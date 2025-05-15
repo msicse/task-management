@@ -12,8 +12,18 @@ use Inertia\Inertia;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 
+
 class UserController extends Controller
 {
+
+    function __construct()
+    {
+        $this->middleware('permission:user-list|user-create|user-edit|user-delete', ['only' => ['index', 'store']]);
+        $this->middleware('permission:user-create', ['only' => ['create', 'store']]);
+        $this->middleware('permission:user-edit', ['only' => ['edit', 'update']]);
+        $this->middleware('permission:user-delete', ['only' => ['destroy']]);
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -22,38 +32,38 @@ class UserController extends Controller
         $perPage = request('per_page', 10);
 
         $users = User::with(['department', 'createdBy', 'updatedBy', 'roles'])
-            ->when(request('search'), function($query, $search) {
-                $query->where(function($query) use ($search) {
+            ->when(request('search'), function ($query, $search) {
+                $query->where(function ($query) use ($search) {
                     $query->where('name', 'like', "%{$search}%")
                         ->orWhere('email', 'like', "%{$search}%")
                         ->orWhere('employee_id', 'like', "%{$search}%");
                 });
             })
-            ->when(request('department'), function($query, $department) {
+            ->when(request('department'), function ($query, $department) {
                 $query->where('department_id', $department);
             })
-            ->when(request('status'), function($query, $status) {
+            ->when(request('status'), function ($query, $status) {
                 $query->where('status', $status);
             })
-            ->when(request('sort_field') && request('sort_direction'), function($query) {
+            ->when(request('sort_field') && request('sort_direction'), function ($query) {
                 $sortField = request('sort_field');
                 $direction = request('sort_direction');
 
                 // Handle special sorting for department and role
                 if ($sortField === 'department_id') {
                     $query->join('departments', 'users.department_id', '=', 'departments.id')
-                          ->orderBy('departments.name', $direction)
-                          ->select('users.*');
+                        ->orderBy('departments.name', $direction)
+                        ->select('users.*');
                 } else if ($sortField === 'role') {
                     $query->leftJoin('model_has_roles', 'users.id', '=', 'model_has_roles.model_id')
-                          ->leftJoin('roles', 'model_has_roles.role_id', '=', 'roles.id')
-                          ->where('model_has_roles.model_type', 'App\\Models\\User')
-                          ->orderBy('roles.name', $direction)
-                          ->select('users.*');
+                        ->leftJoin('roles', 'model_has_roles.role_id', '=', 'roles.id')
+                        ->where('model_has_roles.model_type', 'App\\Models\\User')
+                        ->orderBy('roles.name', $direction)
+                        ->select('users.*');
                 } else {
                     $query->orderBy($sortField, $direction);
                 }
-            }, function($query) {
+            }, function ($query) {
                 $query->latest();
             })
             ->paginate($perPage)

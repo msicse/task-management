@@ -140,7 +140,7 @@
             <span class="meta-label">Updated At:</span> {{ $task->updated_at->format('Y-m-d H:i') }}
         </div>
         <div class="meta-item">
-            <span class="meta-label">Time Spent:</span> {{ $task->time_log ? $task->time_log . ' hours' : '0 hours' }}
+            <span class="meta-label">Time Spent(mins):</span> {{ $task->time_log ? $task->time_log : '0' }}
         </div>
         <div class="meta-item">
             <span class="meta-label">Completed At:</span> {{ $task->completed_at ? $task->completed_at->format('Y-m-d H:i') : 'Not completed' }}

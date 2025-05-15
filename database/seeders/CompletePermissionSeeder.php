@@ -116,9 +116,10 @@ class CompletePermissionSeeder extends Seeder
         foreach ($allPermissions as $permission) {
             Permission::create(['name' => $permission]);
         }
-          // Create roles with permissions
+        // Create roles with permissions
 
         // Admin role - all permissions
+        Role::where('name', 'global-admin')->first() ?: Role::create(['name' => 'global-admin']);
         $adminRole = Role::where('name', 'Admin')->first() ?: Role::create(['name' => 'Admin']);
         $adminRole->syncPermissions($allPermissions);
 
@@ -126,45 +127,104 @@ class CompletePermissionSeeder extends Seeder
         $managerRole = Role::where('name', 'Manager')->first() ?: Role::create(['name' => 'Manager']);
         $managerRole->syncPermissions([
             // Task related
-            'task-list', 'task-create', 'task-edit', 'task-view',
-            'task-assign', 'task-approve', 'task-view-own', 'task-update-own',
-            'task-complete', 'task-comment', 'task-reports',
-            'task-export', 'task-generate-pdf',
+            'task-list',
+            'task-create',
+            'task-edit',
+            'task-view',
+            'task-assign',
+            'task-approve',
+            'task-view-own',
+            'task-update-own',
+            'task-complete',
+            'task-comment',
+            'task-reports',
+            'task-export',
+            'task-generate-pdf',
 
             // Others
-            'project-list', 'project-view', 'report-view',
-            'file-upload', 'file-download',
-            'score-view', 'assignee-score-create', 'assignor-score-create',
+            'project-list',
+            'project-view',
+            'report-view',
+            'file-upload',
+            'file-download',
+            'score-view',
+            'assignee-score-create',
+            'assignor-score-create',
         ]);
-          // Team Leader role - can assign tasks to team, approve team's tasks
+        // Team Leader role - can assign tasks to team, approve team's tasks
         $teamLeaderRole = Role::where('name', 'Team Leader')->first() ?: Role::create(['name' => 'Team Leader']);
         $teamLeaderRole->syncPermissions([
-            'task-list', 'task-create', 'task-view', 'task-edit',
-            'task-assign', 'task-approve', 'task-view-own', 'task-update-own',
-            'task-complete', 'task-comment', 'task-reports',
-            'project-list', 'project-view',
-            'file-upload', 'file-download',
-            'score-view', 'assignee-score-create', 'assignor-score-create',
+            'task-list',
+            'task-create',
+            'task-view',
+            'task-edit',
+            'task-assign',
+            'task-approve',
+            'task-view-own',
+            'task-update-own',
+            'task-complete',
+            'task-comment',
+            'task-reports',
+            'project-list',
+            'project-view',
+            'file-upload',
+            'file-download',
+            'score-view',
+            'assignee-score-create',
+            'assignor-score-create',
         ]);
-          // Employee role - can view assigned tasks, mark as complete
+        // Employee role - can view assigned tasks, mark as complete
         $employeeRole = Role::where('name', 'Employee')->first() ?: Role::create(['name' => 'Employee']);
         $employeeRole->syncPermissions([
-            'task-view-own', 'task-update-own', 'task-complete',
-            'task-comment', 'file-upload', 'file-download',
-            'project-list', 'project-view',
+            'task-list',
+            'task-create',
+            'task-view',
+            'task-view-own',
+            'task-update-own',
+            'task-complete',
+            'task-comment',
+            'file-upload',
+            'file-download',
             'assignee-score-create'
         ]);
-          // Create a super-admin user (if one doesn't exist)
+        // Create a super-admin user (if one doesn't exist)
         $adminUser = User::where('email', 'admin@example.com')->first();
         if (!$adminUser) {
             $adminUser = User::factory()->create([
-                'name' => 'Super Admin',
+                'department_id' => 1,
+                'name' => 'Admin User',
+                'designation' => 'IT Professional',
+                'employee_id' => 2645,
+                'phone' => '1111111111',
                 'email' => 'admin@example.com',
-                'password' => bcrypt('password'),
+                'date_of_join' => '2020-12-12',
+                'password' => bcrypt(12345678),
+                'email_verified_at' => time(),
             ]);
         }
 
         // Make sure the admin user has the Admin role
         $adminUser->syncRoles([$adminRole]);
+
+
+        // Create a super-admin user (if one doesn't exist)
+        $employeeUser = User::where('email', 'user@example.com')->first();
+
+        if (!$employeeUser) {
+            $employeeUser = User::factory()->create([
+                'department_id' => 1,
+                'name' => 'General User',
+                'designation' => 'IT Professional',
+                'employee_id' => 2646,
+                'phone' => '99999999999',
+                'email' => 'user@example.com',
+                'date_of_join' => '2020-12-12',
+                'password' => bcrypt(12345678),
+                'email_verified_at' => time(),
+            ]);
+        }
+
+         // Make sure the admin user has the Admin role
+        $employeeUser->syncRoles([$employeeRole]);
     }
 }

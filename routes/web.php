@@ -61,6 +61,4 @@ Route::middleware('auth')->group(function () {
     Route::get('/task-files/{file}/download', [TaskFileController::class, 'download'])->name('task-files.download');
 });
 
-
-
 require __DIR__ . '/auth.php';

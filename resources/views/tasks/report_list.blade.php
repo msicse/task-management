@@ -191,7 +191,7 @@
                 <td>{{ $task->assignedUser ? $task->assignedUser->name : 'Unassigned' }}</td>
                 <td>{{ $task->createdBy ? $task->createdBy->name : 'Unknown' }}</td>
                 <td>{{ $task->due_date ? $task->due_date->format('Y-m-d') : '-' }}</td>
-                <td>{{ $task->time_log ? $task->time_log . ' h' : '-' }}</td>
+                <td>{{ $task->time_log ? $task->time_log . ' mins' : '-' }}</td>
             </tr>
             @endforeach
         </tbody>

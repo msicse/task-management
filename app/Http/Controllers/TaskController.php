@@ -313,7 +313,7 @@ class TaskController extends Controller
             abort(403, 'You can only edit your own tasks');
         }
 
-        $projects = Project::query()->orderBy('name', 'asc')->get();
+       // $projects = Project::query()->orderBy('name', 'asc')->get();
         $categories = Category::query()->orderBy('name', 'asc')->get();
         $users = User::query()->orderBy('name', 'asc')->get();
 

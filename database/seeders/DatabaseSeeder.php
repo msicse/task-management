@@ -17,41 +17,10 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
-        User::create([
-            'department_id' => 1,
-            'name' => 'Admin User',
-            'designation' => 'IT Professional',
-            'employee_id' => 2645,
-            'phone' => '1111111111',
-            'email' => 'admin@example.com',
-            'date_of_join' => '2020-12-12',
-            'password' => bcrypt(12345678),
-            'email_verified_at' => time(),
 
-        ]);
-
-        User::create([
-            'department_id' => 1,
-            'name' => 'General User',
-            'designation' => 'IT Professional',
-            'employee_id' => 2646,
-            'phone' => '99999999999',
-            'email' => 'user@example.com',
-            'date_of_join' => '2020-12-12',
-            'password' => bcrypt(12345678),
-            'email_verified_at' => time(),
-
-        ]);
-
-
-        // Project::factory()
-        // ->count(10)
-        // ->hasTasks(10)
-        // ->create();
-
-        $this->call(PermissionTableSeeder::class);
-        $this->call(AdminUserTableSeeder::class);
         $this->call(DepartmentTableSeeder::class);
+        $this->call(CompletePermissionSeeder::class);
+        $this->call(UserTableSeeder::class);
 
     }
 

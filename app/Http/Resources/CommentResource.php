@@ -13,7 +13,7 @@ class CommentResource extends JsonResource
         return [
             'id' => $this->id,
             'content' => $this->content,
-            // 'created_at' => $this->created_at->format('d-m-Y'),
+            'created_at' => $this->created_at->format('d-m-Y H:i'),
             'created_at_human' => Carbon::parse($this->created_at)->diffForHumans(),
             'user' => [
                 'id' => $this->user->id,

@@ -14,6 +14,7 @@ import {
   TASK_STATUS_CLASS_MAP,
   TASK_STATUS_TEXT_MAP,
 } from "@/constants";
+import { formatDateTime, formatDate, isPastDue } from "@/utils/dateFormat";
 
 export default function Index({
   auth,
@@ -427,29 +428,21 @@ export default function Index({
                         Status
                       </TableHeading>
                       <TableHeading
-                        name="created_at"
-                        sort_field={sortField}
-                        sort_direction={sortDirection}
-                        sortChanged={sortChanged}
-                      >
-                        Created At
-                      </TableHeading>
-                      <TableHeading sortable={false}>Time Log</TableHeading>
-                      <TableHeading
-                        name="completed_at"
-                        sort_field={sortField}
-                        sort_direction={sortDirection}
-                        sortChanged={sortChanged}
-                      >
-                        Completed
-                      </TableHeading>
-                      <TableHeading
                         name="priority"
                         sort_field={sortField}
                         sort_direction={sortDirection}
                         sortChanged={sortChanged}
                       >
                         Priority
+                      </TableHeading>
+
+                      <TableHeading
+                        name="created_at"
+                        sort_field={sortField}
+                        sort_direction={sortDirection}
+                        sortChanged={sortChanged}
+                      >
+                        Created At
                       </TableHeading>
                       <TableHeading
                         name="due_date"
@@ -459,6 +452,15 @@ export default function Index({
                       >
                         Due Date
                       </TableHeading>
+                      <TableHeading
+                        name="completed_at"
+                        sort_field={sortField}
+                        sort_direction={sortDirection}
+                        sortChanged={sortChanged}
+                      >
+                        Completed
+                      </TableHeading>
+                      <TableHeading sortable={false}>Time Log</TableHeading>
                       <TableHeading sortable={false}>Action</TableHeading>
                     </tr>
                   </thead>
@@ -498,15 +500,6 @@ export default function Index({
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {task.created_at}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {task.time_log ? `${task.time_log} hours` : "N/A"}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {task.completed_at ? task.completed_at : "Not yet"}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
                           <span
                             className={
                               "px-2 py-1 rounded text-white " +
@@ -517,12 +510,23 @@ export default function Index({
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {new Date(task.due_date) < new Date() ? (
-                            <span className="text-red-600">Passed</span>
-                          ) : (
-                            task.due_date
+                          {formatDate(task.created_at)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {task.due_date && (
+                            <span className={isPastDue(task.due_date) || task.completed_at ? "text-red-600 font-medium" : ""}>
+                              {isPastDue(task.due_date) || task.completed_at ? "Passed: " : ""}
+                              {formatDate(task.due_date)}
+                            </span>
                           )}
                         </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {task.completed_at ? formatDate(task.completed_at) : "Not yet"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {task.time_log ? `${task.time_log} mins` : "N/A"}
+                        </td>
+
                         <td className="px-6 py-4 whitespace-nowrap">
                           {(auth.user.id === task.created_by ||
                            auth.user.roles?.some(role => ["Admin", "Manager"].includes(role.name))) && (
