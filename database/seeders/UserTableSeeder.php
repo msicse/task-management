@@ -485,7 +485,7 @@ class UserTableSeeder extends Seeder
 
                 // Assign role to user
                 if ($role) {
-                    $userRole = role::where('name', $role)->first();
+                    $userRole = Role::where('name', $role)->first();
                     if ($userRole) {
                         $user->assignRole($userRole);
                     }
