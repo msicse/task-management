@@ -180,12 +180,14 @@ class CompletePermissionSeeder extends Seeder
             'task-create',
             'task-view',
             'task-view-own',
+            'task-approve',
             'task-update-own',
             'task-complete',
             'task-comment',
             'file-upload',
             'file-download',
-            'assignee-score-create'
+            'assignee-score-create',
+            'assignor-score-create',
         ]);
         // Create a super-admin user (if one doesn't exist)
         $adminUser = User::where('email', 'admin@example.com')->first();

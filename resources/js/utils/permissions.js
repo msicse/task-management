@@ -72,6 +72,17 @@ export const isAssigned = (user, task) => {
 };
 
 /**
+ * Check if user has a specific role
+ * @param {Object} user - The authenticated user
+ * @param {String} roleName - The name of the role to check for
+ * @returns {Boolean} - Whether user has the specified role
+ */
+export const hasRole = (user, roleName) => {
+  if (!user || !user.roles) return false;
+  return Array.isArray(user.roles) && user.roles.some(role => role.name === roleName);
+};
+
+/**
  * Check if user can perform action on a task based on ownership and permissions
  * @param {Object} user - The authenticated user
  * @param {Object} task - The task object
@@ -98,8 +109,8 @@ export const canPerformTaskAction = (user, task, action) => {
       return hasPermission(user, 'task-delete-own') &&
         isCreator(user, task);
     case 'approve':
-      return hasPermission(user, 'task-approve') &&
-        (isCreator(user, task) || hasPermission(user, 'task-approve-all'));
+      // Allow approval if the user has task-approve permission (and is creator) OR has task-approve-all permission
+      return (hasPermission(user, 'task-approve') && isCreator(user, task)) || hasPermission(user, 'task-approve-all');
     case 'complete':
       return hasPermission(user, 'task-complete') &&
         isAssigned(user, task);

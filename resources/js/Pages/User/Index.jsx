@@ -182,91 +182,99 @@ export default function Index({ auth, users, departments, filters, success }) {
                 </form>
               </div>
 
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-700">
-                  <tr>
-                    <TableHeading
-                      name="name"
-                      sortable={true}
-                      sort_field={sortField}
-                      sort_direction={sortDirection}
-                      sortChanged={sortChanged}
-                    >
-                      Name
-                    </TableHeading>
-                    <TableHeading
-                      name="email"
-                      sortable={true}
-                      sort_field={sortField}
-                      sort_direction={sortDirection}
-                      sortChanged={sortChanged}
-                    >
-                      Email
-                    </TableHeading>
-                    <TableHeading
-                      name="department_id"
-                      sortable={true}
-                      sort_field={sortField}
-                      sort_direction={sortDirection}
-                      sortChanged={sortChanged}
-                    >
-                      Department
-                    </TableHeading>
-                    <TableHeading
-                      name="status"
-                      sortable={true}
-                      sort_field={sortField}
-                      sort_direction={sortDirection}
-                      sortChanged={sortChanged}
-                    >
-                      Status
-                    </TableHeading>
-                    <TableHeading
-                      name="role"
-                      sortable={true}
-                      sort_field={sortField}
-                      sort_direction={sortDirection}
-                      sortChanged={sortChanged}
-                    >
-                      Role
-                    </TableHeading>
-                    <TableHeading sortable={false}>Actions</TableHeading>
-                  </tr>
-                </thead>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 table-fixed">
+                  <thead className="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                      <TableHeading
+                        name="name"
+                        sortable={true}
+                        sort_field={sortField}
+                        sort_direction={sortDirection}
+                        sortChanged={sortChanged}
+                        className="w-1/5"
+                      >
+                        Name
+                      </TableHeading>
+                      <TableHeading
+                        name="email"
+                        sortable={true}
+                        sort_field={sortField}
+                        sort_direction={sortDirection}
+                        sortChanged={sortChanged}
+                        className="w-1/5"
+                      >
+                        Email
+                      </TableHeading>
+                      <TableHeading
+                        name="department_id"
+                        sortable={true}
+                        sort_field={sortField}
+                        sort_direction={sortDirection}
+                        sortChanged={sortChanged}
+                        className="w-1/6"
+                      >
+                        Department
+                      </TableHeading>
+                      <TableHeading
+                        name="status"
+                        sortable={true}
+                        sort_field={sortField}
+                        sort_direction={sortDirection}
+                        sortChanged={sortChanged}
+                        className="w-1/8"
+                      >
+                        Status
+                      </TableHeading>
+                      <TableHeading
+                        name="role"
+                        sortable={true}
+                        sort_field={sortField}
+                        sort_direction={sortDirection}
+                        sortChanged={sortChanged}
+                        className="w-1/8"
+                      >
+                        Role
+                      </TableHeading>
+                      <TableHeading sortable={false} className="w-1/6">Actions</TableHeading>
+                    </tr>
+                  </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                   {users.data.map((user) => (
                     <tr key={user.id}>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-4">
                         <div className="flex items-center">
                           {user.image && (
                             <img
-                              className="h-10 w-10 rounded-full mr-3"
+                              className="h-10 w-10 rounded-full mr-3 flex-shrink-0"
                               src={`/storage/${user.image}`}
                               alt={user.name}
                             />
                           )}
-                          <div>
-                            <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                          <div className="min-w-0">
+                            <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                               {user.name}
                             </div>
-                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                            <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
                               {user.designation}
                             </div>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900 dark:text-gray-100">
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-gray-900 dark:text-gray-100 truncate">
                           {user.email}
                         </div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                        <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
                           {user.employee_id}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {user.department ? user.department.name : "-"}
+                      <td className="px-6 py-4">
+                        <div className="truncate">
+                          {user.department ? user.department.name : "-"}
+                        </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-4">
                         <span
                           className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                             user.status === "active"
@@ -277,35 +285,40 @@ export default function Index({ auth, users, departments, filters, success }) {
                           {USER_STATUS_TEXT_MAP[user.status]}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {user.roles && user.roles.length > 0
-                          ? user.roles[0].name
-                          : "-"}
+                      <td className="px-6 py-4">
+                        <div className="truncate">
+                          {user.roles && user.roles.length > 0
+                            ? user.roles[0].name
+                            : "-"}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <Link
-                          href={route("users.show", user.id)}
-                          className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-3"
-                        >
-                          Show
-                        </Link>
-                        <Link
-                          href={route("users.edit", user.id)}
-                          className="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300 mr-3"
-                        >
-                          Edit
-                        </Link>
-                        <button
-                          onClick={() => deleteUser(user)}
-                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                        >
-                          Delete
-                        </button>
+                        <div className="flex space-x-2">
+                          <Link
+                            href={route("users.show", user.id)}
+                            className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-3"
+                          >
+                            Show
+                          </Link>
+                          <Link
+                            href={route("users.edit", user.id)}
+                            className="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300 mr-3"
+                          >
+                            Edit
+                          </Link>
+                          <button
+                            onClick={() => deleteUser(user)}
+                            className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+              </div>
 
               <div className="mt-4 flex items-center justify-between">
                 <div className="text-sm text-gray-600 dark:text-gray-400">

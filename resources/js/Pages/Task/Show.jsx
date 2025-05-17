@@ -11,20 +11,10 @@ import FileUpload from "@/Components/FileUpload";
 import TaskFiles from "@/Components/TaskFiles";
 import { useState, useEffect } from "react";
 import Alert from "@/Components/Alert";
-import { hasPermission, canPerformTaskAction, isCreator, isAssigned } from "@/utils/permissions";
+import { hasPermission, hasRole, canPerformTaskAction, isCreator, isAssigned } from "@/utils/permissions";
 import { formatDateTime } from "@/utils/dateFormat";
 
 export default function Show({ auth, task, comments, files, success }) {
-
-  console.log("Task Details:", task);
-  console.log("Task Status:", task.status);
-  console.log("Task Status Type:", typeof task.status);
-  console.log("Completed At:", task.completed_at);
-  console.log("Approved At:", task.approved_at);
-  console.log("Creator Rating:", task.creator_rating);
-  console.log("Assignee Rating:", task.assignee_rating);
-  console.log("Assigned User:", task.assigned_user_id);
-  console.log("CreatedBy :", task.createdBy.id);
 
   const [replyingTo, setReplyingTo] = useState(null);
   const [updating, setUpdating] = useState(false);
@@ -34,6 +24,8 @@ export default function Show({ auth, task, comments, files, success }) {
   const [showApprovalPopup, setShowApprovalPopup] = useState(false); // New state for approval popup
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [showError, setShowError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   // Check if current user is the creator of this task
   const userIsCreator = isCreator(auth.user, task);
@@ -48,23 +40,21 @@ export default function Show({ auth, task, comments, files, success }) {
   const canApprove = canPerformTaskAction(auth.user, task, 'approve');
   const canComplete = canPerformTaskAction(auth.user, task, 'complete');
 
-  console.log("Is Creator:", userIsCreator);
-  console.log("Is Completed Not Approved:", isCompletedNotApproved);
-  console.log("Status Check:", task.status === "completed" || task.status === "waiting_for_approval");
-  console.log("Approval Check:", !task.approved_at);
 
   const handleStatusChange = async (e) => {
     const newStatus = e.target.value;
 
     // Check if user has permission to change status
     if (!canEdit && !canComplete) {
-      alert("You do not have permission to change the task status.");
+      setErrorMessage("You do not have permission to change the task status.");
+      setShowError(true);
       return;
     }
 
     // Prevent changing status if task is completed, unless the user can approve tasks
     if (task.status === "completed" && !canApprove) {
-      alert("You cannot change the status of a completed task.");
+      setErrorMessage("You cannot change the status of a completed task.");
+      setShowError(true);
       return;
     }
 
@@ -74,7 +64,8 @@ export default function Show({ auth, task, comments, files, success }) {
       // If changing to completed, verify permission and show time spent input
       if (newStatus === "completed" && task.status !== "completed") {
         if (!canComplete) {
-          alert("You do not have permission to mark this task as completed.");
+          setErrorMessage("You do not have permission to mark this task as completed.");
+          setShowError(true);
           setUpdating(false);
           return;
         }
@@ -89,14 +80,32 @@ export default function Show({ auth, task, comments, files, success }) {
         onSuccess: (page) => {
           setSuccessMessage(page.props.success);
           setShowSuccess(true);
+          setShowError(false);
           setUpdating(false);
         },
-        onError: () => {
+        onError: (errors) => {
+          // Handle both standard Inertia errors and plain JSON responses
+          let errorMsg = "Failed to update task status. Please try again.";
+
+          if (errors.message) {
+            errorMsg = errors.message;
+          } else if (errors.response && errors.response.data) {
+            // Handle plain JSON error responses
+            const responseData = errors.response.data;
+            errorMsg = responseData.error || responseData.message || errorMsg;
+          }
+
+          setErrorMessage(errorMsg);
+          setShowError(true);
+          setShowSuccess(false);
           setUpdating(false);
         },
       });
     } catch (error) {
-      console.error("Failed to update task status:", error);
+
+      setErrorMessage("An unexpected error occurred while updating task status.");
+      setShowError(true);
+      setShowSuccess(false);
       setUpdating(false);
     }
   };
@@ -104,7 +113,8 @@ export default function Show({ auth, task, comments, files, success }) {
   const handleTimeSpentSubmit = async () => {
     // Verify permission to complete task
     if (!canComplete) {
-      alert("You do not have permission to complete this task.");
+      setErrorMessage("You do not have permission to complete this task.");
+      setShowError(true);
       return;
     }
 
@@ -130,42 +140,35 @@ export default function Show({ auth, task, comments, files, success }) {
         onSuccess: (page) => {
           setSuccessMessage(page.props.success);
           setShowSuccess(true);
+          setShowError(false);
           setShowTimeSpentInput(false);
           setTimeSpent("");
           setTaskRating(5);
           setUpdating(false);
         },
-        onError: () => {
-          setUpdating(false);
-        },
-      });
-    } catch (error) {
-      console.error("Failed to update task:", error);
-      setUpdating(false);
-    }
-  };
+        onError: (errors) => {
+          // Handle both standard Inertia errors and plain JSON responses
+          let errorMsg = "Failed to complete task. Please try again.";
 
-  const handleScore = async (type, score) => {
-    setUpdating(true);
-    try {
-      router.visit(route("tasks.update-details", task.id), {
-        method: "put",
-        data: {
-          scoreType: type,
-          score: score,
-        },
-        preserveScroll: true,
-        onSuccess: (page) => {
-          setSuccessMessage(page.props.success);
-          setShowSuccess(true);
-          setUpdating(false);
-        },
-        onError: () => {
+          if (errors.message) {
+            errorMsg = errors.message;
+          } else if (errors.response && errors.response.data) {
+            // Handle plain JSON error responses
+            const responseData = errors.response.data;
+            errorMsg = responseData.error || responseData.message || errorMsg;
+          }
+
+          setErrorMessage(errorMsg);
+          setShowError(true);
+          setShowSuccess(false);
           setUpdating(false);
         },
       });
     } catch (error) {
-      console.error("Failed to update task score:", error);
+
+      setErrorMessage("An unexpected error occurred while completing the task.");
+      setShowError(true);
+      setShowSuccess(false);
       setUpdating(false);
     }
   };
@@ -185,16 +188,42 @@ export default function Show({ auth, task, comments, files, success }) {
         onSuccess: (page) => {
           setSuccessMessage(page.props.success || "Task approved successfully");
           setShowSuccess(true);
+          setShowError(false);
           setShowApprovalPopup(false);
           setTaskRating(5);
           setUpdating(false);
         },
-        onError: () => {
+        onError: (errors) => {
+          // Handle both standard Inertia errors and plain JSON responses
+          let errorMsg = "Failed to approve task. Please try again.";
+
+          if (errors.message) {
+            errorMsg = errors.message;
+          } else if (errors.response && errors.response.data) {
+            // Handle plain JSON error responses
+            const responseData = errors.response.data;
+            errorMsg = responseData.error || responseData.message || errorMsg;
+          }
+
+          setErrorMessage(errorMsg);
+          setShowError(true);
+          setShowSuccess(false);
           setUpdating(false);
         },
       });
     } catch (error) {
       console.error("Failed to approve task:", error);
+
+      // Handle non-Inertia JSON error responses that might be caught here
+      let errorMsg = "An unexpected error occurred while approving the task.";
+      if (error.response && error.response.data) {
+        const responseData = error.response.data;
+        errorMsg = responseData.error || responseData.message || errorMsg;
+      }
+
+      setErrorMessage(errorMsg);
+      setShowError(true);
+      setShowSuccess(false);
       setUpdating(false);
     }
   };
@@ -241,7 +270,27 @@ export default function Show({ auth, task, comments, files, success }) {
               <button
                 onClick={() => {
                   if(confirm('Are you sure you want to delete this task?')) {
-                    router.delete(route("tasks.destroy", task.id));
+                    router.delete(route("tasks.destroy", task.id), {
+                      onSuccess: () => {
+                        // No need to set success message here as the user will be redirected
+                      },
+                      onError: (errors) => {
+                        // Handle both standard Inertia errors and plain JSON responses
+                        let errorMsg = "Failed to delete task. Please try again.";
+
+                        if (errors.message) {
+                          errorMsg = errors.message;
+                        } else if (errors.response && errors.response.data) {
+                          // Handle plain JSON error responses
+                          const responseData = errors.response.data;
+                          errorMsg = responseData.error || responseData.message || errorMsg;
+                        }
+
+                        setErrorMessage(errorMsg);
+                        setShowError(true);
+                        setShowSuccess(false);
+                      }
+                    });
                   }
                 }}
                 className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
@@ -263,6 +312,13 @@ export default function Show({ auth, task, comments, files, success }) {
 
       <div className="py-2">
         <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
+          {showError && (
+            <Alert
+              message={errorMessage}
+              type="error"
+              onClose={() => setShowError(false)}
+            />
+          )}
           {showSuccess && (
             <Alert
               message={successMessage}
@@ -295,7 +351,9 @@ export default function Show({ auth, task, comments, files, success }) {
                   </select>
 
                   {/* Add Approve button for creators when task is completed */}
+
                   {canApprove && isCompletedNotApproved ? (
+                    userIsCreator || hasRole(auth.user, "admin") ? (
                     <button
                       onClick={() => setShowApprovalPopup(true)}
                       disabled={updating}
@@ -303,6 +361,7 @@ export default function Show({ auth, task, comments, files, success }) {
                     >
                       Approve
                     </button>
+                    ): ""
                   ) : (
                     canEdit && (
                       <span className="text-xs text-gray-500 italic">
