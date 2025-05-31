@@ -1,5 +1,5 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { Head, Link, router } from "@inertiajs/react";
+import { Head, Link, router, useForm } from "@inertiajs/react";
 import {
   TASK_STATUS_CLASS_MAP,
   TASK_STATUS_TEXT_MAP,
@@ -9,12 +9,17 @@ import {
 import CommentForm from "@/Components/CommentForm";
 import FileUpload from "@/Components/FileUpload";
 import TaskFiles from "@/Components/TaskFiles";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Alert from "@/Components/Alert";
 import { hasPermission, hasRole, canPerformTaskAction, isCreator, isAssigned } from "@/utils/permissions";
 import { formatDateTime } from "@/utils/dateFormat";
+import { FaCloudUploadAlt, FaTimes, FaSpinner } from "react-icons/fa";
 
 export default function Show({ auth, task, comments, files, success }) {
+
+  const { data, setData, post, processing, reset } = useForm({
+    files: []
+  });
 
   const [replyingTo, setReplyingTo] = useState(null);
   const [updating, setUpdating] = useState(false);
@@ -26,6 +31,9 @@ export default function Show({ auth, task, comments, files, success }) {
   const [successMessage, setSuccessMessage] = useState("");
   const [showError, setShowError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef(null);
 
   // Check if current user is the creator of this task
   const userIsCreator = isCreator(auth.user, task);
@@ -247,6 +255,88 @@ export default function Show({ auth, task, comments, files, success }) {
       );
     }
     return options;
+  };
+
+  const validateFile = (file) => {
+    const maxSize = 10 * 1024 * 1024; // 10MB limit
+
+    // Check file size
+    if (file.size > maxSize) {
+      return `File ${file.name} is too large (max 10MB)`;
+    }
+
+    return null; // No error
+  };
+
+  const handleFileChange = (e) => {
+    const newFiles = Array.from(e.target.files);
+
+    // Validate each file
+    let valid = true;
+    let errorMessage = '';
+
+    for (let i = 0; i < newFiles.length; i++) {
+      const error = validateFile(newFiles[i]);
+      if (error) {
+        valid = false;
+        errorMessage = error;
+        break;
+      }
+    }
+
+    if (valid) {
+      // Append new files to existing files instead of replacing them
+      const updatedFiles = [...selectedFiles, ...newFiles];
+      setSelectedFiles(updatedFiles);
+      setData('files', updatedFiles);
+    } else {
+      // Show error message
+      alert(errorMessage);
+      // Clear the file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const removeFile = (index) => {
+    const newFiles = [...selectedFiles];
+    newFiles.splice(index, 1);
+    setSelectedFiles(newFiles);
+    setData('files', newFiles);
+  };
+
+  const uploadFiles = () => {
+    if (selectedFiles.length === 0) {
+      alert('Please select files to upload');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('task_id', task.id);
+
+    // Add files to FormData - using the correct format for Laravel
+    selectedFiles.forEach((file, index) => {
+      formData.append(`files[${index}]`, file);
+    });
+
+    post(route("task-files.store", task.id), formData, {
+      forceFormData: true,
+      preserveScroll: true,
+      onSuccess: () => {
+        // Reset the file selection after successful upload
+        setSelectedFiles([]);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      },
+      onError: (errors) => {
+        console.error('File upload errors:', errors);
+        if (errors.files || errors['files.0']) {
+          alert('File upload error: ' + (errors.files || errors['files.0']));
+        }
+      }
+    });
   };
 
   return (
@@ -641,6 +731,126 @@ export default function Show({ auth, task, comments, files, success }) {
                   <FileUpload taskId={task.id} />
                   <div className="mt-6">
                     <TaskFiles files={files} />
+                  </div>
+
+                  {/* Drag and drop file upload section */}
+                  <div className="mt-6">
+                    <h4 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">
+                      Upload Files (Drag and Drop)
+                    </h4>
+                    <div
+                      className={`border-2 rounded-md p-4 transition-all duration-200 flex flex-col items-center justify-center
+                      ${isDragging ? "border-indigo-500 bg-indigo-50" : "border-gray-300 bg-white"}
+                      `}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        setIsDragging(true);
+                      }}
+                      onDragLeave={() => setIsDragging(false)}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        setIsDragging(false);
+                        const droppedFiles = Array.from(e.dataTransfer.files);
+                        // Validate and append dropped files
+                        let valid = true;
+                        let errorMessage = '';
+
+                        for (let i = 0; i < droppedFiles.length; i++) {
+                          const error = validateFile(droppedFiles[i]);
+                          if (error) {
+                            valid = false;
+                            errorMessage = error;
+                            break;
+                          }
+                        }
+
+                        if (valid) {
+                          const updatedFiles = [...selectedFiles, ...droppedFiles];
+                          setSelectedFiles(updatedFiles);
+                          setData('files', updatedFiles);
+                        } else {
+                          alert(errorMessage);
+                        }
+                      }}
+                      onClick={() => {
+                        if (fileInputRef.current) {
+                          fileInputRef.current.click();
+                        }
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      aria-label="Drag and drop files here or click to upload"
+                    >
+                      <input
+                        type="file"
+                        multiple
+                        onChange={handleFileChange}
+                        className="hidden"
+                        ref={fileInputRef}
+                      />
+                      <div className="flex flex-col items-center">
+                        <FaCloudUploadAlt className="w-10 h-10 text-gray-400 mb-2" />
+                        <span className="text-sm text-gray-500 text-center">
+                          Drag and drop your files here, or{" "}
+                          <span className="text-indigo-600 hover:underline cursor-pointer" onClick={() => fileInputRef.current.click()}>
+                            click to browse
+                          </span>
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Selected files list */}
+                    <div className="mt-4 w-full">
+                      {selectedFiles.length > 0 && (
+                        <div>
+                          <h5 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
+                            Selected Files
+                          </h5>
+                          <ul className="space-y-2">
+                            {selectedFiles.map((file, index) => (
+                              <li key={index} className="flex items-center justify-between bg-gray-50 dark:bg-gray-700 rounded-md p-3">
+                                <div className="flex items-center">
+                                  <svg
+                                    className="w-5 h-5 text-gray-400 mr-3"
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                  >
+                                    <path d="M10 2a1 1 0 011 1v6h6a1 1 0 110 2h-6v6a1 1 0 11-2 0v-6H3a1 1 0 110-2h6V3a1 1 0 011-1z" />
+                                  </svg>
+                                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                                    {file.name}
+                                  </span>
+                                </div>
+                                <button
+                                  onClick={() => removeFile(index)}
+                                  className="text-gray-400 hover:text-gray-500 transition-colors duration-200"
+                                  aria-label="Remove file"
+                                >
+                                  <FaTimes className="w-5 h-5" />
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex justify-end space-x-3 mt-4">
+                      <button
+                        onClick={uploadFiles}
+                        className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+                        disabled={updating || selectedFiles.length === 0}
+                      >
+                        {updating ? (
+                          <span className="flex items-center">
+                            <FaSpinner className="animate-spin h-5 w-5 mr-2" />
+                            Uploading...
+                          </span>
+                        ) : (
+                          "Upload Files"
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

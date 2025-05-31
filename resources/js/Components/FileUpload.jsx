@@ -1,10 +1,10 @@
+import React, { useState, useRef } from 'react';
 import { useForm } from "@inertiajs/react";
-import { useState, useRef } from "react";
 import InputError from "@/Components/InputError";
 import PrimaryButton from "@/Components/PrimaryButton";
 import { FaCloudUploadAlt, FaTimes } from "react-icons/fa";
 
-export default function FileUpload({ taskId }) {
+const FileUpload = ({ taskId }) => {
     const { data, setData, post, processing, reset, errors } = useForm({
         files: [],
     });
@@ -12,42 +12,82 @@ export default function FileUpload({ taskId }) {
     const fileInputRef = useRef(null);
     const [selectedFiles, setSelectedFiles] = useState([]);
     const [isDragging, setIsDragging] = useState(false);
+    const [fileError, setFileError] = useState('');
 
-    const handleFileChange = (e) => {
-        const files = Array.from(e.target.files);
-        setSelectedFiles(files);
-        setData('files', files);
+    // Prevent default behavior
+    const preventDefaults = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
     };
 
+    // Handle drag events
     const handleDrag = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-    };
-
-    const handleDragIn = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+        preventDefaults(e);
+        if (e.type === "dragenter" || e.type === "dragover") {
             setIsDragging(true);
+        } else if (e.type === "dragleave") {
+            setIsDragging(false);
         }
     };
 
-    const handleDragOut = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsDragging(false);
+    // Validate file type and size
+    const validateFile = (file) => {
+        // Define allowed file types and max size (10MB)
+        const allowedTypes = [
+            'image/jpeg', 'image/png', 'image/gif',
+            'application/pdf',
+            'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        ];
+        const maxSize = 10 * 1024 * 1024; // 10MB
+
+        if (!allowedTypes.includes(file.type)) {
+            return "File type not supported. Please upload images, PDFs, or office documents.";
+        }
+
+        if (file.size > maxSize) {
+            return "File is too large. Maximum size is 10MB.";
+        }
+
+        return null;
     };
 
+    // Handle dropped files
     const handleDrop = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
+        preventDefaults(e);
         setIsDragging(false);
 
         if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-            const files = Array.from(e.dataTransfer.files);
-            setSelectedFiles(files);
-            setData('files', files);
-            e.dataTransfer.clearData();
+            handleFiles(Array.from(e.dataTransfer.files));
+        }
+    };
+
+    // Handle file input change
+    const handleChange = (e) => {
+        if (e.target.files && e.target.files.length > 0) {
+            handleFiles(Array.from(e.target.files));
+        }
+    };
+
+    // Process the files
+    const handleFiles = (newFiles) => {
+        let validFiles = [];
+        let hasError = false;
+
+        for (let i = 0; i < newFiles.length; i++) {
+            const error = validateFile(newFiles[i]);
+            if (error) {
+                setFileError(error);
+                hasError = true;
+                break;
+            }
+            validFiles.push(newFiles[i]);
+        }
+
+        if (!hasError) {
+            setFileError('');
+            setSelectedFiles(validFiles);
+            setData('files', validFiles);
         }
     };
 
@@ -72,11 +112,19 @@ export default function FileUpload({ taskId }) {
         });
     };
 
+    // Remove a file
     const removeFile = (index) => {
-        const newFiles = [...selectedFiles];
-        newFiles.splice(index, 1);
-        setSelectedFiles(newFiles);
-        setData('files', newFiles);
+        setSelectedFiles(prevFiles => {
+            const updatedFiles = [...prevFiles];
+            updatedFiles.splice(index, 1);
+            setData('files', updatedFiles);
+            return updatedFiles;
+        });
+    };
+
+    // Open file dialog
+    const openFileDialog = () => {
+        fileInputRef.current.click();
     };
 
     return (
@@ -90,10 +138,11 @@ export default function FileUpload({ taskId }) {
                                 ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
                                 : 'border-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-600'
                             }`}
-                        onDragEnter={handleDragIn}
-                        onDragLeave={handleDragOut}
+                        onDragEnter={handleDrag}
+                        onDragLeave={handleDrag}
                         onDragOver={handleDrag}
                         onDrop={handleDrop}
+                        onClick={openFileDialog}
                     >
                         <div className="flex flex-col items-center justify-center pt-5 pb-6">
                             <FaCloudUploadAlt className={`w-8 h-8 mb-4 transition-colors duration-200 ${isDragging ? 'text-indigo-500' : 'text-gray-500 dark:text-gray-400'}`} />
@@ -109,13 +158,17 @@ export default function FileUpload({ taskId }) {
                             type="file"
                             className="hidden"
                             multiple
-                            onChange={handleFileChange}
+                            onChange={handleChange}
                             ref={fileInputRef}
                         />
                     </label>
                 </div>
                 <InputError message={errors.files} className="mt-2" />
             </div>
+
+            {fileError && (
+                <p className="mt-1 text-sm text-red-600">{fileError}</p>
+            )}
 
             {selectedFiles.length > 0 && (
                 <div className="mt-4">
@@ -148,4 +201,6 @@ export default function FileUpload({ taskId }) {
             </div>
         </form>
     );
-}
+};
+
+export default FileUpload;

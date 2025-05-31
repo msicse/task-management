@@ -23,7 +23,7 @@ class StoreTaskRequest extends FormRequest
     public function rules(): array
     {
         return [
-            "image" => ["nullable", "image", "max:2048"], // 2MB max
+            "image" => ["nullable", "image", "max:20048"], // 2MB max
             "name" => ["required", "string", "max:255"],
             "description" => ["required", "string"], // Allow HTML content
             "due_date" => ["required", "date"],
