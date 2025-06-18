@@ -29,7 +29,10 @@
         "quill": "^2.0.3",
         "quill-better-table": "^1.2.10",
         "quill-image-resize-module-react": "^3.0.0",
+        "quill-magic-url": "^4.2.0",
         "quill-paste-smart": "^2.0.0",
+        "quill-table": "^1.0.0",
+        "quill-table-ui": "^1.0.7",
         "react-icons": "^5.5.0",
         "react-quill": "^2.0.0",
         "react-select": "^5.10.1"

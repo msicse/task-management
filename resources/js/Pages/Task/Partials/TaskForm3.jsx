@@ -10,6 +10,11 @@ import { useMemo } from "react";
 import ImageResize from "quill-image-resize-module-react";
 import { formatDateForInput } from "@/utils";
 import { FaSpinner } from "react-icons/fa";
+import MagicUrl from "quill-magic-url";
+
+
+// Register the magic-url module
+ReactQuill.Quill.register("modules/magicUrl", MagicUrl);
 
 // Register the image resize module
 ReactQuill.Quill.register("modules/imageResize", ImageResize);
@@ -25,7 +30,6 @@ export default function TaskForm3({
   hideSubmitButton = false,
   compactHeight = false,
 }) {
-
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -107,6 +111,10 @@ export default function TaskForm3({
   // Quill editor modules and formats
   const modules = useMemo(
     () => ({
+      magicUrl: {
+        urlRegularExpression: /(https?:\/\/[^\s]+)/g, // Auto-detect URLs
+        globalRegularExpression: /(https?:\/\/[^\s]+)/g, // Apply globally
+      },
       toolbar: {
         container: [
           [{ header: [1, 2, 3, 4, 5, 6, false] }],
@@ -164,7 +172,10 @@ export default function TaskForm3({
   ];
 
   return (
-    <form onSubmit={handleSubmit} className={`grid grid-cols-2 gap-${compactHeight ? "2" : "3"}`}>
+    <form
+      onSubmit={handleSubmit}
+      className={`grid grid-cols-2 gap-${compactHeight ? "2" : "3"}`}
+    >
       <style>{`
         .editor-container {
           display: flex;
@@ -331,7 +342,9 @@ export default function TaskForm3({
             formats={formats}
             className="bg-white text-black h-full"
             style={{
-              height: compactHeight ? "calc(250px - 42px)" : "calc(450px - 42px)",
+              height: compactHeight
+                ? "calc(250px - 42px)"
+                : "calc(450px - 42px)",
               display: "flex",
               flexDirection: "column",
             }}
@@ -343,7 +356,9 @@ export default function TaskForm3({
         <div className="flex items-center justify-end mt-3 col-span-2 space-x-2">
           <Link
             href={route("tasks.index")}
-            className={`px-3 py-${compactHeight ? "1" : "1.5"} text-sm bg-red-600 text-white rounded hover:bg-red-700 mr-2 disabled:opacity-50`}
+            className={`px-3 py-${
+              compactHeight ? "1" : "1.5"
+            } text-sm bg-red-600 text-white rounded hover:bg-red-700 mr-2 disabled:opacity-50`}
             disabled={isSubmitting}
           >
             Cancel
@@ -351,7 +366,9 @@ export default function TaskForm3({
 
           <button
             type="submit"
-            className={`px-3 py-${compactHeight ? "1" : "1.5"} text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50 inline-flex items-center`}
+            className={`px-3 py-${
+              compactHeight ? "1" : "1.5"
+            } text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50 inline-flex items-center`}
             disabled={isSubmitting}
           >
             {isSubmitting ? (

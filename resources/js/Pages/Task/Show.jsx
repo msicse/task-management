@@ -11,14 +11,19 @@ import FileUpload from "@/Components/FileUpload";
 import TaskFiles from "@/Components/TaskFiles";
 import { useState, useEffect, useRef } from "react";
 import Alert from "@/Components/Alert";
-import { hasPermission, hasRole, canPerformTaskAction, isCreator, isAssigned } from "@/utils/permissions";
+import {
+  hasPermission,
+  hasRole,
+  canPerformTaskAction,
+  isCreator,
+  isAssigned,
+} from "@/utils/permissions";
 import { formatDateTime } from "@/utils/dateFormat";
 import { FaCloudUploadAlt, FaTimes, FaSpinner } from "react-icons/fa";
 
 export default function Show({ auth, task, comments, files, success }) {
-
   const { data, setData, post, processing, reset } = useForm({
-    files: []
+    files: [],
   });
 
   const [replyingTo, setReplyingTo] = useState(null);
@@ -40,14 +45,15 @@ export default function Show({ auth, task, comments, files, success }) {
   // Check if current user is the assignee of this task
   const userIsAssigned = isAssigned(auth.user, task);
   // Check if task is completed but not yet approved - works with both "completed" and "waiting_for_approval" statuses
-  const isCompletedNotApproved = (task.status === "completed" || task.status === "waiting_for_approval") && !task.approved_at;
+  const isCompletedNotApproved =
+    (task.status === "completed" || task.status === "waiting_for_approval") &&
+    !task.approved_at;
 
   // Permission checks for various task actions
-  const canEdit = canPerformTaskAction(auth.user, task, 'edit');
-  const canDelete = canPerformTaskAction(auth.user, task, 'delete');
-  const canApprove = canPerformTaskAction(auth.user, task, 'approve');
-  const canComplete = canPerformTaskAction(auth.user, task, 'complete');
-
+  const canEdit = canPerformTaskAction(auth.user, task, "edit");
+  const canDelete = canPerformTaskAction(auth.user, task, "delete");
+  const canApprove = canPerformTaskAction(auth.user, task, "approve");
+  const canComplete = canPerformTaskAction(auth.user, task, "complete");
 
   const handleStatusChange = async (e) => {
     const newStatus = e.target.value;
@@ -72,7 +78,9 @@ export default function Show({ auth, task, comments, files, success }) {
       // If changing to completed, verify permission and show time spent input
       if (newStatus === "completed" && task.status !== "completed") {
         if (!canComplete) {
-          setErrorMessage("You do not have permission to mark this task as completed.");
+          setErrorMessage(
+            "You do not have permission to mark this task as completed."
+          );
           setShowError(true);
           setUpdating(false);
           return;
@@ -110,8 +118,9 @@ export default function Show({ auth, task, comments, files, success }) {
         },
       });
     } catch (error) {
-
-      setErrorMessage("An unexpected error occurred while updating task status.");
+      setErrorMessage(
+        "An unexpected error occurred while updating task status."
+      );
       setShowError(true);
       setShowSuccess(false);
       setUpdating(false);
@@ -134,7 +143,7 @@ export default function Show({ auth, task, comments, files, success }) {
 
       // If user is the assignee, they rate the creator's task (creator_rating)
       // If user is the creator, they rate the assignee's work (assignee_rating)
-      const scoreType = userIsAssigned ? 'creator_rating' : 'assignee_rating';
+      const scoreType = userIsAssigned ? "creator_rating" : "assignee_rating";
 
       router.visit(route("tasks.update-details", task.id), {
         method: "put",
@@ -142,7 +151,7 @@ export default function Show({ auth, task, comments, files, success }) {
           status: "completed",
           time_spent: parseFloat(timeSpent),
           scoreType: scoreType,
-          score: taskRating
+          score: taskRating,
         },
         preserveScroll: true,
         onSuccess: (page) => {
@@ -173,8 +182,9 @@ export default function Show({ auth, task, comments, files, success }) {
         },
       });
     } catch (error) {
-
-      setErrorMessage("An unexpected error occurred while completing the task.");
+      setErrorMessage(
+        "An unexpected error occurred while completing the task."
+      );
       setShowError(true);
       setShowSuccess(false);
       setUpdating(false);
@@ -189,8 +199,8 @@ export default function Show({ auth, task, comments, files, success }) {
         method: "put",
         data: {
           approved_at: new Date().toISOString(),
-          scoreType: 'assignee_rating',
-          score: taskRating
+          scoreType: "assignee_rating",
+          score: taskRating,
         },
         preserveScroll: true,
         onSuccess: (page) => {
@@ -250,7 +260,7 @@ export default function Show({ auth, task, comments, files, success }) {
     for (let i = 1; i <= 5; i++) {
       options.push(
         <option key={i} value={i}>
-          {i} {i === 1 ? 'Star' : 'Stars'}
+          {i} {i === 1 ? "Star" : "Stars"}
         </option>
       );
     }
@@ -273,7 +283,7 @@ export default function Show({ auth, task, comments, files, success }) {
 
     // Validate each file
     let valid = true;
-    let errorMessage = '';
+    let errorMessage = "";
 
     for (let i = 0; i < newFiles.length; i++) {
       const error = validateFile(newFiles[i]);
@@ -288,13 +298,13 @@ export default function Show({ auth, task, comments, files, success }) {
       // Append new files to existing files instead of replacing them
       const updatedFiles = [...selectedFiles, ...newFiles];
       setSelectedFiles(updatedFiles);
-      setData('files', updatedFiles);
+      setData("files", updatedFiles);
     } else {
       // Show error message
       alert(errorMessage);
       // Clear the file input
       if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+        fileInputRef.current.value = "";
       }
     }
   };
@@ -303,17 +313,17 @@ export default function Show({ auth, task, comments, files, success }) {
     const newFiles = [...selectedFiles];
     newFiles.splice(index, 1);
     setSelectedFiles(newFiles);
-    setData('files', newFiles);
+    setData("files", newFiles);
   };
 
   const uploadFiles = () => {
     if (selectedFiles.length === 0) {
-      alert('Please select files to upload');
+      alert("Please select files to upload");
       return;
     }
 
     const formData = new FormData();
-    formData.append('task_id', task.id);
+    formData.append("task_id", task.id);
 
     // Add files to FormData - using the correct format for Laravel
     selectedFiles.forEach((file, index) => {
@@ -327,15 +337,15 @@ export default function Show({ auth, task, comments, files, success }) {
         // Reset the file selection after successful upload
         setSelectedFiles([]);
         if (fileInputRef.current) {
-          fileInputRef.current.value = '';
+          fileInputRef.current.value = "";
         }
       },
       onError: (errors) => {
-        console.error('File upload errors:', errors);
-        if (errors.files || errors['files.0']) {
-          alert('File upload error: ' + (errors.files || errors['files.0']));
+        console.error("File upload errors:", errors);
+        if (errors.files || errors["files.0"]) {
+          alert("File upload error: " + (errors.files || errors["files.0"]));
         }
-      }
+      },
     });
   };
 
@@ -359,27 +369,31 @@ export default function Show({ auth, task, comments, files, success }) {
             {canDelete && (
               <button
                 onClick={() => {
-                  if(confirm('Are you sure you want to delete this task?')) {
+                  if (confirm("Are you sure you want to delete this task?")) {
                     router.delete(route("tasks.destroy", task.id), {
                       onSuccess: () => {
                         // No need to set success message here as the user will be redirected
                       },
                       onError: (errors) => {
                         // Handle both standard Inertia errors and plain JSON responses
-                        let errorMsg = "Failed to delete task. Please try again.";
+                        let errorMsg =
+                          "Failed to delete task. Please try again.";
 
                         if (errors.message) {
                           errorMsg = errors.message;
                         } else if (errors.response && errors.response.data) {
                           // Handle plain JSON error responses
                           const responseData = errors.response.data;
-                          errorMsg = responseData.error || responseData.message || errorMsg;
+                          errorMsg =
+                            responseData.error ||
+                            responseData.message ||
+                            errorMsg;
                         }
 
                         setErrorMessage(errorMsg);
                         setShowError(true);
                         setShowSuccess(false);
-                      }
+                      },
                     });
                   }
                 }}
@@ -425,13 +439,19 @@ export default function Show({ auth, task, comments, files, success }) {
                     {task.name}
                   </h1>
                   <select
-                    value={task.status === "waiting_for_approval" ? "completed" : task.status}
+                    value={
+                      task.status === "waiting_for_approval"
+                        ? "completed"
+                        : task.status
+                    }
                     onChange={handleStatusChange}
                     disabled={
                       updating ||
                       (!canEdit && !canComplete) ||
                       // Only allow status change if it's not completed or user can approve
-                      (task.status === "completed" && !task.approved_at && !canApprove)
+                      (task.status === "completed" &&
+                        !task.approved_at &&
+                        !canApprove)
                     }
                     className="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 disabled:opacity-50"
                   >
@@ -444,22 +464,25 @@ export default function Show({ auth, task, comments, files, success }) {
 
                   {canApprove && isCompletedNotApproved ? (
                     userIsCreator || hasRole(auth.user, "admin") ? (
-                    <button
-                      onClick={() => setShowApprovalPopup(true)}
-                      disabled={updating}
-                      className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
-                    >
-                      Approve
-                    </button>
-                    ): ""
+                      <button
+                        onClick={() => setShowApprovalPopup(true)}
+                        disabled={updating}
+                        className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+                      >
+                        Approve
+                      </button>
+                    ) : (
+                      ""
+                    )
                   ) : (
                     canEdit && (
                       <span className="text-xs text-gray-500 italic">
-                        {task.status !== "completed" && task.status !== "waiting_for_approval"
+                        {task.status !== "completed" &&
+                        task.status !== "waiting_for_approval"
                           ? "(Task must be completed to approve)"
                           : task.approved_at
-                            ? "(Already approved)"
-                            : "(Approval button not showing)"}
+                          ? "(Already approved)"
+                          : "(Approval button not showing)"}
                       </span>
                     )
                   )}
@@ -493,7 +516,9 @@ export default function Show({ auth, task, comments, files, success }) {
                             </label>
                             <select
                               value={taskRating}
-                              onChange={(e) => setTaskRating(parseInt(e.target.value))}
+                              onChange={(e) =>
+                                setTaskRating(parseInt(e.target.value))
+                              }
                               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                             >
                               {renderRatingOptions()}
@@ -535,7 +560,8 @@ export default function Show({ auth, task, comments, files, success }) {
                         </h3>
                         <div className="space-y-4">
                           <p className="text-gray-700 dark:text-gray-300">
-                            You are approving the completed task. Please rate the assignee's work.
+                            You are approving the completed task. Please rate
+                            the assignee's work.
                           </p>
 
                           <div>
@@ -544,7 +570,9 @@ export default function Show({ auth, task, comments, files, success }) {
                             </label>
                             <select
                               value={taskRating}
-                              onChange={(e) => setTaskRating(parseInt(e.target.value))}
+                              onChange={(e) =>
+                                setTaskRating(parseInt(e.target.value))
+                              }
                               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                             >
                               {renderRatingOptions()}
@@ -635,7 +663,9 @@ export default function Show({ auth, task, comments, files, success }) {
                         Time Log
                       </p>
                       <p className="mt-1 text-gray-900 dark:text-gray-100">
-                        {task.time_log ? `${task.time_log} minutes` : "No time logged"}
+                        {task.time_log
+                          ? `${task.time_log} minutes`
+                          : "No time logged"}
                       </p>
                     </div>
                     <div>
@@ -663,24 +693,25 @@ export default function Show({ auth, task, comments, files, success }) {
                         {task.approved_at
                           ? `Approved on ${formatDateTime(task.approved_at)}`
                           : task.status === "completed"
-                            ? "Awaiting approval"
-                            : "Not applicable"}
+                          ? "Awaiting approval"
+                          : "Not applicable"}
                       </p>
                     </div>
                     {/* Rating display based on user role */}
                     <div>
                       <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                        {auth.user.id === task.assigned_user_id ? "Creator Rating" : "Assignee Rating"}
+                        {auth.user.id === task.assigned_user_id
+                          ? "Creator Rating"
+                          : "Assignee Rating"}
                       </p>
                       <p className="mt-1 text-gray-900 dark:text-gray-100">
                         {auth.user.id === task.assigned_user_id
-                          ? (task.assignee_rating
-                              ? `${task.assignee_rating} Stars`
-                              : "Not rated yet")
-                          : (task.creator_rating
-                              ? `${task.creator_rating} Stars`
-                              : "Not rated yet")
-                        }
+                          ? task.assignee_rating
+                            ? `${task.assignee_rating} Stars`
+                            : "Not rated yet"
+                          : task.creator_rating
+                          ? `${task.creator_rating} Stars`
+                          : "Not rated yet"}
                       </p>
                     </div>
                     {/* Visual star rating display */}
@@ -693,7 +724,10 @@ export default function Show({ auth, task, comments, files, success }) {
                           <svg
                             key={index}
                             className={`w-5 h-5 ${
-                              index < (auth.user.id === task.assigned_user_id ? task.assignee_rating || 0 : task.creator_rating || 0)
+                              index <
+                              (auth.user.id === task.assigned_user_id
+                                ? task.assignee_rating || 0
+                                : task.creator_rating || 0)
                                 ? "text-yellow-400"
                                 : "text-gray-300"
                             }`}
@@ -714,8 +748,9 @@ export default function Show({ auth, task, comments, files, success }) {
                   <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
                     Description
                   </h3>
+
                   <div
-                    className="text-gray-700 dark:text-gray-300"
+                    className="prose dark:prose-invert [&_a]:text-blue-600 [&_a]:underline"
                     dangerouslySetInnerHTML={{
                       __html: task.description || "No description provided.",
                     }}
@@ -740,7 +775,11 @@ export default function Show({ auth, task, comments, files, success }) {
                     </h4>
                     <div
                       className={`border-2 rounded-md p-4 transition-all duration-200 flex flex-col items-center justify-center
-                      ${isDragging ? "border-indigo-500 bg-indigo-50" : "border-gray-300 bg-white"}
+                      ${
+                        isDragging
+                          ? "border-indigo-500 bg-indigo-50"
+                          : "border-gray-300 bg-white"
+                      }
                       `}
                       onDragOver={(e) => {
                         e.preventDefault();
@@ -753,7 +792,7 @@ export default function Show({ auth, task, comments, files, success }) {
                         const droppedFiles = Array.from(e.dataTransfer.files);
                         // Validate and append dropped files
                         let valid = true;
-                        let errorMessage = '';
+                        let errorMessage = "";
 
                         for (let i = 0; i < droppedFiles.length; i++) {
                           const error = validateFile(droppedFiles[i]);
@@ -765,9 +804,12 @@ export default function Show({ auth, task, comments, files, success }) {
                         }
 
                         if (valid) {
-                          const updatedFiles = [...selectedFiles, ...droppedFiles];
+                          const updatedFiles = [
+                            ...selectedFiles,
+                            ...droppedFiles,
+                          ];
                           setSelectedFiles(updatedFiles);
-                          setData('files', updatedFiles);
+                          setData("files", updatedFiles);
                         } else {
                           alert(errorMessage);
                         }
@@ -792,7 +834,10 @@ export default function Show({ auth, task, comments, files, success }) {
                         <FaCloudUploadAlt className="w-10 h-10 text-gray-400 mb-2" />
                         <span className="text-sm text-gray-500 text-center">
                           Drag and drop your files here, or{" "}
-                          <span className="text-indigo-600 hover:underline cursor-pointer" onClick={() => fileInputRef.current.click()}>
+                          <span
+                            className="text-indigo-600 hover:underline cursor-pointer"
+                            onClick={() => fileInputRef.current.click()}
+                          >
                             click to browse
                           </span>
                         </span>
@@ -808,7 +853,10 @@ export default function Show({ auth, task, comments, files, success }) {
                           </h5>
                           <ul className="space-y-2">
                             {selectedFiles.map((file, index) => (
-                              <li key={index} className="flex items-center justify-between bg-gray-50 dark:bg-gray-700 rounded-md p-3">
+                              <li
+                                key={index}
+                                className="flex items-center justify-between bg-gray-50 dark:bg-gray-700 rounded-md p-3"
+                              >
                                 <div className="flex items-center">
                                   <svg
                                     className="w-5 h-5 text-gray-400 mr-3"
@@ -889,7 +937,8 @@ export default function Show({ auth, task, comments, files, success }) {
                                 {comment.user.name}
                               </h4>
                               <span className="text-xs text-gray-500 dark:text-gray-400">
-                                {comment.created_at} ({comment.created_at_human})
+                                {comment.created_at} ({comment.created_at_human}
+                                )
                               </span>
                             </div>
                             <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">
@@ -920,7 +969,8 @@ export default function Show({ auth, task, comments, files, success }) {
                                             {reply.user.name}
                                           </h4>
                                           <span className="text-xs text-gray-500 dark:text-gray-400">
-                                            {reply.created_at} ({reply.created_at_human})
+                                            {reply.created_at} (
+                                            {reply.created_at_human})
                                           </span>
                                         </div>
                                         <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">
