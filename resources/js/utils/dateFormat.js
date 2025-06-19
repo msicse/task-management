@@ -196,3 +196,33 @@ export const formatRelativeTime = (dateString) => {
     return dateString;
   }
 };
+
+
+export const formatDateD = (dateString) => {
+    if (!dateString) return null;
+
+    try {
+        // Check if dateString is in the Laravel backend format (dd-mm-yyyy)
+        const isBackendFormat = /^\d{2}-\d{2}-\d{4}/.test(dateString);
+
+        if (isBackendFormat) {
+            // Already in correct format, just return the date part
+            return dateString.split(' ')[0];
+        }
+
+        // For other formats, convert to DD-MM-YYYY
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) {
+            return dateString; // Return original if parsing failed
+        }
+
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+
+        return `${day}-${month}-${year}`;
+    } catch (error) {
+        console.error("Error formatting date:", error);
+        return dateString;
+    }
+};

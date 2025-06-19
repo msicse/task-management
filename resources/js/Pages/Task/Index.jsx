@@ -14,7 +14,7 @@ import {
   TASK_STATUS_CLASS_MAP,
   TASK_STATUS_TEXT_MAP,
 } from "@/constants";
-import { formatDateTime, formatDate, isPastDue } from "@/utils/dateFormat";
+import { formatDateTime, formatDate, isPastDue, formatDateD } from "@/utils/dateFormat";
 
 export default function Index({
   auth,
@@ -510,18 +510,18 @@ export default function Index({
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {formatDate(task.created_at)}
+                          {formatDateD(task.created_at)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {task.due_date && (
                             <span className={isPastDue(task.due_date) || task.completed_at ? "text-red-600 font-medium" : ""}>
                               {isPastDue(task.due_date) || task.completed_at ? "Passed: " : ""}
-                              {formatDate(task.due_date)}
+                              {formatDateD(task.due_date)}
                             </span>
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {task.completed_at ? formatDate(task.completed_at) : "Not yet"}
+                          {task.completed_at ? formatDateD(task.completed_at) : "Not yet"}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {task.time_log ? `${task.time_log} mins` : "N/A"}

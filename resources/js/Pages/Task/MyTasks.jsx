@@ -18,7 +18,7 @@ import {
   isCreator,
   isAssigned,
 } from "@/utils/permissions";
-import { formatDateTime, formatDate, isPastDue } from "@/utils/dateFormat";
+import { formatDateTime, formatDate, isPastDue, formatDateD } from "@/utils/dateFormat";
 
 export default function MyTasks({
   auth,
@@ -559,11 +559,11 @@ export default function MyTasks({
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {formatDate(task.created_at)}
+                          {formatDateD(task.created_at)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {task.completed_at
-                            ? formatDate(task.completed_at)
+                            ? formatDateD(task.completed_at)
                             : "Not yet"}
                         </td>
 
@@ -578,7 +578,7 @@ export default function MyTasks({
                               }
                             >
                               {isPastDue(task.due_date) || task.completed_at ? "passed: " : ""}
-                              {formatDate(task.due_date)}
+                              {formatDateD(task.due_date)}
                             </span>
                           )}
                         </td>

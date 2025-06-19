@@ -18,7 +18,7 @@ import {
   isCreator,
   isAssigned,
 } from "@/utils/permissions";
-import { formatDateTime } from "@/utils/dateFormat";
+import { formatDateTime, formatDate, formatDateD } from "@/utils/dateFormat";
 import { FaCloudUploadAlt, FaTimes, FaSpinner } from "react-icons/fa";
 
 export default function Show({ auth, task, comments, files, success }) {
@@ -634,7 +634,7 @@ export default function Show({ auth, task, comments, files, success }) {
                       </p>
                       <p className="mt-1 text-gray-900 dark:text-gray-100">
                         {task.due_date
-                          ? formatDateTime(task.due_date)
+                          ? formatDateD(task.due_date)
                           : "No due date set"}
                       </p>
                     </div>
@@ -654,7 +654,7 @@ export default function Show({ auth, task, comments, files, success }) {
                       </p>
                       <p className="mt-1 text-gray-900 dark:text-gray-100">
                         {task.created_at
-                          ? formatDateTime(task.created_at)
+                          ? formatDateD(task.created_at)
                           : "N/A"}
                       </p>
                     </div>
@@ -691,7 +691,7 @@ export default function Show({ auth, task, comments, files, success }) {
                       </p>
                       <p className="mt-1 text-gray-900 dark:text-gray-100">
                         {task.approved_at
-                          ? `Approved on ${formatDateTime(task.approved_at)}`
+                          ? `Approved on ${formatDateD(task.approved_at)}`
                           : task.status === "completed"
                           ? "Awaiting approval"
                           : "Not applicable"}
@@ -750,7 +750,7 @@ export default function Show({ auth, task, comments, files, success }) {
                   </h3>
 
                   <div
-                    className="prose dark:prose-invert [&_a]:text-blue-600 [&_a]:underline"
+                    className="prose dark:text-white dark:prose-invert [&_a]:text-blue-600 [&_a]:underline"
                     dangerouslySetInnerHTML={{
                       __html: task.description || "No description provided.",
                     }}

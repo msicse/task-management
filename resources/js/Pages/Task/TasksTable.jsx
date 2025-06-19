@@ -5,7 +5,7 @@ import TextInput from "@/Components/TextInput";
 import SelectInput from "@/Components/SelectInput";
 import TableHeading from "@/Components/TableHeading";
 import { canPerformTaskAction } from "@/utils/permissions";
-import { formatDateTime, formatDate, isPastDue } from "@/utils/dateFormat";
+import { formatDateTime, formatDate, isPastDue, formatDateD } from "@/utils/dateFormat";
 
 export default function TasksTable({
   tasks,
@@ -203,7 +203,7 @@ export default function TasksTable({
                     {TASK_STATUS_TEXT_MAP[task.status]}
                   </span>
                 </td>
-                <td className="px-3 py-2 text-nowrap">{formatDate(task.created_at)}</td>
+                <td className="px-3 py-2 text-nowrap">{formatDateD(task.created_at)}</td>
                 <td className="px-3 py-2 text-nowrap">
                   {task.due_date && (
                     <span className={isPastDue(task.due_date) || task.completed_at ? "text-red-600 font-medium" : ""}>
