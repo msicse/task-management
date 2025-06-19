@@ -21,6 +21,7 @@ class TaskResource extends JsonResource
             "id" => $this->id,
             "name" => $this->name,
             "description" => $this->description,
+            "links" => $this->links,
             "created_at" => (new Carbon($this->created_at))->format("d-m-Y H:i"),
             "due_date" => $this->due_date ? (new Carbon($this->due_date))->format("d-m-Y H:i") : null,
             "completed_at" => $this->completed_at ? (new Carbon($this->completed_at))->format("d-m-Y H:i") : null,

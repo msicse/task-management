@@ -761,15 +761,145 @@ export default function Show({ auth, task, comments, files, success }) {
               <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div className="p-6">
                   <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
-                    Links
+                    Files
                   </h3>
+                  <FileUpload taskId={task.id} />
+                  <div className="mt-6">
+                    <TaskFiles files={files} />
+                  </div>
 
-                  <div
-                    className="prose dark:prose-invert [&_a]:text-blue-600 [&_a]:underline"
-                    dangerouslySetInnerHTML={{
-                      __html: task.links || "No description provided.",
-                    }}
-                  />
+                  {/* Drag and drop file upload section */}
+                  <div className="mt-6">
+                    <h4 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">
+                      Upload Files (Drag and Drop)
+                    </h4>
+                    <div
+                      className={`border-2 rounded-md p-4 transition-all duration-200 flex flex-col items-center justify-center
+                      ${
+                        isDragging
+                          ? "border-indigo-500 bg-indigo-50"
+                          : "border-gray-300 bg-white"
+                      }
+                      `}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        setIsDragging(true);
+                      }}
+                      onDragLeave={() => setIsDragging(false)}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        setIsDragging(false);
+                        const droppedFiles = Array.from(e.dataTransfer.files);
+                        // Validate and append dropped files
+                        let valid = true;
+                        let errorMessage = "";
+
+                        for (let i = 0; i < droppedFiles.length; i++) {
+                          const error = validateFile(droppedFiles[i]);
+                          if (error) {
+                            valid = false;
+                            errorMessage = error;
+                            break;
+                          }
+                        }
+
+                        if (valid) {
+                          const updatedFiles = [
+                            ...selectedFiles,
+                            ...droppedFiles,
+                          ];
+                          setSelectedFiles(updatedFiles);
+                          setData("files", updatedFiles);
+                        } else {
+                          alert(errorMessage);
+                        }
+                      }}
+                      onClick={() => {
+                        if (fileInputRef.current) {
+                          fileInputRef.current.click();
+                        }
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      aria-label="Drag and drop files here or click to upload"
+                    >
+                      <input
+                        type="file"
+                        multiple
+                        onChange={handleFileChange}
+                        className="hidden"
+                        ref={fileInputRef}
+                      />
+                      <div className="flex flex-col items-center">
+                        <FaCloudUploadAlt className="w-10 h-10 text-gray-400 mb-2" />
+                        <span className="text-sm text-gray-500 text-center">
+                          Drag and drop your files here, or{" "}
+                          <span
+                            className="text-indigo-600 hover:underline cursor-pointer"
+                            onClick={() => fileInputRef.current.click()}
+                          >
+                            click to browse
+                          </span>
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Selected files list */}
+                    <div className="mt-4 w-full">
+                      {selectedFiles.length > 0 && (
+                        <div>
+                          <h5 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
+                            Selected Files
+                          </h5>
+                          <ul className="space-y-2">
+                            {selectedFiles.map((file, index) => (
+                              <li
+                                key={index}
+                                className="flex items-center justify-between bg-gray-50 dark:bg-gray-700 rounded-md p-3"
+                              >
+                                <div className="flex items-center">
+                                  <svg
+                                    className="w-5 h-5 text-gray-400 mr-3"
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                  >
+                                    <path d="M10 2a1 1 0 011 1v6h6a1 1 0 110 2h-6v6a1 1 0 11-2 0v-6H3a1 1 0 110-2h6V3a1 1 0 011-1z" />
+                                  </svg>
+                                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                                    {file.name}
+                                  </span>
+                                </div>
+                                <button
+                                  onClick={() => removeFile(index)}
+                                  className="text-gray-400 hover:text-gray-500 transition-colors duration-200"
+                                  aria-label="Remove file"
+                                >
+                                  <FaTimes className="w-5 h-5" />
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex justify-end space-x-3 mt-4">
+                      <button
+                        onClick={uploadFiles}
+                        className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+                        disabled={updating || selectedFiles.length === 0}
+                      >
+                        {updating ? (
+                          <span className="flex items-center">
+                            <FaSpinner className="animate-spin h-5 w-5 mr-2" />
+                            Uploading...
+                          </span>
+                        ) : (
+                          "Upload Files"
+                        )}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

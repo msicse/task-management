@@ -26,6 +26,7 @@ class UpdateTaskRequest extends FormRequest
             "image" => ["nullable", "image"],
             "name" => ["nullable", "max:255"],
             "description" => ["nullable", "string"],
+            "links" => ["nullable", "string"],
             "due_date" => ["nullable", "date"],
             "status" => ["nullable", Rule::in(['pending', 'in_progress', 'completed'])],
             "priority" => ["nullable", Rule::in(['low', 'medium', 'high'])],

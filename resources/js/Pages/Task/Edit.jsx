@@ -10,6 +10,7 @@ export default function Edit({ auth, users, categories, task }) {
         name: task.name || "",
         status: task.status || "",
         description: task.description || "",
+        links: task.links || "",
         due_date: task.due_date || "",
         assigned_user_id: task.assigned_user_id || "",
         factory_id: task.factory_id || "",

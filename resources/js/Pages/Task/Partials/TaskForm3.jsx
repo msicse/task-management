@@ -352,6 +352,27 @@ export default function TaskForm3({
         </div>
         <InputError message={errors.description} className="mt-1" />
       </div>
+      <div className="col-span-2">
+        <InputLabel htmlFor="task_description" value="Task Links" />
+        <div className="mt-1 editor-container">
+          <ReactQuill
+            theme="snow"
+            value={data.links || ""}
+            onChange={(content) => setData("links", content)}
+            modules={modules}
+            formats={formats}
+            className="bg-white text-black h-full"
+            style={{
+              height: compactHeight
+                ? "calc(250px - 42px)"
+                : "calc(450px - 42px)",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          />
+        </div>
+        <InputError message={errors.description} className="mt-1" />
+      </div>
       {!hideSubmitButton && (
         <div className="flex items-center justify-end mt-3 col-span-2 space-x-2">
           <Link

@@ -153,7 +153,7 @@ export default function Create({ auth, users, categories }) {
                                 </ul>
                             </div>
                         )}
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                        <div className="grid grid-cols gap-4">
                             <div className="lg:col-span-2">
                                 {/* Task Details Card */}
                                 <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg mb-4">
@@ -172,133 +172,6 @@ export default function Create({ auth, users, categories }) {
                                             compactHeight={true}
                                         />
 
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="lg:col-span-1">
-                                {/* File Upload Card */}
-                                <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg h-full">
-                                    <div className="p-4 flex flex-col h-full">
-                                        <h3 className="text-md font-semibold text-gray-900 dark:text-gray-100 mb-2 border-b pb-1">
-                                            Attachments
-                                        </h3>
-                                        <div className="flex-grow">
-                                            <div className="flex items-center justify-center w-full">
-                                                <div
-                                                    className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer ${
-                                                        isDragging
-                                                            ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20"
-                                                            : "border-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-600"
-                                                    }`}
-                                                    onClick={() => fileInputRef.current?.click()}
-                                                    onDragOver={(e) => {
-                                                        e.preventDefault();
-                                                        e.stopPropagation();
-                                                        setIsDragging(true);
-                                                    }}
-                                                    onDragEnter={(e) => {
-                                                        e.preventDefault();
-                                                        e.stopPropagation();
-                                                        setIsDragging(true);
-                                                    }}
-                                                    onDragLeave={(e) => {
-                                                        e.preventDefault();
-                                                        e.stopPropagation();
-                                                        setIsDragging(false);
-                                                    }}                                                    onDrop={(e) => {
-                                                        e.preventDefault();
-                                                        e.stopPropagation();
-                                                        setIsDragging(false);
-
-                                                        const newFiles = Array.from(e.dataTransfer.files);
-
-                                                        // Validate dropped files
-                                                        let valid = true;
-                                                        let errorMessage = '';
-
-                                                        for (let i = 0; i < newFiles.length; i++) {
-                                                            const error = validateFile(newFiles[i]);
-                                                            if (error) {
-                                                                valid = false;
-                                                                errorMessage = error;
-                                                                break;
-                                                            }
-                                                        }
-
-                                                        if (valid) {
-                                                            // Append new files to existing files instead of replacing them
-                                                            const updatedFiles = [...selectedFiles, ...newFiles];
-                                                            setSelectedFiles(updatedFiles);
-                                                            setData('files', updatedFiles);
-                                                        } else {
-                                                            alert(errorMessage);
-                                                        }
-                                                    }}
-                                                >
-                                                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                                        <FaCloudUploadAlt className={`w-8 h-8 mb-4 transition-colors duration-200 ${
-                                                            isDragging ? "text-indigo-500" : "text-gray-500 dark:text-gray-400"
-                                                        }`} />
-                                                        <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                                                            <span className="font-semibold">Click to upload</span> or drag and drop
-                                                        </p>
-                                                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                                                            Excel, Word, PDF, or any other file (MAX. 10MB)
-                                                        </p>
-                                                    </div>
-
-                                                    <input
-                                                        id="dropzone-file"
-                                                        type="file"
-                                                        className="hidden"
-                                                        multiple
-                                                        onChange={handleFileChange}
-                                                        ref={fileInputRef}
-                                                    />
-                                                </div>
-                                            </div>
-                                            <InputError message={errors.files} className="mt-2" />
-
-                                            {selectedFiles.length > 0 && (
-                                                <div className="mt-4">
-                                                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                                        Selected Files: <span className="text-indigo-600 font-bold">{selectedFiles.length}</span> file(s)
-                                                    </h4>
-                                                    <div className="flex justify-end mb-2">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                                setSelectedFiles([]);
-                                                                setData('files', []);
-                                                                if (fileInputRef.current) {
-                                                                    fileInputRef.current.value = '';
-                                                                }
-                                                            }}
-                                                            className="text-xs text-red-500 hover:text-red-700"
-                                                        >
-                                                            Clear all files
-                                                        </button>
-                                                    </div>
-                                                    <ul className="space-y-2 max-h-64 overflow-y-auto">
-                                                        {selectedFiles.map((file, index) => (
-                                                            <li key={index} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded-md">
-                                                                <span className="text-sm text-gray-700 dark:text-gray-300 truncate max-w-[80%]">
-                                                                    {file.name}
-                                                                </span>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => removeFile(index)}
-                                                                    className="text-red-500 hover:text-red-700"
-                                                                >
-                                                                    <FaTimes className="w-4 h-4" />
-                                                                </button>
-                                                            </li>
-                                                        ))}
-                                                    </ul>
-                                                </div>
-                                            )}
-                                        </div>
                                     </div>
                                 </div>
                             </div>
