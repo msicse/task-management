@@ -123,7 +123,7 @@ export default function AuthenticatedLayout({ user, header, children }) {
                     href={route("tasks.index")}
                     active={route().current("tasks.*")}
                   >
-                    {user.roles?.some((role) => role.name === "Admin")
+                    {user.roles?.some((role) => role.name === "Admin" || user.roles?.some((role) => role.name === "Team Leader"))
                       ? "All Tasks"
                       : "Created Tasks"}
                   </NavLink>

@@ -122,7 +122,8 @@ class TaskController extends Controller
         $perPage = request('per_page', 10); // Add per_page parameter with default of 10
 
         $user = Auth::user();
-        if (!$user->hasRole('Admin')) { // Check if the user does not have the 'admin' role
+
+        if (!$user->hasRole('Admin') && !$user->hasRole('Team Leader')) { // Check if the user does not have the 'admin' role
             $query->where('created_by', $user->id);
         }
 
