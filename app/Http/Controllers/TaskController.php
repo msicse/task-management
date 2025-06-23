@@ -127,14 +127,21 @@ class TaskController extends Controller
             $query->where('created_by', $user->id);
         }
 
+        // if (request("name")) {
+        //     $query->where("name", "like", "%" . request("name") . "%");
+        // }
         if (request("name")) {
-            $query->where("name", "like", "%" . request("name") . "%");
+            // Try to find tasks by name first
+            $query->where(function ($q) {
+                $q->where("name", "like", "%" . request("name") . "%")
+                    ->orWhere("factory_id", "like", "%" . request("name") . "%");
+            });
         }
         if (request("status")) {
             if (request("status") === "waiting_for_approval") {
                 // Find tasks with status "completed" but approved_at is null
                 $query->where("status", "completed")
-                      ->whereNull("approved_at");
+                    ->whereNull("approved_at");
             } else {
                 $query->where("status", request("status"));
             }
@@ -258,10 +265,12 @@ class TaskController extends Controller
         $this->authorizeAction();
 
         // Additional check for viewing own tasks
-        if (!Auth::user()->can('task-view') &&
+        if (
+            !Auth::user()->can('task-view') &&
             Auth::user()->can('task-view-own') &&
             Auth::id() !== $task->created_by &&
-            Auth::id() !== $task->assigned_user_id) {
+            Auth::id() !== $task->assigned_user_id
+        ) {
             abort(403, 'You can only view your own tasks');
         }
 
@@ -308,13 +317,15 @@ class TaskController extends Controller
         $this->authorizeAction();
 
         // Additional check for editing own tasks
-        if (!Auth::user()->can('task-edit') &&
+        if (
+            !Auth::user()->can('task-edit') &&
             Auth::user()->can('task-update-own') &&
-            Auth::id() !== $task->created_by) {
+            Auth::id() !== $task->created_by
+        ) {
             abort(403, 'You can only edit your own tasks');
         }
 
-       // $projects = Project::query()->orderBy('name', 'asc')->get();
+        // $projects = Project::query()->orderBy('name', 'asc')->get();
         $categories = Category::query()->orderBy('name', 'asc')->get();
         $users = User::query()->orderBy('name', 'asc')->get();
 
@@ -333,9 +344,11 @@ class TaskController extends Controller
         $this->authorizeAction();
 
         // Additional check for updating own tasks
-        if (!Auth::user()->can('task-edit') &&
+        if (
+            !Auth::user()->can('task-edit') &&
             Auth::user()->can('task-update-own') &&
-            Auth::id() !== $task->created_by) {
+            Auth::id() !== $task->created_by
+        ) {
             abort(403, 'You can only update tasks you created');
         }
 
@@ -490,9 +503,11 @@ class TaskController extends Controller
                 }
 
                 // Only assigned user, creator, or manager can mark as complete
-                if ($currentUser->id !== $task->assigned_user_id &&
+                if (
+                    $currentUser->id !== $task->assigned_user_id &&
                     $currentUser->id !== $task->created_by &&
-                    !$currentUser->hasRole(['Admin', 'Manager'])) {
+                    !$currentUser->hasRole(['Admin', 'Manager'])
+                ) {
                     return response()->json(['error' => 'Only the assigned user, task creator, or a manager can mark a task as complete'], 403);
                 }
 
@@ -515,9 +530,11 @@ class TaskController extends Controller
             // Regular status update - check edit permission
             else {
                 // Check if user has edit permission or is updating own task
-                if (!$currentUser->can('task-edit') &&
+                if (
+                    !$currentUser->can('task-edit') &&
                     (!$currentUser->can('task-update-own') || $currentUser->id !== $task->created_by) &&
-                    $currentUser->id !== $task->assigned_user_id) {
+                    $currentUser->id !== $task->assigned_user_id
+                ) {
                     return response()->json(['error' => 'You do not have permission to update this task status'], 403);
                 }
             }
@@ -666,7 +683,7 @@ class TaskController extends Controller
             if (request("status") === "waiting_for_approval") {
                 // Find tasks with status "completed" but approved_at is null
                 $query->where("status", "completed")
-                      ->whereNull("approved_at");
+                    ->whereNull("approved_at");
             } else {
                 $query->where("status", request("status"));
             }
@@ -853,9 +870,11 @@ class TaskController extends Controller
 
         // Check if user has permission to view this task
         $currentUser = Auth::user();
-        if (!$currentUser->can('task-view') &&
+        if (
+            !$currentUser->can('task-view') &&
             !($currentUser->can('task-view-own') &&
-              ($currentUser->id === $task->created_by || $currentUser->id === $task->assigned_user_id))) {
+                ($currentUser->id === $task->created_by || $currentUser->id === $task->assigned_user_id))
+        ) {
             abort(403, 'You do not have permission to generate PDF for this task');
         }
 
@@ -887,17 +906,17 @@ class TaskController extends Controller
             }
             // Regular employees with task-list see only their tasks
             else if (!$user->hasRole(['Admin', 'Manager', 'Team Leader'])) {
-                $query->where(function($q) use ($user) {
+                $query->where(function ($q) use ($user) {
                     $q->where('created_by', $user->id)
-                      ->orWhere('assigned_user_id', $user->id);
+                        ->orWhere('assigned_user_id', $user->id);
                 });
             }
         }
         // Users with only task-view-own permission can only see their own tasks
         else if ($user->can('task-view-own')) {
-            $query->where(function($q) use ($user) {
+            $query->where(function ($q) use ($user) {
                 $q->where('created_by', $user->id)
-                  ->orWhere('assigned_user_id', $user->id);
+                    ->orWhere('assigned_user_id', $user->id);
             });
         }
 

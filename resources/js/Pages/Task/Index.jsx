@@ -14,7 +14,12 @@ import {
   TASK_STATUS_CLASS_MAP,
   TASK_STATUS_TEXT_MAP,
 } from "@/constants";
-import { formatDateTime, formatDate, isPastDue, formatDateD } from "@/utils/dateFormat";
+import {
+  formatDateTime,
+  formatDate,
+  isPastDue,
+  formatDateD,
+} from "@/utils/dateFormat";
 
 export default function Index({
   auth,
@@ -30,11 +35,14 @@ export default function Index({
   const [priority, setPriority] = useState(queryParams?.priority || "");
   const [assignedTo, setAssignedTo] = useState(queryParams?.assigned_to || "");
   const [category, setCategory] = useState(queryParams?.category || "");
-  const [sortField, setSortField] = useState(queryParams?.sort_field || "created_at");
-  const [sortDirection, setSortDirection] = useState(queryParams?.sort_direction || "desc");
+  const [sortField, setSortField] = useState(
+    queryParams?.sort_field || "created_at"
+  );
+  const [sortDirection, setSortDirection] = useState(
+    queryParams?.sort_direction || "desc"
+  );
   const [perPage, setPerPage] = useState(queryParams?.per_page || 10);
   const [isFilterExpanded, setIsFilterExpanded] = useState(false);
-
 
   useEffect(() => {
     if (success) {
@@ -213,8 +221,17 @@ export default function Index({
                       onClick={resetFilters}
                       className="px-3 py-1.5 border border-red-500 text-red-500 rounded-md hover:bg-red-500 hover:text-white transition-colors duration-300 flex items-center gap-1 text-sm"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                          clipRule="evenodd"
+                        />
                       </svg>
                       Reset
                     </button>
@@ -222,10 +239,16 @@ export default function Index({
                 </div>
 
                 {isFilterExpanded && (
-                  <form onSubmit={handleSearch} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg shadow-inner">
+                  <form
+                    onSubmit={handleSearch}
+                    className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg shadow-inner"
+                  >
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
                       <div className="space-y-2">
-                        <label htmlFor="search" className="block text-sm font-medium">
+                        <label
+                          htmlFor="search"
+                          className="block text-sm font-medium"
+                        >
                           Task Name
                         </label>
                         <TextInput
@@ -239,7 +262,10 @@ export default function Index({
                       </div>
 
                       <div className="space-y-2">
-                        <label htmlFor="status" className="block text-sm font-medium">
+                        <label
+                          htmlFor="status"
+                          className="block text-sm font-medium"
+                        >
                           Status
                         </label>
                         <SelectInput
@@ -252,12 +278,17 @@ export default function Index({
                           <option value="pending">Pending</option>
                           <option value="in_progress">In Progress</option>
                           <option value="completed">Completed</option>
-                          <option value="waiting_for_approval">Awaiting Approval</option>
+                          <option value="waiting_for_approval">
+                            Awaiting Approval
+                          </option>
                         </SelectInput>
                       </div>
 
                       <div className="space-y-2">
-                        <label htmlFor="priority" className="block text-sm font-medium">
+                        <label
+                          htmlFor="priority"
+                          className="block text-sm font-medium"
+                        >
                           Priority
                         </label>
                         <SelectInput
@@ -274,14 +305,20 @@ export default function Index({
                       </div>
 
                       <div className="space-y-2">
-                        <label htmlFor="assignedTo" className="block text-sm font-medium">
+                        <label
+                          htmlFor="assignedTo"
+                          className="block text-sm font-medium"
+                        >
                           Assigned To
                         </label>
                         <SearchableSelect
                           id="assignedTo"
                           options={[
                             { value: "", label: "All Assignees" },
-                            ...users.map((user) => ({ value: user.id, label: user.name }))
+                            ...users.map((user) => ({
+                              value: user.id,
+                              label: user.name,
+                            })),
                           ]}
                           value={assignedTo}
                           onChange={(e) => setAssignedTo(e.target.value)}
@@ -291,14 +328,20 @@ export default function Index({
                       </div>
 
                       <div className="space-y-2">
-                        <label htmlFor="category" className="block text-sm font-medium">
+                        <label
+                          htmlFor="category"
+                          className="block text-sm font-medium"
+                        >
                           Category
                         </label>
                         <SearchableSelect
                           id="category"
                           options={[
                             { value: "", label: "All Categories" },
-                            ...categories.map((category) => ({ value: category.id, label: category.name }))
+                            ...categories.map((category) => ({
+                              value: category.id,
+                              label: category.name,
+                            })),
                           ]}
                           value={category}
                           onChange={(e) => setCategory(e.target.value)}
@@ -308,7 +351,10 @@ export default function Index({
                       </div>
 
                       <div className="space-y-2">
-                        <label htmlFor="perPage" className="block text-sm font-medium">
+                        <label
+                          htmlFor="perPage"
+                          className="block text-sm font-medium"
+                        >
                           Items Per Page
                         </label>
                         <SelectInput
@@ -331,8 +377,17 @@ export default function Index({
                         type="submit"
                         className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors duration-300 flex items-center gap-1"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
+                            clipRule="evenodd"
+                          />
                         </svg>
                         Apply Filters
                       </button>
@@ -358,14 +413,38 @@ export default function Index({
                     >
                       Search
                     </button>
-                    {(search || status || priority || assignedTo || category) && (
+                    {(search ||
+                      status ||
+                      priority ||
+                      assignedTo ||
+                      category) && (
                       <div className="text-sm text-gray-500">
                         <span className="mr-1">Active filters:</span>
-                        {search && <span className="px-2 py-1 bg-gray-200 dark:bg-gray-600 rounded-full text-xs mr-1">{search}</span>}
-                        {status && <span className="px-2 py-1 bg-gray-200 dark:bg-gray-600 rounded-full text-xs mr-1">{status}</span>}
-                        {priority && <span className="px-2 py-1 bg-gray-200 dark:bg-gray-600 rounded-full text-xs mr-1">{priority}</span>}
-                        {assignedTo && <span className="px-2 py-1 bg-gray-200 dark:bg-gray-600 rounded-full text-xs mr-1">Assigned</span>}
-                        {category && <span className="px-2 py-1 bg-gray-200 dark:bg-gray-600 rounded-full text-xs mr-1">Category</span>}
+                        {search && (
+                          <span className="px-2 py-1 bg-gray-200 dark:bg-gray-600 rounded-full text-xs mr-1">
+                            {search}
+                          </span>
+                        )}
+                        {status && (
+                          <span className="px-2 py-1 bg-gray-200 dark:bg-gray-600 rounded-full text-xs mr-1">
+                            {status}
+                          </span>
+                        )}
+                        {priority && (
+                          <span className="px-2 py-1 bg-gray-200 dark:bg-gray-600 rounded-full text-xs mr-1">
+                            {priority}
+                          </span>
+                        )}
+                        {assignedTo && (
+                          <span className="px-2 py-1 bg-gray-200 dark:bg-gray-600 rounded-full text-xs mr-1">
+                            Assigned
+                          </span>
+                        )}
+                        {category && (
+                          <span className="px-2 py-1 bg-gray-200 dark:bg-gray-600 rounded-full text-xs mr-1">
+                            Category
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>
@@ -394,6 +473,14 @@ export default function Index({
                         Name
                       </TableHeading>
                       <TableHeading
+                        name="factory_id"
+                        sort_field={sortField}
+                        sort_direction={sortDirection}
+                        sortChanged={sortChanged}
+                      >
+                        Factory ID
+                      </TableHeading>
+                      <TableHeading
                         name="category_id"
                         sort_field={sortField}
                         sort_direction={sortDirection}
@@ -401,7 +488,9 @@ export default function Index({
                       >
                         Category
                       </TableHeading>
-                      {auth.user.roles?.some(role => role.name === "Admin") && (
+                      {auth.user.roles?.some((role) =>
+                        ["Admin", "Team Leader"].includes(role.name)
+                      ) && (
                         <TableHeading
                           name="created_by"
                           sort_field={sortField}
@@ -479,9 +568,14 @@ export default function Index({
                           </Link>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
+                          {task.factory_id}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
                           {task.category.name}
                         </td>
-                        {auth.user.roles?.some(role => role.name === "Admin") && (
+                        {auth.user.roles?.some((role) =>
+                          ["Admin", "Team Leader"].includes(role.name)
+                        ) && (
                           <td className="px-6 py-4 whitespace-nowrap">
                             {task.createdBy.name}
                           </td>
@@ -493,10 +587,20 @@ export default function Index({
                           <span
                             className={
                               "px-2 py-1 rounded text-white " +
-                              TASK_STATUS_CLASS_MAP[task.status === "completed" && !task.approved_at ? "waiting_for_approval" : task.status]
+                              TASK_STATUS_CLASS_MAP[
+                                task.status === "completed" && !task.approved_at
+                                  ? "waiting_for_approval"
+                                  : task.status
+                              ]
                             }
                           >
-                            {TASK_STATUS_TEXT_MAP[task.status === "completed" && !task.approved_at ? "waiting_for_approval" : task.status]}
+                            {
+                              TASK_STATUS_TEXT_MAP[
+                                task.status === "completed" && !task.approved_at
+                                  ? "waiting_for_approval"
+                                  : task.status
+                              ]
+                            }
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -514,14 +618,24 @@ export default function Index({
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {task.due_date && (
-                            <span className={isPastDue(task.due_date) || task.completed_at ? "text-red-600 font-medium" : ""}>
-                              {isPastDue(task.due_date) || task.completed_at ? "Passed: " : ""}
+                            <span
+                              className={
+                                isPastDue(task.due_date) || task.completed_at
+                                  ? "text-red-600 font-medium"
+                                  : ""
+                              }
+                            >
+                              {isPastDue(task.due_date) || task.completed_at
+                                ? "Passed: "
+                                : ""}
                               {formatDateD(task.due_date)}
                             </span>
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {task.completed_at ? formatDateD(task.completed_at) : "Not yet"}
+                          {task.completed_at
+                            ? formatDateD(task.completed_at)
+                            : "Not yet"}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {task.time_log ? `${task.time_log} mins` : "N/A"}
@@ -529,7 +643,9 @@ export default function Index({
 
                         <td className="px-6 py-4 whitespace-nowrap">
                           {(auth.user.id === task.created_by ||
-                           auth.user.roles?.some(role => ["Admin", "Manager"].includes(role.name))) && (
+                            auth.user.roles?.some((role) =>
+                              ["Admin", "Manager"].includes(role.name)
+                            )) && (
                             <Link
                               href={route("tasks.edit", task.id)}
                               className="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300 mr-3"
@@ -538,7 +654,9 @@ export default function Index({
                             </Link>
                           )}
                           {(auth.user.id === task.created_by ||
-                           auth.user.roles?.some(role => ["Admin"].includes(role.name))) && (
+                            auth.user.roles?.some((role) =>
+                              ["Admin"].includes(role.name)
+                            )) && (
                             <button
                               onClick={() => deleteTask(task.id)}
                               className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"

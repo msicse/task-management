@@ -106,7 +106,6 @@ export default function AuthenticatedLayout({ user, header, children }) {
                 </div>
               )}
 
-
               {hasPermission("category-list") && (
                 <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                   <NavLink
@@ -123,7 +122,9 @@ export default function AuthenticatedLayout({ user, header, children }) {
                     href={route("tasks.index")}
                     active={route().current("tasks.*")}
                   >
-                    {user.roles?.some((role) => role.name === "Admin" || user.roles?.some((role) => role.name === "Team Leader"))
+                    {user.roles?.some((role) =>
+                      ["Admin", "Team Leader"].includes(role.name)
+                    )
                       ? "All Tasks"
                       : "Created Tasks"}
                   </NavLink>
@@ -283,9 +284,8 @@ export default function AuthenticatedLayout({ user, header, children }) {
                 </span>
                 <button
                   onClick={() => {
-                    const isDarkMode = !document.documentElement.classList.contains(
-                      "dark"
-                    );
+                    const isDarkMode =
+                      !document.documentElement.classList.contains("dark");
                     if (isDarkMode) {
                       document.documentElement.classList.add("dark");
                       localStorage.setItem("theme", "dark");

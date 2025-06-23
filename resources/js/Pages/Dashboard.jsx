@@ -23,8 +23,12 @@ export default function Dashboard({
 }) {
   // Check if user has admin role
   const isAdmin = auth.user.roles.some((role) => role.name === "Admin");
+  const isAdminLeader = auth.user.roles.some(
+    (role) => role.name === "Admin" || role.name === "Team Leader"
+  );
   // Calculate total tasks across all statuses
-  const totalTasks = totalPendingTasks + totalProgressTasks + totalCompletedTasks;
+  const totalTasks =
+    totalPendingTasks + totalProgressTasks + totalCompletedTasks;
 
   return (
     <AuthenticatedLayout
@@ -40,7 +44,7 @@ export default function Dashboard({
       <div className="py-6">
         <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
           {/* Admin-only Total Task Statistics */}
-          {isAdmin && (
+          {isAdminLeader && (
             <div className="mb-8">
               <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-gray-200">
                 System-wide Task Statistics
@@ -90,7 +94,9 @@ export default function Dashboard({
                       <div className="mt-2">
                         <p className="text-xs text-gray-500 dark:text-gray-400">
                           {totalTasks > 0
-                            ? ((totalPendingTasks / totalTasks) * 100).toFixed(0)
+                            ? ((totalPendingTasks / totalTasks) * 100).toFixed(
+                                0
+                              )
                             : 0}
                           % of all tasks
                         </p>
@@ -117,7 +123,9 @@ export default function Dashboard({
                       <div className="mt-2">
                         <p className="text-xs text-gray-500 dark:text-gray-400">
                           {totalTasks > 0
-                            ? ((totalProgressTasks / totalTasks) * 100).toFixed(0)
+                            ? ((totalProgressTasks / totalTasks) * 100).toFixed(
+                                0
+                              )
                             : 0}
                           % of all tasks
                         </p>
@@ -144,7 +152,10 @@ export default function Dashboard({
                       <div className="mt-2">
                         <p className="text-xs text-gray-500 dark:text-gray-400">
                           {totalTasks > 0
-                            ? ((totalCompletedTasks / totalTasks) * 100).toFixed(0)
+                            ? (
+                                (totalCompletedTasks / totalTasks) *
+                                100
+                              ).toFixed(0)
                             : 0}
                           % of all tasks
                         </p>
@@ -189,9 +200,10 @@ export default function Dashboard({
                       </div>
                       <div className="mt-2">
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {((myPendingTasks / (totalPendingTasks || 1)) * 100).toFixed(
-                            0
-                          )}
+                          {(
+                            (myPendingTasks / (totalPendingTasks || 1)) *
+                            100
+                          ).toFixed(0)}
                           % of all pending tasks
                         </p>
                       </div>
@@ -216,9 +228,10 @@ export default function Dashboard({
                       </div>
                       <div className="mt-2">
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {((myProgressTasks / (totalProgressTasks || 1)) * 100).toFixed(
-                            0
-                          )}
+                          {(
+                            (myProgressTasks / (totalProgressTasks || 1)) *
+                            100
+                          ).toFixed(0)}
                           % of all in-progress tasks
                         </p>
                       </div>
@@ -243,9 +256,10 @@ export default function Dashboard({
                       </div>
                       <div className="mt-2">
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {((myCompletedTasks / (totalCompletedTasks || 1)) * 100).toFixed(
-                            0
-                          )}
+                          {(
+                            (myCompletedTasks / (totalCompletedTasks || 1)) *
+                            100
+                          ).toFixed(0)}
                           % of all completed tasks
                         </p>
                       </div>
@@ -280,9 +294,10 @@ export default function Dashboard({
                       </div>
                       <div className="mt-2">
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {((createdPendingTasks / (totalPendingTasks || 1)) * 100).toFixed(
-                            0
-                          )}
+                          {(
+                            (createdPendingTasks / (totalPendingTasks || 1)) *
+                            100
+                          ).toFixed(0)}
                           % of all pending tasks
                         </p>
                       </div>
@@ -307,9 +322,10 @@ export default function Dashboard({
                       </div>
                       <div className="mt-2">
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {((createdProgressTasks / (totalProgressTasks || 1)) * 100).toFixed(
-                            0
-                          )}
+                          {(
+                            (createdProgressTasks / (totalProgressTasks || 1)) *
+                            100
+                          ).toFixed(0)}
                           % of all in-progress tasks
                         </p>
                       </div>
@@ -334,9 +350,11 @@ export default function Dashboard({
                       </div>
                       <div className="mt-2">
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {((createdCompletedTasks / (totalCompletedTasks || 1)) * 100).toFixed(
-                            0
-                          )}
+                          {(
+                            (createdCompletedTasks /
+                              (totalCompletedTasks || 1)) *
+                            100
+                          ).toFixed(0)}
                           % of all completed tasks
                         </p>
                       </div>
