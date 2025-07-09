@@ -614,7 +614,7 @@ export default function Show({ auth, task, comments, files, success }) {
                 </div>
                 <div className="mt-4 md:mt-0 text-sm text-gray-500 dark:text-gray-400">
                   Created by {task.createdBy.name} on{" "}
-                  {formatDateTime(task.created_at)}
+                  {formatDateD(task.created_at)}
                 </div>
               </div>
             </div>
@@ -644,7 +644,7 @@ export default function Show({ auth, task, comments, files, success }) {
                       </p>
                       <p className="mt-1 text-gray-900 dark:text-gray-100">
                         {task.completed_at
-                          ? formatDateTime(task.completed_at)
+                          ? formatDateD(task.completed_at)
                           : "Not completed yet"}
                       </p>
                     </div>
@@ -765,7 +765,7 @@ export default function Show({ auth, task, comments, files, success }) {
                   </h3>
 
                   <div
-                    className="prose dark:prose-invert [&_a]:text-blue-600 [&_a]:underline"
+                    className="prose dark:text-white dark:prose-invert [&_a]:text-blue-600 [&_a]:underline"
                     dangerouslySetInnerHTML={{
                       __html: task.links || "No description provided.",
                     }}

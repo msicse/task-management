@@ -618,20 +618,28 @@ export default function Index({
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {task.due_date && (
-                            <span
-                              className={
-                                isPastDue(task.due_date) || task.completed_at
-                                  ? "text-red-600 font-medium"
-                                  : ""
-                              }
-                            >
-                              {isPastDue(task.due_date) || task.completed_at
-                                ? "Passed: "
-                                : ""}
-                              {formatDateD(task.due_date)}
+                            <span className="font-medium">
+                              {task.completed_at ? (
+                                isPastDue(task.due_date, task.completed_at) ? (
+                                  <>
+                                    <span className="text-red-600">
+                                      passed: {formatDateD(task.due_date)}
+                                    </span>
+                                  </>
+                                ) : (
+                                   <span>{formatDateD(task.due_date)}</span>
+                                )
+                              ) : isPastDue(task.due_date) ? (
+                                <span className="text-red-600">
+                                  passed: {formatDateD(task.due_date)}
+                                </span>
+                              ) : (
+                                <span>{formatDateD(task.due_date)}</span>
+                              )}
                             </span>
                           )}
                         </td>
+
                         <td className="px-6 py-4 whitespace-nowrap">
                           {task.completed_at
                             ? formatDateD(task.completed_at)
@@ -670,7 +678,6 @@ export default function Index({
                   </tbody>
                 </table>
               </div>
-
               <div className="mt-6 px-2">
                 <Pagination
                   links={tasks.meta.links}

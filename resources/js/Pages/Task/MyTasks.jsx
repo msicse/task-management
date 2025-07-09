@@ -561,26 +561,34 @@ export default function MyTasks({
                         <td className="px-6 py-4 whitespace-nowrap">
                           {formatDateD(task.created_at)}
                         </td>
+
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {task.due_date && (
+                            <span className="font-medium">
+                              {task.completed_at ? (
+                                isPastDue(task.due_date, task.completed_at) ? (
+                                  <>
+                                    <span className="text-red-600">
+                                      passed: {formatDateD(task.due_date)}
+                                    </span>
+                                  </>
+                                ) : (
+                                   <span>{formatDateD(task.due_date)}</span>
+                                )
+                              ) : isPastDue(task.due_date) ? (
+                                <span className="text-red-600">
+                                  passed: {formatDateD(task.due_date)}
+                                </span>
+                              ) : (
+                                <span>{formatDateD(task.due_date)}</span>
+                              )}
+                            </span>
+                          )}
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {task.completed_at
                             ? formatDateD(task.completed_at)
                             : "Not yet"}
-                        </td>
-
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {task.due_date && (
-                            <span
-                              className={
-                                // If task is completed, always show the date as passed
-                                isPastDue(task.due_date) || task.completed_at
-                                  ? "text-red-600 font-medium"
-                                  : ""
-                              }
-                            >
-                              {isPastDue(task.due_date) || task.completed_at ? "passed: " : ""}
-                              {formatDateD(task.due_date)}
-                            </span>
-                          )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {task.time_log ? `${task.time_log} mins` : "N/A"}

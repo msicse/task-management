@@ -212,6 +212,12 @@ class TaskController extends Controller
         $data['updated_by'] = $currentUser->id;
         $data['slug'] = Str::slug($data['name']);
 
+        $date = Carbon::parse($data['due_date']);
+        $currentTime = Carbon::now()->format('H:i:s'); // Get current time (e.g., 14:35:00)
+
+        $dueDateWithTime = Carbon::parse($date->format('Y-m-d') . ' ' . $currentTime);
+        $data['due_date'] = $dueDateWithTime;
+
         // Handle image upload
         if ($image) {
             $data['image_path'] = $image->store('task/' . Str::random(), 'public');
