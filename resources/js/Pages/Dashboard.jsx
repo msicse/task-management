@@ -42,7 +42,7 @@ export default function Dashboard({
       <Head title="Dashboard" />
 
       <div className="py-6">
-        <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <div className="max-w-full mx-auto sm:px-6 lg:px-8">
           {/* Admin-only Total Task Statistics */}
           {isAdminLeader && (
             <div className="mb-8">

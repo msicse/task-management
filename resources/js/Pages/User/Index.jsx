@@ -115,7 +115,7 @@ export default function Index({ auth, users, departments, filters, success }) {
       <Head title="Users" />
 
       <div className="py-2">
-        <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <div className="max-w-full mx-auto sm:px-6 lg:px-8">
           {showSuccess && (
             <Alert
               message={success}

@@ -110,7 +110,7 @@ class TaskController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         $this->authorizeAction();
 
@@ -120,16 +120,27 @@ class TaskController extends Controller
         $sortField = request("sort_field", 'created_at');
         $sortDirection = request("sort_direction", 'desc');
         $perPage = request('per_page', 10); // Add per_page parameter with default of 10
+        $filter = $request->query('filter', 'assigned');
 
         $user = Auth::user();
 
-        if (!$user->hasRole('Admin') && !$user->hasRole('Team Leader')) { // Check if the user does not have the 'admin' role
+        if ($filter === 'all') {
+            if (!$user->hasRole('Admin') && !$user->hasRole('Team Leader')) {
+                // Prevent access to all if user is not admin/team lead
+                $query->where('assigned_user_id', $user->id);
+                $filter = 'assigned';
+            }
+        } elseif ($filter === 'created') {
             $query->where('created_by', $user->id);
+        } else {
+            $query->where('assigned_user_id', $user->id);
+            $filter = 'assigned';
         }
 
-        // if (request("name")) {
-        //     $query->where("name", "like", "%" . request("name") . "%");
+        // if (!$user->hasRole('Admin') && !$user->hasRole('Team Leader')) { // Check if the user does not have the 'admin' role
+        //     $query->where('created_by', $user->id);
         // }
+
         if (request("name")) {
             // Try to find tasks by name first
             $query->where(function ($q) {

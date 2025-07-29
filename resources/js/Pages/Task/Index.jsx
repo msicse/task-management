@@ -194,7 +194,7 @@ export default function Index({
       <Head title="Tasks" />
 
       <div className="py-2">
-        <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <div className="max-w-full mx-auto sm:px-6 lg:px-8">
           {showSuccess && (
             <Alert
               message={success}
@@ -488,26 +488,7 @@ export default function Index({
                       >
                         Category
                       </TableHeading>
-                      {auth.user.roles?.some((role) =>
-                        ["Admin", "Team Leader"].includes(role.name)
-                      ) && (
-                        <TableHeading
-                          name="created_by"
-                          sort_field={sortField}
-                          sort_direction={sortDirection}
-                          sortChanged={sortChanged}
-                        >
-                          Assigned By
-                        </TableHeading>
-                      )}
-                      <TableHeading
-                        name="assigned_user_id"
-                        sort_field={sortField}
-                        sort_direction={sortDirection}
-                        sortChanged={sortChanged}
-                      >
-                        Assigned To
-                      </TableHeading>
+
                       <TableHeading
                         name="status"
                         sort_field={sortField}
@@ -541,6 +522,26 @@ export default function Index({
                       >
                         Due Date
                       </TableHeading>
+                        {auth.user.roles?.some((role) =>
+                        ["Admin", "Team Leader"].includes(role.name)
+                      ) && (
+                        <TableHeading
+                          name="created_by"
+                          sort_field={sortField}
+                          sort_direction={sortDirection}
+                          sortChanged={sortChanged}
+                        >
+                          Assigned By
+                        </TableHeading>
+                      )}
+                      <TableHeading
+                        name="assigned_user_id"
+                        sort_field={sortField}
+                        sort_direction={sortDirection}
+                        sortChanged={sortChanged}
+                      >
+                        Assigned To
+                      </TableHeading>
                       <TableHeading
                         name="completed_at"
                         sort_field={sortField}
@@ -563,8 +564,11 @@ export default function Index({
                           <Link
                             href={route("tasks.show", task.id)}
                             className="text-blue-600 hover:text-blue-900 hover:underline dark:text-blue-400 dark:hover:text-blue-300 mr-3"
+                            title={task.name}
                           >
-                            {task.name}
+                            {task.name.length > 30
+                              ? `${task.name.substring(0, 15)} ...`
+                              : task.name}
                           </Link>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -573,16 +577,7 @@ export default function Index({
                         <td className="px-6 py-4 whitespace-nowrap">
                           {task.category.name}
                         </td>
-                        {auth.user.roles?.some((role) =>
-                          ["Admin", "Team Leader"].includes(role.name)
-                        ) && (
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            {task.createdBy.name}
-                          </td>
-                        )}
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {task.assignedUser.name}
-                        </td>
+
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span
                             className={
@@ -627,7 +622,7 @@ export default function Index({
                                     </span>
                                   </>
                                 ) : (
-                                   <span>{formatDateD(task.due_date)}</span>
+                                  <span>{formatDateD(task.due_date)}</span>
                                 )
                               ) : isPastDue(task.due_date) ? (
                                 <span className="text-red-600">
@@ -638,6 +633,17 @@ export default function Index({
                               )}
                             </span>
                           )}
+                        </td>
+
+                        {auth.user.roles?.some((role) =>
+                          ["Admin", "Team Leader"].includes(role.name)
+                        ) && (
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {task.createdBy.name}
+                          </td>
+                        )}
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {task.assignedUser.name}
                         </td>
 
                         <td className="px-6 py-4 whitespace-nowrap">

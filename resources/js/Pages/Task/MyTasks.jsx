@@ -163,7 +163,7 @@ export default function MyTasks({
       <Head title="Tasks" />
 
       <div className="py-2">
-        <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <div className="max-w-full mx-auto sm:px-6 lg:px-8">
           {showSuccess && (
             <Alert
               message={success}

@@ -62,11 +62,28 @@ export default function AuthenticatedLayout({ user, header, children }) {
     return hasRolePermission; //hasDirectPermission || hasRolePermission;
   };
 
+  const taskTabs = [];
+
+  if (hasPermission("task-list")) {
+    const isAdminOrLeader = user.roles?.some((role) =>
+      ["Admin", "Team Leader"].includes(role.name)
+    );
+
+    if (isAdminOrLeader) {
+      taskTabs.push({ label: "All Tasks", filter: "all" });
+    }
+
+    taskTabs.push(
+      { label: "My Tasks", filter: "assigned" },
+      { label: "Created Tasks", filter: "created" }
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 pt-16">
       <LoadingIndicator />
       <nav className="border-b border-gray-100 bg-white dark:bg-gray-800 fixed top-0 left-0 right-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-4">
           <div className="flex justify-between h-16">
             <div className="flex">
               <div className="shrink-0 flex items-center">
@@ -116,6 +133,35 @@ export default function AuthenticatedLayout({ user, header, children }) {
                   </NavLink>
                 </div>
               )}
+
+              {taskTabs.map(({ label, filter }) => (
+                <div
+                  key={filter}
+                  className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex"
+                >
+                  <NavLink
+                    href={route("tasks.index", { filter })}
+                    active={
+                      route().current("tasks.index") &&
+                      route().params.filter === filter
+                    }
+                  >
+                    {label}
+                  </NavLink>
+                </div>
+              ))}
+{/*
+              {hasPermission("task-list") && (
+                <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                  <NavLink
+                    href={route("tasks.index")}
+                    active={route().current("tasks.*")}
+                  >
+                    Created Tasks
+                  </NavLink>
+                </div>
+              )}
+
               {hasPermission("task-list") && (
                 <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                   <NavLink
@@ -129,7 +175,7 @@ export default function AuthenticatedLayout({ user, header, children }) {
                       : "Created Tasks"}
                   </NavLink>
                 </div>
-              )}
+              )} */}
 
               {hasPermission("task-create") && (
                 <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
@@ -142,7 +188,7 @@ export default function AuthenticatedLayout({ user, header, children }) {
                 </div>
               )}
 
-              {hasPermission("task-view-own") && (
+              {/* {hasPermission("task-view-own") && (
                 <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                   <NavLink
                     href={route("task.mytasks")}
@@ -151,7 +197,7 @@ export default function AuthenticatedLayout({ user, header, children }) {
                     My Tasks
                   </NavLink>
                 </div>
-              )}
+              )} */}
             </div>
 
             <div className="hidden sm:flex sm:items-center sm:ms-6">
@@ -326,13 +372,13 @@ export default function AuthenticatedLayout({ user, header, children }) {
 
       {header && (
         <header className="bg-white dark:bg-gray-800 shadow">
-          <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-full mx-auto py-6 px-4 sm:px-6 lg:px-8">
             {header}
           </div>
         </header>
       )}
 
-      <main>{children}</main>
+      <main className="max-w-full">{children}</main>
     </div>
   );
 }
