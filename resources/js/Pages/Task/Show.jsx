@@ -11,6 +11,7 @@ import FileUpload from "@/Components/FileUpload";
 import TaskFiles from "@/Components/TaskFiles";
 import { useState, useEffect, useRef } from "react";
 import Alert from "@/Components/Alert";
+import { HiArrowNarrowLeft } from "react-icons/hi";
 import {
   hasPermission,
   hasRole,
@@ -402,12 +403,14 @@ export default function Show({ auth, task, comments, files, success }) {
                 Delete Task
               </button>
             )}
-            <Link
-              href={route("tasks.index")}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+            <button
+              onClick={() => window.history.back()}
+              className="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-800 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md shadow-sm text-sm font-medium transition"
+                type="button"
             >
-              Back to Tasks
-            </Link>
+              <HiArrowNarrowLeft className="h-5 w-5 mr-2" />
+              Back
+            </button>
           </div>
         </div>
       }
@@ -653,9 +656,7 @@ export default function Show({ auth, task, comments, files, success }) {
                         Creation Date
                       </p>
                       <p className="mt-1 text-gray-900 dark:text-gray-100">
-                        {task.created_at
-                          ? formatDateD(task.created_at)
-                          : "N/A"}
+                        {task.created_at ? formatDateD(task.created_at) : "N/A"}
                       </p>
                     </div>
                     <div>

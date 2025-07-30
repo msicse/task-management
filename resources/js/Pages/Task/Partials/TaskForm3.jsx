@@ -12,7 +12,6 @@ import { formatDateForInput } from "@/utils";
 import { FaSpinner } from "react-icons/fa";
 import MagicUrl from "quill-magic-url";
 
-
 // Register the magic-url module
 ReactQuill.Quill.register("modules/magicUrl", MagicUrl);
 
@@ -218,7 +217,6 @@ export default function TaskForm3({
         }
         /* Style the calendar icon for date inputs */
         input[type="date"]::-webkit-calendar-picker-indicator {
-          filter: invert(1);
           cursor: pointer;
         }
         /* Adjust label sizes */
@@ -246,7 +244,7 @@ export default function TaskForm3({
           type="text"
           name="factory_id"
           value={data.factory_id}
-          className="mt-1 block w-full"
+          className="mt-1 block w-full dark:bg-gray-50 dark:text-gray-900"
           onChange={(e) => setData("factory_id", e.target.value)}
         />
         <InputError message={errors.factory_id} className="mt-2" />
@@ -258,7 +256,7 @@ export default function TaskForm3({
           type="text"
           name="name"
           value={data.name}
-          className="mt-1 block w-full"
+          className="mt-1 block w-full dark:bg-gray-50 dark:text-gray-900"
           isFocused={true}
           onChange={(e) => setData("name", e.target.value)}
         />
@@ -271,7 +269,7 @@ export default function TaskForm3({
           type="date"
           name="due_date"
           value={formatDateForInput(data.due_date)}
-          className="mt-1 block w-full"
+          className="mt-1 block w-full dark:bg-gray-50 dark:text-gray-900"
           onChange={(e) => setData("due_date", e.target.value)}
         />
         <InputError message={errors.due_date} className="mt-2" />

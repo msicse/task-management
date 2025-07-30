@@ -129,7 +129,7 @@ export default function Create({ auth, users, categories }) {
                     </h2>
                     <div>
                         <button
-                            onClick={() => router.visit(route("tasks.index"))}
+                            onClick={() => router.visit(route("tasks.index", { filter: 'created' }))}
                             className="px-4 py-1 bg-red-500 text-gray-200 rounded-md hover:bg-red-700 transition-all duration-200"
                         >
                             Cancel

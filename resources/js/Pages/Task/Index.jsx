@@ -56,7 +56,7 @@ export default function Index({
     router.get(
       route("tasks.index"),
       {
-        filter,
+        filter: filter,
         name: search,
         status,
         priority,
@@ -65,7 +65,6 @@ export default function Index({
         sort_field: sortField,
         sort_direction: sortDirection,
         per_page: perPage,
-
       },
       {
         preserveState: true,
@@ -89,7 +88,7 @@ export default function Index({
     // Navigate to the route without query params
     router.get(
       route("tasks.index"),
-      {filter},
+      { filter },
       {
         preserveState: true,
         preserveScroll: true,
@@ -525,9 +524,8 @@ export default function Index({
                       >
                         Due Date
                       </TableHeading>
-                        {auth.user.roles?.some((role) =>
-                        ["Admin", "Team Leader"].includes(role.name)
-                      ) && (
+
+                      {(filter === "assigned" || filter === "all") && (
                         <TableHeading
                           name="created_by"
                           sort_field={sortField}
@@ -537,14 +535,18 @@ export default function Index({
                           Assigned By
                         </TableHeading>
                       )}
-                      <TableHeading
-                        name="assigned_user_id"
-                        sort_field={sortField}
-                        sort_direction={sortDirection}
-                        sortChanged={sortChanged}
-                      >
-                        Assigned To
-                      </TableHeading>
+
+                      {(filter === "created" || filter === "all") && (
+                        <TableHeading
+                          name="assigned_user_id"
+                          sort_field={sortField}
+                          sort_direction={sortDirection}
+                          sortChanged={sortChanged}
+                        >
+                          Assigned To
+                        </TableHeading>
+                      )}
+
                       <TableHeading
                         name="completed_at"
                         sort_field={sortField}
@@ -637,17 +639,16 @@ export default function Index({
                             </span>
                           )}
                         </td>
-
-                        {auth.user.roles?.some((role) =>
-                          ["Admin", "Team Leader"].includes(role.name)
-                        ) && (
-                          <td className="px-2 py-4 whitespace-nowrap">
+                        {(filter === "assigned" || filter === "all") && (
+                            <td className="px-2 py-4 whitespace-nowrap">
                             {task.createdBy.name}
                           </td>
                         )}
-                        <td className="px-2 py-4 whitespace-nowrap">
-                          {task.assignedUser.name}
-                        </td>
+                        {(filter === "created" || filter === "all") && (
+                          <td className="px-2 py-4 whitespace-nowrap">
+                            {task.assignedUser.name}
+                          </td>
+                        )}
 
                         <td className="px-2 py-4 whitespace-nowrap">
                           {task.completed_at
@@ -693,6 +694,7 @@ export default function Index({
                   meta={tasks.meta}
                   routeName="tasks.index"
                   queryParams={{
+                    filter,
                     name: search,
                     status,
                     priority,

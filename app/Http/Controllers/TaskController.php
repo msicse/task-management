@@ -127,8 +127,11 @@ class TaskController extends Controller
         if ($filter === 'all') {
             if (!$user->hasRole('Admin') && !$user->hasRole('Team Leader')) {
                 // Prevent access to all if user is not admin/team lead
-                $query->where('assigned_user_id', $user->id);
                 $filter = 'assigned';
+                $query->where('assigned_user_id', $user->id);
+                return redirect()->route('tasks.index', ['filter' => 'assigned'])
+                ->with('error', 'You do not have permission to view all tasks.');
+
             }
         } elseif ($filter === 'created') {
             $query->where('created_by', $user->id);
@@ -188,7 +191,7 @@ class TaskController extends Controller
             "tasks" => $paginatedTasks,
             "users" => $users,
             'categories' => $categories,
-            'queryParams' => request()->query() ?: null,
+            'queryParams' => array_merge($request->query(), ['filter' => $filter]),
             'success' => session('success'),
         ]);
     }
@@ -268,7 +271,7 @@ class TaskController extends Controller
             }
         }
 
-        return to_route("tasks.index")->with([
+        return to_route("tasks.index", ['filter' => 'created'])->with([
             "success" => "Task has been created successfully",
             "taskId" => $task->id
         ]);
@@ -442,7 +445,7 @@ class TaskController extends Controller
             return response()->json(['message' => 'Task updated successfully']);
         }
 
-        return to_route("tasks.index")->with("success", "Task \"$task->name\" is updated");
+        return to_route("tasks.index",['filter' => 'all'])->with("success", "Task \"$task->name\" is updated");
     }
 
     /**
@@ -464,7 +467,7 @@ class TaskController extends Controller
             Storage::disk("public")->deleteDirectory(dirname($task->image_path));
         }
 
-        return to_route('tasks.index')->with('success', ("Task \"$name\" was deleted"));
+        return to_route('tasks.index', ['filter' => 'all'])->with('success', ("Task \"$name\" was deleted"));
     }
 
     /**
@@ -750,7 +753,7 @@ class TaskController extends Controller
         try {
             Excel::import(new TaskImport, $request->file('file'));
 
-            return redirect()->route('tasks.index')->with('success', 'Tasks imported successfully!');
+            return redirect()->route('tasks.index', ['filter' => 'all'])->with('success', 'Tasks imported successfully!');
         } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => 'Failed to import tasks: ' . $e->getMessage()]);
         }
