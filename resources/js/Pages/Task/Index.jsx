@@ -120,6 +120,7 @@ export default function Index({
     router.get(
       route("tasks.index"),
       {
+        filter: filter,
         name: search,
         status,
         priority,
@@ -572,7 +573,7 @@ export default function Index({
                             title={task.name}
                           >
                             {task.name.length > 40
-                              ? `${task.name.substring(0, 15)} ...`
+                              ? `${task.name.substring(0, 40)} ...`
                               : task.name}
                           </Link>
                         </td>

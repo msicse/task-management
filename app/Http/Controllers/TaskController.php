@@ -130,7 +130,7 @@ class TaskController extends Controller
                 $filter = 'assigned';
                 $query->where('assigned_user_id', $user->id);
                 return redirect()->route('tasks.index', ['filter' => 'assigned'])
-                ->with('error', 'You do not have permission to view all tasks.');
+                    ->with('error', 'You do not have permission to view all tasks.');
 
             }
         } elseif ($filter === 'created') {
@@ -151,15 +151,37 @@ class TaskController extends Controller
                     ->orWhere("factory_id", "like", "%" . request("name") . "%");
             });
         }
-        if (request("status")) {
-            if (request("status") === "waiting_for_approval") {
-                // Find tasks with status "completed" but approved_at is null
-                $query->where("status", "completed")
-                    ->whereNull("approved_at");
-            } else {
-                $query->where("status", request("status"));
+        // if (request("status")) {
+        //     if (request("status") === "waiting_for_approval") {
+        //         // Find tasks with status "completed" but approved_at is null
+        //         $query->where("status", "completed")
+        //             ->whereNull("approved_at");
+        //     } else {
+        //         if (request('status') === "completed") {
+        //             $query->where("status", "completed")
+        //                 ->whereNotNull("completed_at");
+        //         } else {
+        //             $query->where("status", request("status"));
+        //         }
+
+        //     }
+        // }
+
+        if ($status = request('status')) {
+            switch ($status) {
+                case 'waiting_for_approval':
+                    $query->where('status', 'completed')
+                        ->whereNull('approved_at');
+                    break;
+                case 'completed':
+                    $query->where('status', 'completed')
+                        ->whereNotNull('completed_at');
+                    break;
+                default:
+                    $query->where('status', $status);
             }
         }
+
         if (request("priority")) {
             $query->where("priority", request("priority"));
         }
@@ -445,7 +467,7 @@ class TaskController extends Controller
             return response()->json(['message' => 'Task updated successfully']);
         }
 
-        return to_route("tasks.index",['filter' => 'all'])->with("success", "Task \"$task->name\" is updated");
+        return to_route("tasks.index", ['filter' => 'all'])->with("success", "Task \"$task->name\" is updated");
     }
 
     /**
