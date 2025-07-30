@@ -241,10 +241,10 @@ export default function TaskForm3({
         <InputLabel htmlFor="task_factory_id" value="Factory ID" />
         <TextInput
           id="task_factory_id"
-          type="text"
+          type="number"
           name="factory_id"
           value={data.factory_id}
-          className="mt-1 block w-full  "
+          className="mt-1 block w-full h-8"
           onChange={(e) => setData("factory_id", e.target.value)}
         />
         <InputError message={errors.factory_id} className="mt-2" />

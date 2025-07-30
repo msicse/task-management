@@ -175,7 +175,7 @@ class TaskController extends Controller
                     break;
                 case 'completed':
                     $query->where('status', 'completed')
-                        ->whereNotNull('completed_at');
+                        ->whereNotNull('approved_at');
                     break;
                 default:
                     $query->where('status', $status);
