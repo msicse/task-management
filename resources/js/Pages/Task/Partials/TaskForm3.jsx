@@ -244,7 +244,7 @@ export default function TaskForm3({
           type="text"
           name="factory_id"
           value={data.factory_id}
-          className="mt-1 block w-full dark:bg-gray-50 dark:text-gray-900"
+          className="mt-1 block w-full  "
           onChange={(e) => setData("factory_id", e.target.value)}
         />
         <InputError message={errors.factory_id} className="mt-2" />
@@ -256,7 +256,7 @@ export default function TaskForm3({
           type="text"
           name="name"
           value={data.name}
-          className="mt-1 block w-full dark:bg-gray-50 dark:text-gray-900"
+          className="mt-1 block w-full  "
           isFocused={true}
           onChange={(e) => setData("name", e.target.value)}
         />
@@ -269,7 +269,7 @@ export default function TaskForm3({
           type="date"
           name="due_date"
           value={formatDateForInput(data.due_date)}
-          className="mt-1 block w-full dark:bg-gray-50 dark:text-gray-900"
+          className="mt-1 block w-full  "
           onChange={(e) => setData("due_date", e.target.value)}
         />
         <InputError message={errors.due_date} className="mt-2" />
