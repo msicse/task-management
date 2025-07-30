@@ -374,7 +374,7 @@ export default function Dashboard({
                       Tasks Assigned To Me
                     </h3>
                     <Link
-                      href={route("task.mytasks")}
+                      href={route("tasks.index", { filter: 'assigned' })}
                       className="text-sm text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
                     >
                       View All
@@ -481,7 +481,7 @@ export default function Dashboard({
                       Tasks Created By Me
                     </h3>
                     <Link
-                      href={route("tasks.index")}
+                      href={route("tasks.index", { filter: 'created' })}
                       className="text-sm text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
                     >
                       View All

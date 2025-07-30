@@ -35,6 +35,7 @@ export default function Index({
   const [priority, setPriority] = useState(queryParams?.priority || "");
   const [assignedTo, setAssignedTo] = useState(queryParams?.assigned_to || "");
   const [category, setCategory] = useState(queryParams?.category || "");
+  const [filter, setFilter] = useState(queryParams.filter || "assigned");
   const [sortField, setSortField] = useState(
     queryParams?.sort_field || "created_at"
   );
@@ -55,6 +56,7 @@ export default function Index({
     router.get(
       route("tasks.index"),
       {
+        filter,
         name: search,
         status,
         priority,
@@ -63,6 +65,7 @@ export default function Index({
         sort_field: sortField,
         sort_direction: sortDirection,
         per_page: perPage,
+
       },
       {
         preserveState: true,
@@ -86,7 +89,7 @@ export default function Index({
     // Navigate to the route without query params
     router.get(
       route("tasks.index"),
-      {},
+      {filter},
       {
         preserveState: true,
         preserveScroll: true,
@@ -249,12 +252,12 @@ export default function Index({
                           htmlFor="search"
                           className="block text-sm font-medium"
                         >
-                          Task Name
+                          Task Name or Factory ID
                         </label>
                         <TextInput
                           id="search"
                           type="text"
-                          placeholder="Search tasks..."
+                          placeholder="Search tasks or factory ID..."
                           value={search}
                           onChange={(e) => setSearch(e.target.value)}
                           className="w-full"
@@ -557,28 +560,28 @@ export default function Index({
                   <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                     {tasks.data.map((task) => (
                       <tr key={task.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-2 py-4 whitespace-nowrap">
                           {task.id}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-2 py-4 whitespace-nowrap">
                           <Link
                             href={route("tasks.show", task.id)}
                             className="text-blue-600 hover:text-blue-900 hover:underline dark:text-blue-400 dark:hover:text-blue-300 mr-3"
                             title={task.name}
                           >
-                            {task.name.length > 30
+                            {task.name.length > 40
                               ? `${task.name.substring(0, 15)} ...`
                               : task.name}
                           </Link>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-2 py-4 whitespace-nowrap">
                           {task.factory_id}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-2 py-4 whitespace-nowrap">
                           {task.category.name}
                         </td>
 
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-2 py-4 whitespace-nowrap">
                           <span
                             className={
                               "px-2 py-1 rounded text-white " +
@@ -598,7 +601,7 @@ export default function Index({
                             }
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-2 py-4 whitespace-nowrap">
                           <span
                             className={
                               "px-2 py-1 rounded text-white " +
@@ -608,10 +611,10 @@ export default function Index({
                             {TASK_PRIORITY_TEXT_MAP[task.priority]}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-2 py-4 whitespace-nowrap">
                           {formatDateD(task.created_at)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-2 py-4 whitespace-nowrap">
                           {task.due_date && (
                             <span className="font-medium">
                               {task.completed_at ? (
@@ -638,24 +641,24 @@ export default function Index({
                         {auth.user.roles?.some((role) =>
                           ["Admin", "Team Leader"].includes(role.name)
                         ) && (
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-2 py-4 whitespace-nowrap">
                             {task.createdBy.name}
                           </td>
                         )}
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-2 py-4 whitespace-nowrap">
                           {task.assignedUser.name}
                         </td>
 
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-2 py-4 whitespace-nowrap">
                           {task.completed_at
                             ? formatDateD(task.completed_at)
                             : "Not yet"}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-2 py-4 whitespace-nowrap">
                           {task.time_log ? `${task.time_log} mins` : "N/A"}
                         </td>
 
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-2 py-4 whitespace-nowrap">
                           {(auth.user.id === task.created_by ||
                             auth.user.roles?.some((role) =>
                               ["Admin", "Manager"].includes(role.name)
