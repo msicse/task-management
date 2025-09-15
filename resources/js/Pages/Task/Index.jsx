@@ -275,7 +275,7 @@ export default function Index({
                           id="status"
                           value={status}
                           onChange={(e) => setStatus(e.target.value)}
-                          className="w-full text-gray-800"
+                          className="w-full"
                         >
                           <option value="">All Status</option>
                           <option value="pending">Pending</option>
@@ -298,7 +298,7 @@ export default function Index({
                           id="priority"
                           value={priority}
                           onChange={(e) => setPriority(e.target.value)}
-                          className="w-full text-gray-800"
+                          className="w-full"
                         >
                           <option value="">All Priority</option>
                           <option value="low">Low</option>
@@ -364,7 +364,7 @@ export default function Index({
                           id="perPage"
                           value={perPage}
                           onChange={(e) => setPerPage(e.target.value)}
-                          className="w-full text-gray-800"
+                          className="w-full"
                         >
                           <option value="5">5</option>
                           <option value="10">10</option>

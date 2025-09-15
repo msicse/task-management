@@ -268,6 +268,32 @@ export default function Show({ auth, task, comments, files, success }) {
     return options;
   };
 
+  // Helper to auto-link URLs inside plain text comments and replies
+  const linkify = (text) => {
+    if (!text) return null;
+    const urlPattern = /(https?:\/\/[^\s]+|www\.[^\s]+)/gi;
+    const isUrl = /^(https?:\/\/|www\.)/i;
+    return String(text)
+      .split(urlPattern)
+      .map((part, idx) => {
+        if (isUrl.test(part)) {
+          const href = part.startsWith("http") ? part : `http://${part}`;
+          return (
+            <a
+              key={`lnk-${idx}`}
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:underline break-all"
+            >
+              {part}
+            </a>
+          );
+        }
+        return <span key={`txt-${idx}`}>{part}</span>;
+      });
+  };
+
   const validateFile = (file) => {
     const maxSize = 10 * 1024 * 1024; // 10MB limit
 
@@ -406,7 +432,7 @@ export default function Show({ auth, task, comments, files, success }) {
             <button
               onClick={() => window.history.back()}
               className="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-800 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md shadow-sm text-sm font-medium transition"
-                type="button"
+              type="button"
             >
               <HiArrowNarrowLeft className="h-5 w-5 mr-2" />
               Back
@@ -791,7 +817,7 @@ export default function Show({ auth, task, comments, files, success }) {
                         key={comment.id}
                         className="border-b border-gray-200 dark:border-gray-700 pb-6 last:border-0"
                       >
-                        <div className="flex items-start">
+                        <div className="flex items-start gap-3">
                           <div className="flex-shrink-0">
                             <img
                               className="h-10 w-10 rounded-full"
@@ -802,28 +828,27 @@ export default function Show({ auth, task, comments, files, success }) {
                               alt=""
                             />
                           </div>
-                          <div className="ml-3 flex-1">
-                            <div className="flex items-center justify-between">
-                              <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                          <div className="ml-3 flex-1 min-w-0">
+                            <div className="flex items-center justify-between flex-wrap gap-2">
+                              <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 break-words">
                                 {comment.user.name}
                               </h4>
-                              <span className="text-xs text-gray-500 dark:text-gray-400">
-                                {comment.created_at} ({comment.created_at_human}
-                                )
+                              <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                                {comment.created_at} ({comment.created_at_human})
                               </span>
                             </div>
-                            <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">
-                              {comment.content}
+                            <p className="mt-1 text-sm text-gray-700 dark:text-gray-300 break-words whitespace-pre-wrap">
+                              {linkify(comment.content)}
                             </p>
 
                             {comment.replies?.length > 0 && (
-                              <div className="mt-3 ml-4 pl-4 border-l-2 border-gray-200 dark:border-gray-700">
+                              <div className="mt-3 ml-4 pl-4 border-l-2 border-gray-200 dark:border-gray-700 space-y-4">
                                 {comment.replies.map((reply) => (
                                   <div
                                     key={reply.id}
                                     className="mt-3 first:mt-0"
                                   >
-                                    <div className="flex items-start">
+                                    <div className="flex items-start gap-2">
                                       <div className="flex-shrink-0">
                                         <img
                                           className="h-8 w-8 rounded-full"
@@ -834,18 +859,17 @@ export default function Show({ auth, task, comments, files, success }) {
                                           alt=""
                                         />
                                       </div>
-                                      <div className="ml-3 flex-1">
-                                        <div className="flex items-center justify-between">
-                                          <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                      <div className="ml-3 flex-1 min-w-0">
+                                        <div className="flex items-center justify-between flex-wrap gap-2">
+                                          <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 break-words">
                                             {reply.user.name}
                                           </h4>
-                                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                                            {reply.created_at} (
-                                            {reply.created_at_human})
+                                          <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                                            {reply.created_at} ({reply.created_at_human})
                                           </span>
                                         </div>
-                                        <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">
-                                          {reply.content}
+                                        <p className="mt-1 text-sm text-gray-700 dark:text-gray-300 break-words whitespace-pre-wrap">
+                                          {linkify(reply.content)}
                                         </p>
                                       </div>
                                     </div>

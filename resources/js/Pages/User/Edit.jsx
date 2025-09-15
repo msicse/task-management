@@ -27,12 +27,15 @@ export default function Edit({ auth, user, departments, roles }) {
     role_id: user.roles?.[0]?.id || "",
   });
 
+  console.log(data.role_id)
+
   const submit = (e) => {
     e.preventDefault();
     put(route("users.update", user.id));
   };
 
   return (
+
     <AuthenticatedLayout
       user={auth.user}
       header={
@@ -199,7 +202,7 @@ export default function Edit({ auth, user, departments, roles }) {
                       type="date"
                       name="date_of_join"
                       value={data.date_of_join}
-                      className="mt-1 block w-full"
+                      className="mt-1 block w-full dark:bg-slate-200 dark:text-gray-900 "
                       onChange={(e) => setData("date_of_join", e.target.value)}
                     />
                     <InputError message={errors.date_of_join} className="mt-2" />
@@ -212,7 +215,7 @@ export default function Edit({ auth, user, departments, roles }) {
                       type="date"
                       name="date_of_resign"
                       value={data.date_of_resign}
-                      className="mt-1 block w-full"
+                      className="mt-1 block w-full dark:bg-slate-200 dark:text-gray-900"
                       onChange={(e) => setData("date_of_resign", e.target.value)}
                     />
                     <InputError message={errors.date_of_resign} className="mt-2" />
@@ -265,7 +268,7 @@ export default function Edit({ auth, user, departments, roles }) {
                     >
                       <option value="">Select Role</option>
                       {roles?.map((role) => (
-                        <option key={role.id} value={role.name}>
+                        <option key={role.id} value={role.id}>
                           {role.name}
                         </option>
                       ))}

@@ -146,7 +146,8 @@ class UserController extends Controller
     {
         $data = $request->validated();
         $data['updated_by'] = Auth::id();
-        $roleId = $data['role_id'];
+        $roleId = (int) $data['role_id'];
+
         unset($data['role_id']);
 
         if ($request->filled('password')) {

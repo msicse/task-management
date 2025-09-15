@@ -38,7 +38,7 @@ class UpdateUserRequest extends FormRequest
             'about' => ['nullable', 'string'],
             'image' => ['nullable', 'image', 'max:1024'],
             'department_id' => ['nullable', 'exists:departments,id'],
-            'role_id' => ['required', 'exists:roles,name'],
+            'role_id' => ['required', 'exists:roles,id'],
         ];
     }
 }

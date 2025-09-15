@@ -106,7 +106,7 @@ export default function Index({ auth, users, departments, filters, success }) {
       user={auth.user}
       header={
         <Link href={route("users.index")} className="hover:underline hover:text-zinc-50">
-          <h2 className="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+          <h2 className="font-semibold text-xl  dark:text-gray-200 leading-tight">
             Users
           </h2>
         </Link>
@@ -144,7 +144,7 @@ export default function Index({ auth, users, departments, filters, success }) {
                   <SelectInput
                     value={department}
                     onChange={(e) => setDepartment(e.target.value)}
-                    className="w-48 text-gray-800"
+                    className="w-48 "
                   >
                     <option value="">All Departments</option>
                     {departments.map((dept) => (
@@ -156,14 +156,14 @@ export default function Index({ auth, users, departments, filters, success }) {
                   <SelectInput
                     value={status}
                     onChange={(e) => setStatus(e.target.value)}
-                    className="w-48 text-gray-800"
+                    className="w-48 "
                   >
                     <option value="">All Status</option>
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
                   </SelectInput>
                   <SelectInput
-                    className="w-32 text-gray-800"
+                    className="w-32 "
                     value={perPage}
                     onChange={handlePerPageChange}
                   >
