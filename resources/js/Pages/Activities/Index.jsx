@@ -31,6 +31,7 @@ export default function Index({
   auth,
   activities,
   categories,
+  assignedCategories = [],
   filters = {},
   permissions = {},
   success
@@ -43,6 +44,7 @@ export default function Index({
   const [sortField, setSortField] = useState("created_at");
   const [sortDirection, setSortDirection] = useState("desc");
   const [isFilterExpanded, setIsFilterExpanded] = useState(false);
+  const [externalUpdateToast, setExternalUpdateToast] = useState(false);
 
   // Sliding panel state
   const [showAddActivityPanel, setShowAddActivityPanel] = useState(false);
@@ -55,13 +57,21 @@ export default function Index({
   // Separate main and sub-categories
   const mainCategories = categories?.filter(cat => !cat.parent_id) || [];
   const subCategories = categories?.filter(cat => cat.parent_id) || [];
+  // If backend provided assignedCategories (array of ids), limit sub-categories to those
+  // that the current user has access to. Otherwise fall back to all sub-categories.
+  const assignedCategoryIds = Array.isArray(assignedCategories) ? assignedCategories.map(String) : [];
+  const allowedSubCategories = (assignedCategoryIds.length > 0)
+    ? subCategories.filter(sub => assignedCategoryIds.includes(String(sub.id)))
+    : subCategories;
 
   // State for selected main category in the sliding panel
   const [selectedMainCategory, setSelectedMainCategory] = useState("");
   // Filtered sub-categories based on main category selection
+  // By default only show sub-categories (same behaviour as Dashboard) so users
+  // cannot accidentally pick a main category which would fail access checks.
   const filteredSubCategories = selectedMainCategory
-    ? subCategories.filter(sub => sub.parent_id === Number(selectedMainCategory))
-    : [...mainCategories, ...subCategories];
+    ? allowedSubCategories.filter(sub => sub.parent_id === Number(selectedMainCategory))
+    : allowedSubCategories;
 
   // Fix: Define categoryOptions for MultipleSearchableSelect
   const categoryOptions = categories?.map(cat => ({ value: String(cat.id), label: cat.name })) || [];
@@ -107,6 +117,30 @@ export default function Index({
       return () => clearTimeout(timer);
     }
   }, [success]);
+
+  // Listen for cross-tab activity updates (set by Dashboard or other pages)
+  useEffect(() => {
+    const handler = (e) => {
+      if (!e) return;
+      const key = e.key || null;
+      if (key === 'activities_updated') {
+        // show a small toast then reload the activities partial
+        setExternalUpdateToast(true);
+        setTimeout(() => {
+          try {
+            router.reload({ only: ['activities'] });
+          } catch (err) {
+            router.reload();
+          }
+        }, 800);
+        // hide toast in case reload is delayed
+        setTimeout(() => setExternalUpdateToast(false), 3000);
+      }
+    };
+
+    window.addEventListener('storage', handler);
+    return () => window.removeEventListener('storage', handler);
+  }, []);
 
   const searchFieldChanged = (name, value) => {
     const params = { ...filters };
@@ -156,7 +190,8 @@ export default function Index({
     router.put(route(actionRoutes[action], activity.id), {}, {
       preserveScroll: true,
       onSuccess: () => {
-        // Handle success if needed
+        // Signal other tabs/pages that activities updated
+        try { localStorage.setItem('activities_updated', Date.now().toString()); } catch(e) {}
       }
     });
   };
@@ -177,11 +212,17 @@ export default function Index({
     setIsCreatingActivity(true);
 
     try {
-      await router.post(route("activities.store"), {
+      const payload = {
         ...newActivityData,
         status: "started",
-        redirect_to: "activities", // Stay on activities page
-      }, {
+        redirect_to: "activities",
+      };
+
+      // Debug: log payload before sending
+      console.log('Creating activity with payload:', payload);
+
+      await router.post(route("activities.store"), payload, {
+        preserveScroll: true,
         onSuccess: () => {
           // Reset form and close panel
           setNewActivityData({
@@ -192,6 +233,16 @@ export default function Index({
           setShowAddActivityPanel(false);
           // Reload to show updated activities
           router.reload({ only: ['activities'] });
+        },
+        onError: (errors) => {
+          // Show validation/server errors so user can paste them here
+          console.error('Server returned errors when creating activity:', errors);
+          try {
+            const msg = JSON.stringify(errors);
+            alert('Failed to start activity. See console for details.\n' + msg);
+          } catch (e) {
+            alert('Failed to start activity. Check console for details.');
+          }
         }
       });
     } catch (error) {
@@ -233,6 +284,11 @@ export default function Index({
       <Head title="Activities" />
 
       <div className="py-2">
+        {externalUpdateToast && (
+          <div className="fixed top-4 right-4 z-50">
+            <div className="bg-blue-600 text-white px-4 py-2 rounded shadow">Activities updated — reloading...</div>
+          </div>
+        )}
         <div className="max-w-full mx-auto sm:px-6 lg:px-8">
           {showSuccess && (
             <Alert
@@ -573,7 +629,15 @@ export default function Index({
                 <MultipleSearchableSelect
                   options={filteredSubCategories.map(cat => ({ value: String(cat.id), label: cat.name }))}
                   value={newActivityData.activity_category_id}
-                  onChange={value => setNewActivityData(prev => ({ ...prev, activity_category_id: value }))}
+                  onChange={value => {
+                    // Set the chosen sub-category id (string)
+                    setNewActivityData(prev => ({ ...prev, activity_category_id: value }));
+                    // Auto-select parent/main category when a sub-category is chosen (same behaviour as Dashboard)
+                    const selectedSub = filteredSubCategories.find(cat => String(cat.id) === String(value));
+                    if (selectedSub && selectedSub.parent_id) {
+                      setSelectedMainCategory(String(selectedSub.parent_id));
+                    }
+                  }}
                   placeholder="Select sub-category..."
                   searchPlaceholder="Search sub-categories..."
                   searchable={true}

@@ -72,9 +72,14 @@ class ActivityController extends Controller
         // Get all categories (main and sub) for select
         $categories = ActivityCategory::orderBy('name')->get(['id', 'name', 'parent_id']);
 
+        // Also get categories assigned to current user's work roles so the UI can
+        // restrict selectable sub-categories to only those the user has access to.
+        $assignedCategories = $currentUser->getAssignedActivityCategories()->pluck('id');
+
         return Inertia::render('Activities/Index', [
             'activities' => $activities,
             'categories' => $categories,
+            'assignedCategories' => $assignedCategories,
             'filters' => $request->only(['status', 'start_date', 'end_date', 'user_id', 'category_id']),
             'permissions' => [
                 'canSeeAllActivities' => $currentUser->can('activity-list-all'),

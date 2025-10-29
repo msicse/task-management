@@ -141,6 +141,13 @@ export default function Dashboard({
         status: "started",
       });
 
+      // Signal other tabs/pages that activities have been updated
+      try {
+        localStorage.setItem('activities_updated', Date.now().toString());
+      } catch (e) {
+        // ignore localStorage errors (e.g., private mode)
+      }
+
       // Reset form after successful creation
       setActivityData({
         activity_category_id: "",
@@ -182,6 +189,7 @@ export default function Dashboard({
           setCompleteActivityPanel({ open: false, activity: null });
           setCompleteActivityFiles([]);
           setCompleteActivityCount(1);
+            try { localStorage.setItem('activities_updated', Date.now().toString()); } catch(e) {}
         },
         onError: (errors) => {
           alert("Failed to complete activity. Please check your input and try again.");
@@ -201,6 +209,7 @@ export default function Dashboard({
         preserveScroll: true,
         onSuccess: () => {
           // Success message will be handled by Laravel session
+          try { localStorage.setItem('activities_updated', Date.now().toString()); } catch(e) {}
         },
         onError: (errors) => {
           console.error(`Error ${action} activity:`, errors);
@@ -343,6 +352,13 @@ export default function Dashboard({
           router.reload({ only: ['activeActivities'] });
         }
       });
+
+      // Signal other tabs/pages that activities have been updated
+      try {
+        localStorage.setItem('activities_updated', Date.now().toString());
+      } catch (e) {
+        // ignore localStorage errors
+      }
     } catch (error) {
       console.error("Error creating activity:", error);
     } finally {
@@ -488,6 +504,8 @@ export default function Dashboard({
                                       onSuccess: () => {
                                         // reload only activeActivities to refresh running items
                                         router.reload({ only: ['activeActivities'] });
+                                        // Signal other tabs/pages that activities have been updated
+                                        try { localStorage.setItem('activities_updated', Date.now().toString()); } catch(e) {}
                                       },
                                       onFinish: () => setIsStartingCategoryId(null)
                                     });

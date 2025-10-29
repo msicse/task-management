@@ -73,6 +73,9 @@ export default function Show({ auth, activity }) {
 
     router.put(route(actionRoutes[action], activity.id), {}, {
       preserveScroll: true,
+      onSuccess: () => {
+        try { localStorage.setItem('activities_updated', Date.now().toString()); } catch(e) {}
+      }
     });
   };
 
@@ -120,6 +123,7 @@ export default function Show({ auth, activity }) {
         onSuccess: () => {
           setShowCompleteModal(false);
           setUploadFiles([]);
+          try { localStorage.setItem('activities_updated', Date.now().toString()); } catch(e) {}
         },
         onFinish: () => setIsCompleting(false)
       });
@@ -134,6 +138,7 @@ export default function Show({ auth, activity }) {
       preserveScroll: true,
       onSuccess: () => {
         setShowCompleteModal(false);
+        try { localStorage.setItem('activities_updated', Date.now().toString()); } catch(e) {}
       }
     });
   };
