@@ -17,6 +17,7 @@ class Activity extends Model
         'ended_at',
         'duration',
         'count',
+        'notes',
     ];
 
     protected $casts = [

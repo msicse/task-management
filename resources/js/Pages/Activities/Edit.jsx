@@ -18,6 +18,8 @@ export default function Edit({ auth, activity, categories }) {
   const { data, setData, put, post, errors, processing } = useForm({
     activity_category_id: String(activity.activity_category_id || ""),
     description: activity.description || "",
+    notes: activity.notes || "",
+    count: activity.count ?? 1,
   });
 
   const [selectedFiles, setSelectedFiles] = useState([]);
@@ -64,6 +66,10 @@ export default function Edit({ auth, activity, categories }) {
       formData.append('_method', 'PUT');
       formData.append('activity_category_id', data.activity_category_id);
       formData.append('description', data.description);
+      formData.append('count', data.count);
+      if (data.notes && data.notes.trim() !== '') {
+        formData.append('notes', data.notes.trim());
+      }
 
       // Append each file
       selectedFiles.forEach((file, index) => {
@@ -83,8 +89,8 @@ export default function Edit({ auth, activity, categories }) {
         }
       });
     } else {
-      // No new files, use regular PUT request
-      put(route("activities.update", activity.id));
+  // No new files, use regular PUT request
+  put(route("activities.update", activity.id), { ...data });
     }
   };
 
@@ -168,6 +174,36 @@ export default function Edit({ auth, activity, categories }) {
                   placeholder="Describe what you're working on..."
                 />
                 <InputError message={errors.description} className="mt-2" />
+              </div>
+
+              {/* Count */}
+              <div>
+                <InputLabel htmlFor="count" value="Count" />
+                <input
+                  id="count"
+                  name="count"
+                  type="number"
+                  min={0}
+                  className="mt-1 block w-32 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm px-2 py-1"
+                  value={data.count}
+                  onChange={(e) => setData('count', Number(e.target.value))}
+                />
+                <InputError message={errors.count} className="mt-2" />
+              </div>
+
+              {/* Notes */}
+              <div>
+                <InputLabel htmlFor="notes" value="Notes (optional)" />
+                <textarea
+                  id="notes"
+                  name="notes"
+                  rows="4"
+                  className="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm"
+                  value={data.notes}
+                  onChange={(e) => setData('notes', e.target.value)}
+                  placeholder="Optional notes about this activity"
+                />
+                <InputError message={errors.notes} className="mt-2" />
               </div>
 
               {/* Existing Files */}

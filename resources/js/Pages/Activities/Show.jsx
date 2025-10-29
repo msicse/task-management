@@ -14,6 +14,7 @@ import {
   PencilIcon,
   TrashIcon,
   DocumentIcon,
+  XMarkIcon,
   ClockIcon,
   UserIcon,
   TagIcon,
@@ -27,6 +28,11 @@ export default function Show({ auth, activity }) {
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [uploadFiles, setUploadFiles] = useState([]);
   const [isCompleting, setIsCompleting] = useState(false);
+  // Sliding complete panel state (match Dashboard/Index behaviour)
+  const [showCompletePanel, setShowCompletePanel] = useState(false);
+  const [completeFiles, setCompleteFiles] = useState([]);
+  const [completeNotes, setCompleteNotes] = useState(activity.notes || "");
+  const [completeCount, setCompleteCount] = useState(activity.count ?? 1);
   const [isEditingCount, setIsEditingCount] = useState(false);
   const [countValue, setCountValue] = useState(activity.count ?? 0);
   const [isSavingCount, setIsSavingCount] = useState(false);
@@ -62,7 +68,11 @@ export default function Show({ auth, activity }) {
 
   const handleStatusAction = (action) => {
     if (action === 'complete') {
-      setShowCompleteModal(true);
+      // open sliding panel instead of modal
+      setCompleteFiles([]);
+      setCompleteNotes(activity.notes || "");
+      setCompleteCount(activity.count ?? 1);
+      setShowCompletePanel(true);
       return;
     }
 
@@ -96,51 +106,40 @@ export default function Show({ auth, activity }) {
     const files = Array.from(event.target.files);
     setUploadFiles(files);
   };
-
-  const handleCompleteWithFiles = async () => {
-    setIsCompleting(true);
-
-    try {
-      // Upload files first if any
-      if (uploadFiles.length > 0) {
-        for (const file of uploadFiles) {
-          const formData = new FormData();
-          formData.append('file', file);
-
-          await fetch(route('activity-files.store', activity.id), {
-            method: 'POST',
-            body: formData,
-            headers: {
-              'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-            },
-          });
-        }
-      }
-
-      // Then complete the activity
-      router.put(route('activities.complete', activity.id), {}, {
-        preserveScroll: true,
-        onSuccess: () => {
-          setShowCompleteModal(false);
-          setUploadFiles([]);
-          try { localStorage.setItem('activities_updated', Date.now().toString()); } catch(e) {}
-        },
-        onFinish: () => setIsCompleting(false)
-      });
-    } catch (error) {
-      console.error('Error uploading files:', error);
-      setIsCompleting(false);
-    }
+  const handleCompleteFileSelect = (event) => {
+    const files = Array.from(event.target.files || []);
+    setCompleteFiles(files);
   };
 
-  const handleCompleteWithoutFiles = () => {
-    router.put(route('activities.complete', activity.id), {}, {
-      preserveScroll: true,
-      onSuccess: () => {
-        setShowCompleteModal(false);
-        try { localStorage.setItem('activities_updated', Date.now().toString()); } catch(e) {}
+  const handleRemoveCompleteFile = (index) => {
+    setCompleteFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const submitComplete = async () => {
+    if (!activity) return;
+    setIsCompleting(true);
+    try {
+      const formData = new FormData();
+      formData.append('_method', 'PUT');
+      formData.append('count', completeCount);
+      if (completeNotes && completeNotes.trim() !== '') {
+        formData.append('notes', completeNotes.trim());
       }
-    });
+      completeFiles.forEach((f) => formData.append('files[]', f));
+
+      await router.post(route('activities.complete', activity.id), formData, {
+        preserveScroll: true,
+        onSuccess: () => {
+          setShowCompletePanel(false);
+          setCompleteFiles([]);
+          try { localStorage.setItem('activities_updated', Date.now().toString()); } catch(e) {}
+        },
+        onFinish: () => setIsCompleting(false),
+      });
+    } catch (err) {
+      console.error('Failed completing activity:', err);
+      setIsCompleting(false);
+    }
   };
 
   const removeFile = (index) => {
@@ -239,6 +238,13 @@ export default function Show({ auth, activity }) {
                   <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
                     {activity.description || 'No description'}
                   </p>
+
+                  {activity.notes && (
+                    <div className="mt-3">
+                      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Notes</h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">{activity.notes}</p>
+                    </div>
+                  )}
 
                   <div className="mt-3 flex flex-wrap items-center gap-2">
                     <span className={`inline-flex items-center px-2 py-1 text-xs rounded-full text-white ${ACTIVITY_STATUS_CLASS_MAP[activity.status]}`}>
@@ -500,119 +506,58 @@ export default function Show({ auth, activity }) {
         </div>
       </div>
 
-      {/* Complete Activity Modal */}
-      {showCompleteModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-2/3 lg:w-1/2 shadow-lg rounded-md bg-white dark:bg-gray-800">
-            <div className="mt-3">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                  Complete Activity
-                </h3>
-                <button
-                  onClick={() => setShowCompleteModal(false)}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
+      {/* Sliding Complete Panel (replaces modal) */}
+      <div className={`fixed inset-y-0 right-0 z-50 w-96 bg-white dark:bg-gray-800 shadow-xl transform transition-transform duration-300 ease-in-out ${showCompletePanel ? 'translate-x-0' : 'translate-x-full'}`}>
+        <div className="flex flex-col h-full">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Complete Activity</h3>
+              <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">{activity.activity_category?.name || activity.description}</div>
+            </div>
+            <button onClick={() => setShowCompletePanel(false)} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+              <XMarkIcon className="w-5 h-5" />
+            </button>
+          </div>
 
-              <div className="mb-6">
-                <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  Would you like to upload any files before completing this activity? You can also complete without uploading files.
-                </p>
-
-                {/* File Upload Section */}
-                <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6">
-                  <div className="text-center">
-                    <DocumentIcon className="mx-auto h-12 w-12 text-gray-400" />
-                    <div className="mt-4">
-                      <label htmlFor="file-upload" className="cursor-pointer">
-                        <span className="mt-2 block text-sm font-medium text-gray-900 dark:text-gray-100">
-                          Upload files (optional)
-                        </span>
-                        <input
-                          id="file-upload"
-                          name="file-upload"
-                          type="file"
-                          multiple
-                          className="sr-only"
-                          onChange={handleFileSelect}
-                          accept="*/*"
-                        />
-                        <span className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-200 dark:hover:bg-blue-800 mt-2">
-                          Choose Files
-                        </span>
-                      </label>
-                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                        PNG, JPG, PDF, DOC, or any file up to 10MB
-                      </p>
+          <div className="flex-1 px-6 py-4 overflow-y-auto space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Add Files</label>
+              <input type="file" multiple onChange={handleCompleteFileSelect} className="w-full" />
+              {completeFiles.length > 0 && (
+                <div className="mt-2 text-sm text-gray-600 dark:text-gray-300">{completeFiles.length} file(s) selected</div>
+              )}
+              {completeFiles.length > 0 && (
+                <div className="mt-2 space-y-2">
+                  {completeFiles.map((f, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
+                      <div className="text-sm text-gray-900 dark:text-gray-100">{f.name}</div>
+                      <button onClick={() => handleRemoveCompleteFile(idx)} className="text-red-500 text-sm">Remove</button>
                     </div>
-                  </div>
+                  ))}
                 </div>
+              )}
+            </div>
 
-                {/* Selected Files List */}
-                {uploadFiles.length > 0 && (
-                  <div className="mt-4">
-                    <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
-                      Selected Files ({uploadFiles.length})
-                    </h4>
-                    <div className="space-y-2">
-                      {uploadFiles.map((file, index) => (
-                        <div key={index} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
-                          <div className="flex items-center">
-                            <DocumentIcon className="w-4 h-4 text-gray-400 mr-2" />
-                            <span className="text-sm text-gray-900 dark:text-gray-100">{file.name}</span>
-                            <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
-                              ({(file.size / 1024 / 1024).toFixed(2)} MB)
-                            </span>
-                          </div>
-                          <button
-                            onClick={() => removeFile(index)}
-                            className="text-red-500 hover:text-red-700 text-sm"
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Notes (optional)</label>
+              <textarea value={completeNotes} onChange={e => setCompleteNotes(e.target.value)} placeholder="Add notes (optional)" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md resize-y" rows={4} />
+            </div>
 
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-3 justify-end">
-                <button
-                  onClick={() => setShowCompleteModal(false)}
-                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                  disabled={isCompleting}
-                >
-                  Cancel
-                </button>
-
-                <button
-                  onClick={handleCompleteWithoutFiles}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  disabled={isCompleting}
-                >
-                  {isCompleting ? 'Completing...' : 'Complete Without Files'}
-                </button>
-
-                {uploadFiles.length > 0 && (
-                  <button
-                    onClick={handleCompleteWithFiles}
-                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-                    disabled={isCompleting}
-                  >
-                    {isCompleting ? 'Uploading & Completing...' : `Complete with ${uploadFiles.length} file(s)`}
-                  </button>
-                )}
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Count</label>
+              <input type="number" min={1} value={completeCount} onChange={e => setCompleteCount(Number(e.target.value))} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md" />
             </div>
           </div>
+
+          <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex space-x-3">
+            <button onClick={() => setShowCompletePanel(false)} className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600">Cancel</button>
+            <button onClick={submitComplete} disabled={isCompleting} className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-sm text-white uppercase tracking-widest hover:bg-green-700 focus:bg-green-700 active:bg-green-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50">{isCompleting ? 'Submitting...' : 'Submit'}</button>
+          </div>
         </div>
+      </div>
+
+      {showCompletePanel && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 z-40 transition-opacity duration-300" onClick={() => setShowCompletePanel(false)}></div>
       )}
     </AuthenticatedLayout>
   );

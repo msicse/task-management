@@ -44,6 +44,7 @@ export default function Dashboard({
   const [completeActivityPanel, setCompleteActivityPanel] = useState({ open: false, activity: null });
   const [completeActivityFiles, setCompleteActivityFiles] = useState([]);
   const [completeActivityCount, setCompleteActivityCount] = useState(1);
+  const [completeActivityNotes, setCompleteActivityNotes] = useState('');
   const [isSubmittingComplete, setIsSubmittingComplete] = useState(false);
   // Check if user has admin role
   // Main categories: show only those with at least one accessible sub-category
@@ -175,6 +176,9 @@ export default function Dashboard({
     // Use method spoofing so the request is sent as POST (allowing files) but treated as PUT by Laravel
     formData.append('_method', 'PUT');
     formData.append('count', completeActivityCount);
+    if (completeActivityNotes && completeActivityNotes.trim() !== '') {
+      formData.append('notes', completeActivityNotes.trim());
+    }
     if (completeActivityFiles.length > 0) {
       completeActivityFiles.forEach((file) => {
         // ensure files are sent as an array
@@ -189,6 +193,7 @@ export default function Dashboard({
           setCompleteActivityPanel({ open: false, activity: null });
           setCompleteActivityFiles([]);
           setCompleteActivityCount(1);
+          setCompleteActivityNotes('');
             try { localStorage.setItem('activities_updated', Date.now().toString()); } catch(e) {}
         },
         onError: (errors) => {
@@ -370,6 +375,13 @@ export default function Dashboard({
     setShowAddActivityPanel(false);
     setNewActivityData({ activity_category_id: "", description: "" });
     setSelectedMainCategory("");
+  };
+
+  const closeCompleteActivityPanel = () => {
+    setCompleteActivityPanel({ open: false, activity: null });
+    setCompleteActivityFiles([]);
+    setCompleteActivityCount(1);
+    setCompleteActivityNotes('');
   };
 
   return (
@@ -609,14 +621,14 @@ export default function Dashboard({
   <div className={`fixed inset-y-0 right-0 z-50 w-96 bg-white dark:bg-gray-800 shadow-xl transform transition-transform duration-300 ease-in-out ${completeActivityPanel.open ? 'translate-x-0' : 'translate-x-full'}`}>
     <div className="flex flex-col h-full">
       {/* Panel Header */}
-      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+  <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Complete Activity</h3>
           {completeActivityPanel.activity && (
             <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">{completeActivityPanel.activity.activity_category?.name || completeActivityPanel.activity.name}</div>
           )}
         </div>
-        <button onClick={() => setCompleteActivityPanel({ open: false, activity: null })} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+        <button onClick={closeCompleteActivityPanel} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
           <XMarkIcon className="w-5 h-5" />
         </button>
       </div>
@@ -628,6 +640,16 @@ export default function Dashboard({
           {completeActivityFiles.length > 0 && (
             <div className="mt-2 text-sm text-gray-600 dark:text-gray-300">{completeActivityFiles.length} file(s) selected</div>
           )}
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Notes (optional)</label>
+          <textarea
+            value={completeActivityNotes}
+            onChange={e => setCompleteActivityNotes(e.target.value)}
+            placeholder="Add any notes about this activity (optional)"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md resize-y"
+            rows={4}
+          />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Count</label>
@@ -646,21 +668,10 @@ export default function Dashboard({
   </div>
   {/* Backdrop for Complete Activity Panel */}
   {completeActivityPanel.open && (
-    <div className="fixed inset-0 bg-black bg-opacity-30 z-40 transition-opacity duration-300" onClick={() => setCompleteActivityPanel({ open: false, activity: null })}></div>
+    <div className="fixed inset-0 bg-black bg-opacity-30 z-40 transition-opacity duration-300" onClick={closeCompleteActivityPanel}></div>
   )}
 
-                          {/* File Upload Button */}
-                          <label className="inline-flex items-center px-3 py-2 bg-gray-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition ease-in-out duration-150 cursor-pointer">
-                            <DocumentArrowUpIcon className="w-4 h-4 mr-1" />
-                            {uploadingFiles[activity.id] ? 'Uploading...' : 'Add Files'}
-                            <input
-                              type="file"
-                              multiple
-                              className="hidden"
-                              onChange={(e) => handleFileUpload(activity.id, e.target.files)}
-                              disabled={uploadingFiles[activity.id]}
-                            />
-                          </label>
+                          {/* File upload removed from Dashboard active list (use activity detail page or complete panel) */}
 
                           {/* Add Another Activity Button */}
                           <button

@@ -278,12 +278,13 @@ class ActivityController extends Controller
             'activity_category_id' => 'required|exists:activity_categories,id',
             'description' => 'nullable|string|max:1000',
             'count' => 'nullable|integer|min:0',
+            'notes' => 'nullable|string|max:2000',
             'files.*' => 'nullable|file|max:10240', // 10MB max per file
         ]);
 
         // Update only the validated fields (including count if provided)
         $activity->update(array_filter($validated, function ($value, $key) {
-            return in_array($key, ['activity_category_id', 'description', 'count']);
+            return in_array($key, ['activity_category_id', 'description', 'count', 'notes']);
         }, ARRAY_FILTER_USE_BOTH));
 
         // Handle file uploads if any
@@ -409,6 +410,12 @@ class ActivityController extends Controller
             // Update count field if provided (after completion to avoid overwrite)
             if (request()->has('count')) {
                 $activity->count = request('count');
+                $activity->save();
+            }
+
+            // Update optional notes if provided
+            if (request()->has('notes')) {
+                $activity->notes = request('notes');
                 $activity->save();
             }
 
