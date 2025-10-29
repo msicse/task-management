@@ -3,10 +3,11 @@ import InputLabel from "@/Components/InputLabel";
 import SelectInput from "@/Components/SelectInput";
 import TextInput from "@/Components/TextInput";
 import TextareaInput from "@/Components/TextareaInput";
+import MultipleSearchableSelect from "@/Components/MultipleSearchableSelect";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, Link, useForm } from "@inertiajs/react";
 
-export default function Create({ auth, departments = [], roles = [] }) {
+export default function Create({ auth, departments = [], roles = [], workRoles = [] }) {
   const { data, setData, post, processing, errors, reset } = useForm({
     name: "",
     email: "",
@@ -24,8 +25,21 @@ export default function Create({ auth, departments = [], roles = [] }) {
     about: "",
     image: null,
     department_id: "",
-    role_id: "",
+    role_ids: [],
+    work_role_ids: [],
   });
+
+  // Prepare role options for MultipleSearchableSelect
+  const roleOptions = roles?.map(role => ({
+    value: String(role.id),
+    label: role.name
+  })) || [];
+
+  // Prepare work role options for MultipleSearchableSelect
+  const workRoleOptions = workRoles?.map(workRole => ({
+    value: String(workRole.id),
+    label: workRole.name
+  })) || [];
 
   const onSubmit = (e) => {
     e.preventDefault();
@@ -267,23 +281,47 @@ export default function Create({ auth, departments = [], roles = [] }) {
                   </div>
 
                   <div>
-                    <InputLabel htmlFor="role_id" value="Role" />
-                    <SelectInput
-                      id="role_id"
-                      name="role_id"
-                      value={data.role_id}
-                      className="mt-1 block w-full"
-                      onChange={(e) => setData("role_id", e.target.value)}
-                      required
-                    >
-                      <option value="">Select Role</option>
-                      {roles?.map((role) => (
-                        <option key={role.id} value={role.name}>
-                          {role.name}
-                        </option>
-                      ))}
-                    </SelectInput>
-                    <InputError message={errors.role_id} className="mt-2" />
+                    <InputLabel htmlFor="role_ids" value="Roles *" />
+                    <div className="mt-1">
+                      <MultipleSearchableSelect
+                        options={roleOptions}
+                        value={data.role_ids}
+                        onChange={(value) => setData("role_ids", value)}
+                        placeholder="Select roles..."
+                        searchPlaceholder="Search roles..."
+                        searchable={true}
+                        multiSelect={true}
+                        allowClear={true}
+                        showSelectedCount={true}
+                        className="w-full"
+                      />
+                    </div>
+                    <InputError message={errors.role_ids} className="mt-2" />
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                      You can select multiple roles for this user
+                    </p>
+                  </div>
+
+                  <div>
+                    <InputLabel htmlFor="work_role_ids" value="Work Roles" />
+                    <div className="mt-1">
+                      <MultipleSearchableSelect
+                        options={workRoleOptions}
+                        value={data.work_role_ids}
+                        onChange={(value) => setData("work_role_ids", value)}
+                        placeholder="Select work roles..."
+                        searchPlaceholder="Search work roles..."
+                        searchable={true}
+                        multiSelect={true}
+                        allowClear={true}
+                        showSelectedCount={true}
+                        className="w-full"
+                      />
+                    </div>
+                    <InputError message={errors.work_role_ids} className="mt-2" />
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                      Select work roles that define user's job responsibilities
+                    </p>
                   </div>
 
                   <div>

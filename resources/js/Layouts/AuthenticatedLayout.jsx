@@ -79,6 +79,12 @@ export default function AuthenticatedLayout({ user, header, children }) {
     );
   }
 
+  // Show Activities if user has explicit activity permission or generic task permission
+  const canSeeActivities =
+    hasPermission("activity-list") || hasPermission("task-list");
+  // Show Activity Monitor for users who can see all activities
+  const canSeeActivityMonitor = hasPermission("activity-list-all");
+
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 pt-16">
       <LoadingIndicator />
@@ -101,39 +107,29 @@ export default function AuthenticatedLayout({ user, header, children }) {
                 </NavLink>
               </div>
 
-              {hasPermission("role-list") && (
+              {canSeeActivities && (
                 <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                   <NavLink
-                    href={route("roles.index")}
-                    active={route().current("roles.*")}
+                    href={route("activities.index")}
+                    active={route().current("activities.*")}
                   >
-                    Roles
+                    Activities
                   </NavLink>
                 </div>
               )}
 
-              {hasPermission("user-list") && (
+              {canSeeActivityMonitor && (
                 <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                   <NavLink
-                    href={route("users.index")}
-                    active={route().current("users.*")}
+                    href={route("activity-monitor.index")}
+                    active={route().current("activity-monitor.*")}
                   >
-                    Users
+                    Activity Monitor
                   </NavLink>
                 </div>
               )}
 
-              {hasPermission("category-list") && (
-                <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                  <NavLink
-                    href={route("categories.index")}
-                    active={route().current("categories.*")}
-                  >
-                    Categories
-                  </NavLink>
-                </div>
-              )}
-
+              {/* Task-related links stay as top-level items */}
               {taskTabs.map(({ label, filter }) => (
                 <div
                   key={filter}
@@ -150,32 +146,6 @@ export default function AuthenticatedLayout({ user, header, children }) {
                   </NavLink>
                 </div>
               ))}
-{/*
-              {hasPermission("task-list") && (
-                <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                  <NavLink
-                    href={route("tasks.index")}
-                    active={route().current("tasks.*")}
-                  >
-                    Created Tasks
-                  </NavLink>
-                </div>
-              )}
-
-              {hasPermission("task-list") && (
-                <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                  <NavLink
-                    href={route("tasks.index")}
-                    active={route().current("tasks.*")}
-                  >
-                    {user.roles?.some((role) =>
-                      ["Admin", "Team Leader"].includes(role.name)
-                    )
-                      ? "All Tasks"
-                      : "Created Tasks"}
-                  </NavLink>
-                </div>
-              )} */}
 
               {hasPermission("task-create") && (
                 <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
@@ -188,13 +158,142 @@ export default function AuthenticatedLayout({ user, header, children }) {
                 </div>
               )}
 
+              {/* Reports dropdown */}
+              {hasPermission("task-list") && (
+                <div className="hidden sm:flex sm:items-center sm:ms-10">
+                  <Dropdown>
+                    <Dropdown.Trigger>
+                      <span className="inline-flex items-center rounded-md">
+                        <button
+                          type="button"
+                          className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none transition ease-in-out duration-150"
+                        >
+                          Reports
+                          <FaChevronDown className="ms-2 -me-0.5 h-4 w-4" />
+                        </button>
+                      </span>
+                    </Dropdown.Trigger>
+                    <Dropdown.Content>
+                      <div className="px-3 py-1 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                        Tasks
+                      </div>
+                      <Dropdown.Link href={route("tasks.reports")}>
+                        Task Reports
+                      </Dropdown.Link>
+                      <Dropdown.Link href={route("tasks.export.excel")}>
+                        Export Excel
+                      </Dropdown.Link>
+                      <Dropdown.Link href={route("tasks.export.pdf")}>
+                        Export PDF
+                      </Dropdown.Link>
+                      {canSeeActivities && (
+                        <>
+                          <div className="mt-2 px-3 py-1 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                            Activities
+                          </div>
+                          {hasPermission("activity-list-all") && (
+                            <Dropdown.Link
+                              href={route("activities.reports", {
+                                filter: "all",
+                              })}
+                            >
+                              All Activities
+                            </Dropdown.Link>
+                          )}
+                          <Dropdown.Link
+                            href={route("activities.reports", { filter: "my" })}
+                          >
+                            My Activities
+                          </Dropdown.Link>
+                          <Dropdown.Link
+                            href={route("activities.export.excel")}
+                          >
+                            Export Excel
+                          </Dropdown.Link>
+                        </>
+                      )}
+                    </Dropdown.Content>
+                  </Dropdown>
+                </div>
+              )}
+
+              {/* Management dropdown groups admin/management items */}
+              <div className="hidden sm:flex sm:items-center sm:ms-10">
+                <Dropdown>
+                  <Dropdown.Trigger>
+                    <span className="inline-flex items-center rounded-md">
+                      <button
+                        type="button"
+                        className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none transition ease-in-out duration-150"
+                      >
+                        Management
+                        <FaChevronDown className="ms-2 -me-0.5 h-4 w-4" />
+                      </button>
+                    </span>
+                  </Dropdown.Trigger>
+                  <Dropdown.Content>
+                    <div className="px-3 py-1 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                      User Management
+                    </div>
+                    {hasPermission("role-list") && (
+                      <Dropdown.Link href={route("roles.index")}>
+                        Site Roles & Permissions
+                      </Dropdown.Link>
+                    )}
+                    {hasPermission("role-list") && (
+                      <Dropdown.Link href={route("work-roles.index")}>
+                        Work Roles & Assignments
+                      </Dropdown.Link>
+                    )}
+                    {hasPermission("user-list") && (
+                      <Dropdown.Link href={route("users.index")}>
+                        Users
+                      </Dropdown.Link>
+                    )}
+
+                    <div className="mt-2 px-3 py-1 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                      Categories
+                    </div>
+                    {hasPermission("category-list") && (
+                      <Dropdown.Link href={route("categories.index")}>
+                        Categories
+                      </Dropdown.Link>
+                    )}
+                    {hasPermission("category-list") && (
+                      <Dropdown.Link href={route("activity-categories.index")}>
+                        Activity Categories
+                      </Dropdown.Link>
+                    )}
+
+                    <div className="mt-2 px-3 py-1 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                      Import Management
+                    </div>
+                    {/* {hasPermission("work-role-import") && (
+
+                    )} */}
+
+                    <Dropdown.Link href={route("activity-categories.import")}>
+                      Import Activity Categories
+                    </Dropdown.Link>
+
+                    <Dropdown.Link href={route("work-roles.import")}>
+                      Import Work Roles
+                    </Dropdown.Link>
+
+                    {/* {hasPermission("activity-category-import") && (
+
+                    )} */}
+                  </Dropdown.Content>
+                </Dropdown>
+              </div>
+
               {/* {hasPermission("task-view-own") && (
                 <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                   <NavLink
                     href={route("task.mytasks")}
-                    active={route().current("task.mytasks")}
+                    active={route().current("task.mytasks")}f
                   >
-                    My Tasks
+                    My Tasksf
                   </NavLink>
                 </div>
               )} */}
@@ -287,6 +386,67 @@ export default function AuthenticatedLayout({ user, header, children }) {
             >
               Dashboard
             </ResponsiveNavLink>
+
+            {hasPermission("role-list") && (
+              <>
+                <ResponsiveNavLink
+                  href={route("roles.index")}
+                  active={route().current("roles.*")}
+                >
+                  Site Roles & Permissions
+                </ResponsiveNavLink>
+                <ResponsiveNavLink
+                  href={route("work-roles.index")}
+                  active={route().current("work-roles.*")}
+                >
+                  Work Roles & Assignments
+                </ResponsiveNavLink>
+              </>
+            )}
+
+            {hasPermission("user-list") && (
+              <ResponsiveNavLink
+                href={route("users.index")}
+                active={route().current("users.*")}
+              >
+                Users
+              </ResponsiveNavLink>
+            )}
+
+            {hasPermission("category-list") && (
+              <>
+                <ResponsiveNavLink
+                  href={route("categories.index")}
+                  active={route().current("categories.*")}
+                >
+                  Task Categories
+                </ResponsiveNavLink>
+                <ResponsiveNavLink
+                  href={route("activity-categories.index")}
+                  active={route().current("activity-categories.*")}
+                >
+                  Activity Categories
+                </ResponsiveNavLink>
+              </>
+            )}
+
+            {canSeeActivities && (
+              <ResponsiveNavLink
+                href={route("activities.index")}
+                active={route().current("activities.*")}
+              >
+                Activities
+              </ResponsiveNavLink>
+            )}
+
+            {canSeeActivityMonitor && (
+              <ResponsiveNavLink
+                href={route("activity-monitor.index")}
+                active={route().current("activity-monitor.*")}
+              >
+                Activity Monitor
+              </ResponsiveNavLink>
+            )}
           </div>
 
           <div className="pt-4 pb-1 border-t border-gray-200 dark:border-gray-600">

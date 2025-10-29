@@ -1,5 +1,19 @@
-import { Head, Link } from "@inertiajs/react";
+import { Head, Link, router } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
+import MultipleSearchableSelect from "@/Components/MultipleSearchableSelect";
+import { useState, useEffect } from "react";
+import {
+  PlayIcon,
+  PauseIcon,
+  CheckIcon,
+  PlusIcon,
+  DocumentArrowUpIcon,
+  ClockIcon,
+  XMarkIcon,
+  TagIcon,
+  UserGroupIcon
+} from "@heroicons/react/24/outline";
+import { formatMinutesDisplay, exactTooltip } from '@/utils/timeFormat';
 import {
   TASK_STATUS_CLASS_MAP,
   TASK_STATUS_TEXT_MAP,
@@ -20,15 +34,327 @@ export default function Dashboard({
   createdProgressTasks,
   createdCompletedTasks,
   myCreatedTasks,
+  activityCategories,
+  allMainCategories,
+  allCategories,
+  activeActivities,
+  userWorkRoles,
 }) {
+  // State for complete activity sliding panel
+  const [completeActivityPanel, setCompleteActivityPanel] = useState({ open: false, activity: null });
+  const [completeActivityFiles, setCompleteActivityFiles] = useState([]);
+  const [completeActivityCount, setCompleteActivityCount] = useState(1);
+  const [isSubmittingComplete, setIsSubmittingComplete] = useState(false);
   // Check if user has admin role
+  // Main categories: show only those with at least one accessible sub-category
+  const subCategories = activityCategories.filter(cat => cat.parent_id);
+  const mainCategoryIds = subCategories
+    .map(sub => sub.parent_id)
+    .filter((id, idx, arr) => id && arr.indexOf(id) === idx); // unique parent IDs
+  const mainCategories = mainCategoryIds
+    .map(parentId => allCategories.find(cat => cat.id === parentId))
+    .filter(Boolean); // remove nulls
+
+  // State for selected main category in the sliding panel
+  const [selectedMainCategory, setSelectedMainCategory] = useState("");
+  // Filtered sub-categories based on main category selection
+  const filteredSubCategories = selectedMainCategory
+    ? subCategories.filter(sub => sub.parent_id === Number(selectedMainCategory))
+    : subCategories;
   const isAdmin = auth.user.roles.some((role) => role.name === "Admin");
   const isAdminLeader = auth.user.roles.some(
     (role) => role.name === "Admin" || role.name === "Team Leader"
   );
+
+  // Helper function to check if user has permission
+  const hasPermission = (permission) => {
+    // Check role-based permissions
+    const hasRolePermission =
+      auth.user?.roles?.some((role) =>
+        role.permissions?.some((p) => p.name === permission)
+      ) ?? false;
+
+    return hasRolePermission;
+  };
+
   // Calculate total tasks across all statuses
   const totalTasks =
     totalPendingTasks + totalProgressTasks + totalCompletedTasks;
+
+  // Activity section state
+  const [activityData, setActivityData] = useState({
+    activity_category_id: "",
+    description: "",
+  });
+  const [isStarting, setIsStarting] = useState(false);
+  const [processingActivity, setProcessingActivity] = useState(null);
+  const [uploadingFiles, setUploadingFiles] = useState({});
+  const [showAddActivityPanel, setShowAddActivityPanel] = useState(false);
+  // One-click start for top categories
+  const TOP_CATEGORIES_COUNT = 8; // change to 10 if you prefer
+  const [isStartingCategoryId, setIsStartingCategoryId] = useState(null);
+  const [newActivityData, setNewActivityData] = useState({
+    activity_category_id: "",
+    description: "",
+  });
+  const [isCreatingActivity, setIsCreatingActivity] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Update current time every minute for real-time duration display
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every minute
+
+    return () => clearInterval(timer);
+  }, []);
+
+  // Prepare category options for SearchableSelect
+  const categoryOptions = activityCategories?.map(category => ({
+    value: String(category.id),
+    label: category.name
+  })) || [];
+
+  const handleStartActivity = async () => {
+    if (!activityData.activity_category_id) {
+      alert("Please select a category");
+      return;
+    }
+
+    // Check if there are currently running activities
+    const hasRunningActivities = activeActivities?.some(activity => activity.status === 'started');
+
+    if (hasRunningActivities) {
+      const confirmed = confirm(
+        "You have currently running activities. Starting a new activity will automatically pause them. Do you want to continue?"
+      );
+      if (!confirmed) {
+        return;
+      }
+    }
+
+    setIsStarting(true);
+
+    try {
+      await router.post(route("activities.store"), {
+        ...activityData,
+        status: "started",
+      });
+
+      // Reset form after successful creation
+      setActivityData({
+        activity_category_id: "",
+        description: "",
+      });
+    } catch (error) {
+      console.error("Error starting activity:", error);
+    } finally {
+      setIsStarting(false);
+    }
+  };
+
+  // Handle submit for complete activity modal
+  const handleCompleteActivitySubmit = async () => {
+    if (!completeActivityPanel.activity) {
+      alert("No activity selected.");
+      return;
+    }
+    if (!completeActivityCount || completeActivityCount < 1) {
+      alert("Please enter a valid count.");
+      return;
+    }
+    setIsSubmittingComplete(true);
+    const formData = new FormData();
+    // Use method spoofing so the request is sent as POST (allowing files) but treated as PUT by Laravel
+    formData.append('_method', 'PUT');
+    formData.append('count', completeActivityCount);
+    if (completeActivityFiles.length > 0) {
+      completeActivityFiles.forEach((file) => {
+        // ensure files are sent as an array
+        formData.append('files[]', file);
+      });
+    }
+    try {
+      // Use POST with method spoofing to ensure file upload works reliably
+      await router.post(route("activities.complete", completeActivityPanel.activity.id), formData, {
+        // don't set Content-Type manually — let the browser set the multipart boundary
+        onSuccess: () => {
+          setCompleteActivityPanel({ open: false, activity: null });
+          setCompleteActivityFiles([]);
+          setCompleteActivityCount(1);
+        },
+        onError: (errors) => {
+          alert("Failed to complete activity. Please check your input and try again.");
+        },
+      });
+    } catch (error) {
+      alert("Error completing activity. Please try again.");
+    } finally {
+      setIsSubmittingComplete(false);
+    }
+  };
+
+  const handleActivityAction = async (activityId, action) => {
+    setProcessingActivity(activityId);
+    try {
+      await router.put(route(`activities.${action}`, activityId), {}, {
+        preserveScroll: true,
+        onSuccess: () => {
+          // Success message will be handled by Laravel session
+        },
+        onError: (errors) => {
+          console.error(`Error ${action} activity:`, errors);
+          alert(`Failed to ${action} activity. Please try again.`);
+        }
+      });
+    } catch (error) {
+      console.error(`Error ${action} activity:`, error);
+      alert(`Failed to ${action} activity. Please try again.`);
+    } finally {
+      setProcessingActivity(null);
+    }
+  };
+
+  const handleFileUpload = async (activityId, files) => {
+    if (!files.length) return;
+
+    setUploadingFiles(prev => ({ ...prev, [activityId]: true }));
+
+    const formData = new FormData();
+    Array.from(files).forEach(file => {
+      formData.append('files[]', file);
+    });
+
+    try {
+      await router.post(route('activity-files.store', activityId), formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+    } catch (error) {
+      console.error('Error uploading files:', error);
+    } finally {
+      setUploadingFiles(prev => ({ ...prev, [activityId]: false }));
+    }
+  };
+
+  const formatDuration = (durationInMinutes) => {
+    return formatMinutesDisplay(durationInMinutes);
+  };
+
+  const formatDurationFromSessions = (activity) => {
+    let totalDuration = 0;
+
+    // Add duration from completed sessions
+    if (activity.sessions) {
+      totalDuration = activity.sessions
+        .filter(session => session.ended_at && session.duration)
+        .reduce((sum, session) => sum + session.duration, 0);
+    }
+
+    // If activity is currently running, add current session duration (with fractional minutes)
+    if (activity.status === 'started' && activity.sessions) {
+      const activeSession = activity.sessions.find(session => !session.ended_at);
+      if (activeSession && activeSession.started_at) {
+        const sessionStart = new Date(activeSession.started_at);
+        const now = currentTime;
+        const currentSessionMinutesFloat = (now - sessionStart) / (1000 * 60); // float minutes
+        totalDuration += currentSessionMinutesFloat;
+      }
+    }
+
+    // For completed or paused activities, use the stored duration if sessions don't have duration
+    if ((activity.status === 'completed' || activity.status === 'paused') && totalDuration === 0 && activity.duration) {
+      totalDuration = activity.duration;
+    }
+
+    // If still no duration found, try to use real_time_duration from backend calculation
+    if (totalDuration === 0 && activity.real_time_duration) {
+      totalDuration = activity.real_time_duration;
+    }
+
+    return formatDuration(totalDuration);
+  };
+
+  // Return numeric total minutes (float) for an activity, combining stored sessions and live session
+  const getTotalDurationMinutes = (activity) => {
+    let totalDuration = 0;
+
+    if (activity.sessions) {
+      totalDuration = activity.sessions
+        .filter(session => session.ended_at && session.duration)
+        .reduce((sum, session) => sum + session.duration, 0);
+    }
+
+    if (activity.status === 'started' && activity.sessions) {
+      const activeSession = activity.sessions.find(session => !session.ended_at);
+      if (activeSession && activeSession.started_at) {
+        const sessionStart = new Date(activeSession.started_at);
+        const now = currentTime;
+        const currentSessionMinutesFloat = (now - sessionStart) / (1000 * 60); // float minutes
+        totalDuration += currentSessionMinutesFloat;
+      }
+    }
+
+    if ((activity.status === 'completed' || activity.status === 'paused') && totalDuration === 0 && activity.duration) {
+      totalDuration = activity.duration;
+    }
+
+    if (totalDuration === 0 && activity.real_time_duration) {
+      totalDuration = activity.real_time_duration;
+    }
+
+    return totalDuration;
+  };
+
+  const handleCreateNewActivity = async () => {
+    if (!newActivityData.activity_category_id) {
+      alert("Please select a category");
+      return;
+    }
+
+    // Check if there are currently running activities
+    const hasRunningActivities = activeActivities?.some(activity => activity.status === 'started');
+
+    if (hasRunningActivities) {
+      const confirmed = confirm(
+        "You have currently running activities. Starting a new activity will automatically pause them. Do you want to continue?"
+      );
+      if (!confirmed) {
+        return;
+      }
+    }
+
+    setIsCreatingActivity(true);
+
+    try {
+      await router.post(route("activities.store"), {
+        ...newActivityData,
+        status: "started",
+        redirect_to: "dashboard", // Add this to indicate we want to stay on dashboard
+      }, {
+        onSuccess: () => {
+          // Reset form and close panel after successful creation
+          setNewActivityData({
+            activity_category_id: "",
+            description: "",
+          });
+          setSelectedMainCategory("");
+          setShowAddActivityPanel(false);
+          // Reload the current page (dashboard) to show updated activities
+          router.reload({ only: ['activeActivities'] });
+        }
+      });
+    } catch (error) {
+      console.error("Error creating activity:", error);
+    } finally {
+      setIsCreatingActivity(false);
+    }
+  };
+
+  const closeAddActivityPanel = () => {
+    setShowAddActivityPanel(false);
+    setNewActivityData({ activity_category_id: "", description: "" });
+    setSelectedMainCategory("");
+  };
 
   return (
     <AuthenticatedLayout
@@ -43,6 +369,298 @@ export default function Dashboard({
 
       <div className="py-6">
         <div className="max-w-full mx-auto sm:px-6 lg:px-8">
+          {/* Role-based Activity Creation Section */}
+          <div className="mb-8">
+            <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+              <div className="p-6">
+                <div className="flex items-start justify-between mb-6">
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                      Quick Activity Start
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Start tracking your work activities instantly
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-end space-y-2">
+                    {/* System Role Badge */}
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">System:</span>
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                        {auth.user.roles?.map(role => role.name).join(', ') || 'No roles'}
+                      </span>
+                    </div>
+                    {/* Work Roles Badges */}
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">Work:</span>
+                      <div className="flex flex-wrap gap-1 max-w-xs">
+                        {userWorkRoles && userWorkRoles.length > 0 ? (
+                          userWorkRoles.slice(0, 3).map((role, index) => (
+                            <span
+                              key={role.id}
+                              className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                            >
+                              {role.name}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-xs text-gray-400 italic">No work roles</span>
+                        )}
+                        {userWorkRoles && userWorkRoles.length > 3 && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                            +{userWorkRoles.length - 3}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {activityCategories.length === 0 ? (
+                  <div className="text-center py-8">
+                    <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6">
+                      <TagIcon className="w-12 h-12 mx-auto mb-4 text-yellow-400" />
+                      <h3 className="text-lg font-medium text-yellow-800 dark:text-yellow-200 mb-2">
+                        No Categories Available
+                      </h3>
+                      <p className="text-yellow-700 dark:text-yellow-300 mb-2">
+                        No activity categories are available for your current work role(s).
+                        Contact your administrator to assign activity categories to your work roles.
+                      </p>
+                      <div className="mt-4 text-sm text-yellow-600 dark:text-yellow-400">
+                        Your work roles: {userWorkRoles?.map(role => role.name).join(', ') || 'No work roles assigned'}
+                      </div>
+                      <div className="mt-4">
+                        {hasPermission("user-list") ? (
+                          <a
+                            href={route('users.index')}
+                            className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-sm transition-colors duration-200"
+                          >
+                            <UserGroupIcon className="w-4 h-4 mr-2" />
+                            Manage User Assignments
+                          </a>
+                        ) : hasPermission("role-list") ? (
+                          <a
+                            href={route('work-roles.index')}
+                            className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-sm transition-colors duration-200"
+                          >
+                            <UserGroupIcon className="w-4 h-4 mr-2" />
+                            Manage Work Role Assignments
+                          </a>
+                        ) : (
+                          <div className="text-sm text-gray-500 dark:text-gray-400 italic">
+                            Contact your administrator for access
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center">
+                      <button
+                        onClick={() => setShowAddActivityPanel(true)}
+                        className="inline-flex items-center px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg shadow-sm transition-colors duration-200"
+                      >
+                        <PlayIcon className="w-5 h-5 mr-2" />
+                        Start Activity
+                      </button>
+
+                      <div className="mt-3 text-sm text-gray-500 dark:text-gray-400">
+                        Available categories: {activityCategories.length}
+                      </div>
+
+                      {/* Top categories quick start grid */}
+                      { (typeof topCategories !== 'undefined' && topCategories.length > 0 ? topCategories : activityCategories) && ( (typeof topCategories !== 'undefined' && topCategories.length > 0 ? topCategories : activityCategories).length > 0) && (
+                        <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
+                          {(typeof topCategories !== 'undefined' && topCategories.length > 0 ? topCategories : activityCategories).slice(0, TOP_CATEGORIES_COUNT).map((cat) => (
+                            <div key={cat.id} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
+                              <div title={cat.name} aria-label={cat.name} className="text-sm text-gray-700 dark:text-gray-100 truncate">{cat.name}</div>
+                              <button
+                                onClick={async () => {
+                                  // one-click start
+                                  setIsStartingCategoryId(cat.id);
+                                  try {
+                                    await router.post(route('activities.store'), {
+                                      activity_category_id: cat.id,
+                                      status: 'started',
+                                      redirect_to: 'dashboard'
+                                    }, {
+                                      onSuccess: () => {
+                                        // reload only activeActivities to refresh running items
+                                        router.reload({ only: ['activeActivities'] });
+                                      },
+                                      onFinish: () => setIsStartingCategoryId(null)
+                                    });
+                                  } catch (err) {
+                                    console.error('Failed to start category', err);
+                                    setIsStartingCategoryId(null);
+                                  }
+                                }}
+                                disabled={isStartingCategoryId === cat.id}
+                                className={`ml-2 inline-flex items-center px-2 py-1 text-xs rounded ${isStartingCategoryId === cat.id ? 'bg-gray-300 text-gray-700' : 'bg-green-600 text-white hover:bg-green-700'}`}
+                              >
+                                {isStartingCategoryId === cat.id ? 'Starting...' : 'Start'}
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Active Activities Section */}
+          {activeActivities?.length > 0 && (
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">
+                Active Activities
+              </h2>
+              <div className="grid gap-4">
+                {activeActivities.map((activity) => (
+                  <div key={activity.id} className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                    <div className="p-6">
+                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                        {/* Activity Info */}
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
+                              activity.status === 'started'
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                            }`}>
+                              <ClockIcon className="w-3 h-3 mr-1" />
+                              {activity.status === 'started' ? 'Running' : 'Paused'}
+                            </span>
+                            <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                              {activity.activity_category?.name}
+                            </span>
+                          </div>
+                          {activity.description && (
+                            <p className="text-gray-600 dark:text-gray-400 mb-2">
+                              {activity.description}
+                            </p>
+                          )}
+                          <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                            <ClockIcon className="w-4 h-4 mr-1" />
+                            Duration: <span title={exactTooltip(getTotalDurationMinutes(activity))} aria-label={exactTooltip(getTotalDurationMinutes(activity))}>{formatMinutesDisplay(getTotalDurationMinutes(activity))}</span>
+                            {activity.files?.length > 0 && (
+                              <span className="ml-4 flex items-center">
+                                <DocumentArrowUpIcon className="w-4 h-4 mr-1" />
+                                {activity.files.length} file(s)
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex flex-wrap gap-2">
+                          {/* Pause/Resume Button */}
+                          {activity.status === 'started' ? (
+                            <button
+                              onClick={() => handleActivityAction(activity.id, 'pause')}
+                              disabled={processingActivity === activity.id}
+                              className="inline-flex items-center px-3 py-2 bg-yellow-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-yellow-700 focus:bg-yellow-700 active:bg-yellow-900 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition ease-in-out duration-150"
+                            >
+                              <PauseIcon className="w-4 h-4 mr-1" />
+                              {processingActivity === activity.id ? 'Pausing...' : 'Pause'}
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleActivityAction(activity.id, 'start')}
+                              disabled={processingActivity === activity.id}
+                              className="inline-flex items-center px-3 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 focus:bg-green-700 active:bg-green-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition ease-in-out duration-150"
+                            >
+                              <PlayIcon className="w-4 h-4 mr-1" />
+                              {processingActivity === activity.id ? 'Resuming...' : 'Resume'}
+                            </button>
+                          )}
+
+                          {/* Complete Button triggers sliding window */}
+                          <button
+                            onClick={() => setCompleteActivityPanel({ open: true, activity })}
+                            disabled={processingActivity === activity.id}
+                            className="inline-flex items-center px-3 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition ease-in-out duration-150"
+                          >
+                            <CheckIcon className="w-4 h-4 mr-1" />
+                            {processingActivity === activity.id ? 'Completing...' : 'Complete'}
+                          </button>
+  {/* Sliding window/modal for completing activity */}
+  {/* Sliding Panel for Completing Activity */}
+  <div className={`fixed inset-y-0 right-0 z-50 w-96 bg-white dark:bg-gray-800 shadow-xl transform transition-transform duration-300 ease-in-out ${completeActivityPanel.open ? 'translate-x-0' : 'translate-x-full'}`}>
+    <div className="flex flex-col h-full">
+      {/* Panel Header */}
+      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Complete Activity</h3>
+          {completeActivityPanel.activity && (
+            <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">{completeActivityPanel.activity.activity_category?.name || completeActivityPanel.activity.name}</div>
+          )}
+        </div>
+        <button onClick={() => setCompleteActivityPanel({ open: false, activity: null })} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+          <XMarkIcon className="w-5 h-5" />
+        </button>
+      </div>
+      {/* Panel Content */}
+      <div className="flex-1 px-6 py-4 overflow-y-auto space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Add Files</label>
+          <input type="file" multiple onChange={e => setCompleteActivityFiles(Array.from(e.target.files))} className="w-full" />
+          {completeActivityFiles.length > 0 && (
+            <div className="mt-2 text-sm text-gray-600 dark:text-gray-300">{completeActivityFiles.length} file(s) selected</div>
+          )}
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Count</label>
+          <input type="number" min={1} value={completeActivityCount} onChange={e => setCompleteActivityCount(Number(e.target.value))} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md" />
+        </div>
+      </div>
+      {/* Panel Footer */}
+      <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex space-x-3">
+        <button onClick={() => setCompleteActivityPanel({ open: false, activity: null })} className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors">Cancel</button>
+        <button onClick={handleCompleteActivitySubmit} disabled={isSubmittingComplete} className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-sm text-white uppercase tracking-widest hover:bg-green-700 focus:bg-green-700 active:bg-green-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition ease-in-out duration-150">
+          <CheckIcon className="w-4 h-4 mr-2" />
+          {isSubmittingComplete ? "Submitting..." : "Submit"}
+        </button>
+      </div>
+    </div>
+  </div>
+  {/* Backdrop for Complete Activity Panel */}
+  {completeActivityPanel.open && (
+    <div className="fixed inset-0 bg-black bg-opacity-30 z-40 transition-opacity duration-300" onClick={() => setCompleteActivityPanel({ open: false, activity: null })}></div>
+  )}
+
+                          {/* File Upload Button */}
+                          <label className="inline-flex items-center px-3 py-2 bg-gray-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition ease-in-out duration-150 cursor-pointer">
+                            <DocumentArrowUpIcon className="w-4 h-4 mr-1" />
+                            {uploadingFiles[activity.id] ? 'Uploading...' : 'Add Files'}
+                            <input
+                              type="file"
+                              multiple
+                              className="hidden"
+                              onChange={(e) => handleFileUpload(activity.id, e.target.files)}
+                              disabled={uploadingFiles[activity.id]}
+                            />
+                          </label>
+
+                          {/* Add Another Activity Button */}
+                          <button
+                            onClick={() => setShowAddActivityPanel(true)}
+                            className="inline-flex items-center px-3 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
+                          >
+                            <PlusIcon className="w-4 h-4 mr-1" />
+                            Add Another
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Admin-only Total Task Statistics */}
           {isAdminLeader && (
             <div className="mb-8">
@@ -578,6 +1196,131 @@ export default function Dashboard({
           </div>
         </div>
       </div>
+
+      {/* Sliding Panel for Adding New Activity */}
+      <div className={`fixed inset-y-0 right-0 z-50 w-96 bg-white dark:bg-gray-800 shadow-xl transform transition-transform duration-300 ease-in-out ${
+        showAddActivityPanel ? 'translate-x-0' : 'translate-x-full'
+      }`}>
+        <div className="flex flex-col h-full">
+          {/* Panel Header */}
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                Add New Activity
+              </h2>
+              <button
+                onClick={closeAddActivityPanel}
+                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              >
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Panel Content */}
+          <div className="flex-1 px-6 py-4 overflow-y-auto">
+            <div className="space-y-4">
+              {/* Main Category Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Main Category
+                </label>
+                <MultipleSearchableSelect
+                  options={mainCategories.map(cat => ({ value: String(cat.id), label: cat.name }))}
+                  value={selectedMainCategory}
+                  onChange={setSelectedMainCategory}
+                  placeholder="Select main category..."
+                  searchPlaceholder="Search main categories..."
+                  searchable={true}
+                  multiSelect={false}
+                  closeOnSelect={true}
+                  allowClear={true}
+                  className="w-full mb-2"
+                />
+              </div>
+
+              {/* Sub-Category Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Sub-Category *
+                </label>
+                <MultipleSearchableSelect
+                  options={filteredSubCategories.map(cat => ({ value: String(cat.id), label: cat.name }))}
+                  value={newActivityData.activity_category_id}
+                  onChange={value => {
+                    setNewActivityData(prev => ({ ...prev, activity_category_id: value }));
+                    // Auto-select parent category if sub-category is chosen
+                    const selectedSub = filteredSubCategories.find(cat => String(cat.id) === String(value));
+                    if (selectedSub && selectedSub.parent_id) {
+                      setSelectedMainCategory(String(selectedSub.parent_id));
+                    }
+                  }}
+                  placeholder="Select sub-category..."
+                  searchPlaceholder="Search sub-categories..."
+                  searchable={true}
+                  multiSelect={false}
+                  closeOnSelect={true}
+                  allowClear={true}
+                  className="w-full"
+                />
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Description (Optional)
+                </label>
+                <textarea
+                  value={newActivityData.description}
+                  onChange={(e) => setNewActivityData(prev => ({
+                    ...prev,
+                    description: e.target.value
+                  }))}
+                  placeholder="Enter activity description..."
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-gray-200 resize-none"
+                  rows="4"
+                />
+              </div>
+
+              {/* Info Note */}
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-md p-3">
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  <ClockIcon className="w-4 h-4 inline mr-1" />
+                  Starting this activity will automatically pause any currently running activities and begin tracking time immediately.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Panel Footer */}
+          <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex space-x-3">
+              <button
+                onClick={closeAddActivityPanel}
+                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateNewActivity}
+                disabled={isCreatingActivity || !newActivityData.activity_category_id}
+                className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-sm text-white uppercase tracking-widest hover:bg-green-700 focus:bg-green-700 active:bg-green-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition ease-in-out duration-150"
+              >
+                <PlayIcon className="w-4 h-4 mr-2" />
+                {isCreatingActivity ? "Starting..." : "Start Activity"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Backdrop */}
+      {showAddActivityPanel && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-25 z-40 transition-opacity duration-300"
+          onClick={closeAddActivityPanel}
+        />
+      )}
     </AuthenticatedLayout>
   );
 }

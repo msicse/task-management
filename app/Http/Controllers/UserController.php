@@ -84,7 +84,8 @@ class UserController extends Controller
     {
         return Inertia::render('User/Create', [
             'departments' => Department::orderBy('name')->get(),
-            'roles' => Role::orderBy('name')->get()
+            'roles' => Role::orderBy('name')->get(),
+            'workRoles' => \App\Models\WorkRole::where('is_active', true)->orderBy('name')->get()
         ]);
     }
 
@@ -95,15 +96,22 @@ class UserController extends Controller
     {
         $data = $request->validated();
         $data['password'] = Hash::make($data['password']);
-        $roleId = $data['role_id'];
-        unset($data['role_id']);
+        $roleIds = array_map('intval', $data['role_ids']);
+        $workRoleIds = isset($data['work_role_ids']) ? array_map('intval', $data['work_role_ids']) : [];
+
+        unset($data['role_ids'], $data['work_role_ids']);
 
         if ($request->hasFile('image')) {
             $data['image'] = $request->file('image')->store('users', 'public');
         }
 
         $user = User::create($data);
-        $user->assignRole($roleId);
+        $user->assignRole($roleIds);
+
+        // Assign work roles if provided
+        if (!empty($workRoleIds)) {
+            $user->workRoles()->sync($workRoleIds);
+        }
 
         return redirect()->route('users.index')
             ->with('success', 'User created successfully.');
@@ -133,9 +141,10 @@ class UserController extends Controller
     public function edit(User $user)
     {
         return Inertia::render('User/Edit', [
-            'user' => $user->load('roles'),
+            'user' => $user->load(['roles', 'workRoles']),
             'departments' => Department::orderBy('name')->get(),
-            'roles' => Role::orderBy('name')->get()
+            'roles' => Role::orderBy('name')->get(),
+            'workRoles' => \App\Models\WorkRole::where('is_active', true)->orderBy('name')->get()
         ]);
     }
 
@@ -146,9 +155,10 @@ class UserController extends Controller
     {
         $data = $request->validated();
         $data['updated_by'] = Auth::id();
-        $roleId = (int) $data['role_id'];
+        $roleIds = array_map('intval', $data['role_ids']);
+        $workRoleIds = isset($data['work_role_ids']) ? array_map('intval', $data['work_role_ids']) : [];
 
-        unset($data['role_id']);
+        unset($data['role_ids'], $data['work_role_ids']);
 
         if ($request->filled('password')) {
             $data['password'] = Hash::make($data['password']);
@@ -161,7 +171,10 @@ class UserController extends Controller
         }
 
         $user->update($data);
-        $user->syncRoles([$roleId]);
+        $user->syncRoles($roleIds);
+
+        // Sync work roles
+        $user->workRoles()->sync($workRoleIds);
 
         return redirect()->route('users.index')
             ->with('success', 'User updated successfully.');
@@ -176,5 +189,57 @@ class UserController extends Controller
 
         return redirect()->route('users.index')
             ->with('success', 'User deleted successfully.');
+    }
+
+    /**
+     * Show the form for managing work roles for a user.
+     */
+    public function manageWorkRoles(User $user)
+    {
+        $workRoles = \App\Models\WorkRole::with(['department', 'activityCategories'])
+            ->orderBy('name')
+            ->get();
+
+        $userWorkRoles = $user->workRoles;
+
+        return Inertia::render('User/ManageWorkRoles', [
+            'user' => $user,
+            'workRoles' => $workRoles,
+            'userWorkRoles' => $userWorkRoles,
+        ]);
+    }
+
+    /**
+     * Update work roles for a user.
+     */
+    public function updateWorkRoles(Request $request, User $user)
+    {
+        $request->validate([
+            'work_roles' => 'array',
+            'work_roles.*' => 'exists:work_roles,id',
+        ]);
+
+        $workRoleIds = $request->input('work_roles', []);
+
+        // Debug logging
+        \Log::info('Work roles update attempt', [
+            'user_id' => $user->id,
+            'work_roles_input' => $workRoleIds,
+            'request_data' => $request->all()
+        ]);
+
+        // Sync work roles (this will add new ones and remove old ones)
+        $user->workRoles()->sync($workRoleIds);
+
+        $workRoleNames = \App\Models\WorkRole::whereIn('id', $workRoleIds)
+            ->pluck('name')
+            ->toArray();
+
+        $message = count($workRoleIds) > 0
+            ? "User {$user->name} has been assigned to work roles: " . implode(', ', $workRoleNames)
+            : "All work roles have been removed from user {$user->name}.";
+
+        return redirect()->route('users.manage-work-roles', $user)
+            ->with('success', $message);
     }
 }

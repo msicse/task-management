@@ -20,6 +20,7 @@ import {
   isAssigned,
 } from "@/utils/permissions";
 import { formatDateTime, formatDate, formatDateD } from "@/utils/dateFormat";
+import { formatMinutesDisplay } from '@/utils/timeFormat';
 import { FaCloudUploadAlt, FaTimes, FaSpinner } from "react-icons/fa";
 
 export default function Show({ auth, task, comments, files, success }) {
@@ -689,9 +690,9 @@ export default function Show({ auth, task, comments, files, success }) {
                       <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
                         Time Log
                       </p>
-                      <p className="mt-1 text-gray-900 dark:text-gray-100">
+                        <p className="mt-1 text-gray-900 dark:text-gray-100">
                         {task.time_log
-                          ? `${task.time_log} minutes`
+                          ? formatMinutesDisplay(task.time_log)
                           : "No time logged"}
                       </p>
                     </div>

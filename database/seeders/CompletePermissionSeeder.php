@@ -78,6 +78,18 @@ class CompletePermissionSeeder extends Seeder
             'project-view',
         ];
 
+        // Activity permissions
+        $activityPermissions = [
+            'activity-list',          // View own activities
+            'activity-list-all',      // View all team activities
+            'activity-create',        // Create new activities
+            'activity-edit',          // Edit activities
+            'activity-delete',        // Delete activities
+            'activity-view',          // View activity details
+            'activity-reports',       // View activity reports
+            'activity-export',        // Export activities
+        ];
+
         // Scoring permissions
         $scorePermissions = [
             'assignee-score-create',
@@ -107,6 +119,7 @@ class CompletePermissionSeeder extends Seeder
             $categoryPermissions,
             $departmentPermissions,
             $projectPermissions,
+            $activityPermissions,
             $scorePermissions,
             $filePermissions,
             $reportingPermissions
@@ -141,6 +154,13 @@ class CompletePermissionSeeder extends Seeder
             'task-export',
             'task-generate-pdf',
 
+            // Activity related
+            'activity-list',
+            'activity-list-all',
+            'activity-view',
+            'activity-reports',
+            'activity-export',
+
             // Others
             'project-list',
             'project-view',
@@ -165,6 +185,14 @@ class CompletePermissionSeeder extends Seeder
             'task-complete',
             'task-comment',
             'task-reports',
+
+            // Activity related
+            'activity-list',
+            'activity-list-all',
+            'activity-view',
+            'activity-reports',
+            'activity-export',
+
             'project-list',
             'project-view',
             'file-upload',
@@ -184,6 +212,11 @@ class CompletePermissionSeeder extends Seeder
             'task-update-own',
             'task-complete',
             'task-comment',
+
+            // Activity permissions - employees can only see their own activities
+            'activity-list',
+            'activity-view',
+
             'file-upload',
             'file-download',
             'assignee-score-create',

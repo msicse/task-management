@@ -25,6 +25,8 @@ class Role extends SpatieRole
         'updated_at' => 'datetime',
     ];
 
+
+
     /**
      * Get the users that belong to this role.
      *

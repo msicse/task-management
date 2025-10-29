@@ -1,0 +1,27 @@
+/* File Upload Button - No Border Styles */
+.file-upload-btn-no-border {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  border-width: 0 !important;
+}
+
+.file-upload-btn-no-border:focus,
+.file-upload-btn-no-border:active,
+.file-upload-btn-no-border:hover {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  border-width: 0 !important;
+}
+
+/* Additional reset for any potential browser defaults */
+.file-upload-btn-no-border:focus-visible {
+  outline: none !important;
+  border: none !important;
+}
+
+.file-upload-btn-no-border::-moz-focus-inner {
+  border: 0 !important;
+  outline: none !important;
+}

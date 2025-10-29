@@ -86,4 +86,4 @@ export default function Create({ auth, success }) {
       </div>
     </AuthenticatedLayout>
   );
-} 
+}

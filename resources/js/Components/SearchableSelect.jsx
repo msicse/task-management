@@ -15,10 +15,22 @@ export default function SearchableSelect({
   const customStyles = {
     control: (provided, state) => ({
       ...provided,
-      borderColor: state.isFocused ? '#6366f1' : '#d1d5db',
-      boxShadow: state.isFocused ? '0 0 0 1px #6366f1' : 'none',
+      borderColor: state.isFocused ? '#d1d5db' : '#d1d5db',
+      boxShadow: 'none',
+      outline: 'none',
+      border: '1px solid #d1d5db',
       '&:hover': {
-        borderColor: state.isFocused ? '#6366f1' : '#9ca3af',
+        borderColor: '#9ca3af',
+      },
+      '&:focus': {
+        outline: 'none',
+        boxShadow: 'none',
+        borderColor: '#d1d5db',
+      },
+      '&:focus-within': {
+        outline: 'none',
+        boxShadow: 'none',
+        borderColor: '#d1d5db',
       },
       borderRadius: '0.375rem',
       padding: '2px',

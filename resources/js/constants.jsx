@@ -39,3 +39,15 @@ export const USER_STATUS_TEXT_MAP = {
     active: 'Active',
     inactive: 'Inactive'
 };
+
+export const ACTIVITY_STATUS_CLASS_MAP = {
+  started: "bg-blue-500",
+  paused: "bg-yellow-500",
+  completed: "bg-green-500",
+};
+
+export const ACTIVITY_STATUS_TEXT_MAP = {
+  started: "Started",
+  paused: "Paused",
+  completed: "Completed",
+};

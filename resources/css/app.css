@@ -1,3 +1,54 @@
-﻿@tailwind base;
+﻿@import './file-upload-button.css';
+
+@tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Date input calendar icon - hide default in dark mode */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+}
+
+/* Hide default calendar icon in dark mode - we use custom JavaScript component */
+html.dark input[type="date"]::-webkit-calendar-picker-indicator,
+.dark input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0 !important;
+}
+
+/* Hover states for better UX */
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+html.dark input[type="date"]::-webkit-calendar-picker-indicator:hover,
+.dark input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 0.9;
+}
+
+/* Firefox date input support */
+input[type="date"] {
+  color-scheme: light;
+}
+
+html.dark input[type="date"],
+.dark input[type="date"] {
+  color-scheme: dark;
+}
+
+/* Fallback for dark mode using prefers-color-scheme (for browsers without .dark class) */
+@media (prefers-color-scheme: dark) {
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1) brightness(2) contrast(1.2) !important;
+    background-color: transparent !important;
+    opacity: 1 !important;
+  }
+}
+
+/* For Firefox (icon color cannot be changed directly, but color-scheme helps) */
+@media (prefers-color-scheme: dark) {
+  input[type="date"] {
+    color-scheme: dark;
+  }
+}

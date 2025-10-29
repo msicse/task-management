@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Task;
+use App\Models\Activity;
+use App\Models\ActivityCategory;
 use Illuminate\Http\Request;
 use App\Http\Resources\TaskResource;
 use Illuminate\Support\Facades\Auth;
@@ -49,6 +51,53 @@ class DashboardController extends Controller
         $activeTasks = TaskResource::collection($myTasks);
         $myCreatedTasks = TaskResource::collection($createdTasks);
 
+        // Get activity categories applicable to current user's roles
+        $activityCategories = $user->getApplicableActivityCategories();
+
+        // Get applicable category IDs for filtering activities
+        $applicableCategoryIds = $activityCategories->pluck('id')->toArray();
+
+        // Get user's active activities (started or paused) from applicable categories only
+        $activeActivities = Activity::with(['activityCategory', 'files', 'sessions'])
+            ->where('user_id', $user->id)
+            ->whereIn('status', ['started', 'paused'])
+            ->when(!empty($applicableCategoryIds), function($query) use ($applicableCategoryIds) {
+                return $query->whereIn('activity_category_id', $applicableCategoryIds);
+            })
+            ->orderBy('updated_at', 'desc')
+            ->get()
+            ->map(function($activity) {
+                // Calculate real-time duration from sessions
+                $activity->real_time_duration = $activity->getTotalDurationFromSessions();
+                return $activity;
+            });
+
+        // Get user's work roles for display
+        $userWorkRoles = $user->workRoles;
+
+        // Get all main categories for Dashboard select
+        $allMainCategories = ActivityCategory::whereNull('parent_id')->orderBy('name')->get(['id', 'name']);
+        // Get all categories for grouped select
+        $allCategories = ActivityCategory::orderBy('name')->get(['id', 'name', 'parent_id']);
+
+        // Compute top categories used by the current user (by activity count)
+        $topCategories = Activity::selectRaw('activity_category_id, count(*) as usage_count')
+            ->where('user_id', $user->id)
+            ->groupBy('activity_category_id')
+            ->orderByDesc('usage_count')
+            ->limit(10)
+            ->get()
+            ->map(function ($row) {
+                $category = ActivityCategory::find($row->activity_category_id);
+                return [
+                    'id' => $category?->id,
+                    'name' => $category?->name,
+                    'usage_count' => $row->usage_count,
+                ];
+            })
+            ->filter()
+            ->values();
+
         return inertia("Dashboard", compact(
             "totalPendingTasks",
             "myPendingTasks",
@@ -60,7 +109,12 @@ class DashboardController extends Controller
             "createdPendingTasks",
             "createdProgressTasks",
             "createdCompletedTasks",
-            "myCreatedTasks"
+            "myCreatedTasks",
+            "activityCategories",
+            "activeActivities",
+            "userWorkRoles",
+            "allMainCategories",
+            "allCategories"
         ));
     }
 }
