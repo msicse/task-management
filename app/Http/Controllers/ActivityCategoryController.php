@@ -231,6 +231,11 @@ class ActivityCategoryController extends Controller
      */
     public function importForm()
     {
+        // Server-side permission check - redirect with flash for web UX
+        if (! auth()->user() || ! auth()->user()->can('activity-category-import')) {
+            return redirect()->route('dashboard')->with('error', 'You are not authorized to access category imports.');
+        }
+
         return inertia('ActivityCategories/Import', [
             'success' => session('success'),
             'error' => session('error'),
@@ -243,6 +248,11 @@ class ActivityCategoryController extends Controller
     public function import(Request $request)
     {
         \Log::info('ActivityCategoryController: import called');
+
+        // Server-side permission check - redirect with flash for web UX
+        if (! auth()->user() || ! auth()->user()->can('activity-category-import')) {
+            return redirect()->route('activity-categories.import.form')->with('error', 'You are not authorized to import activity categories.');
+        }
 
         $request->validate([
             'file' => 'required|file|mimes:xlsx,xls,csv|max:10240', // 10MB max

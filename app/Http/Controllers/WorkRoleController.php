@@ -201,10 +201,20 @@ class WorkRoleController extends Controller
 
     public function import()
     {
+        // Server-side permission check - redirect with flash for web UX
+        if (! auth()->user() || ! auth()->user()->can('work-role-import')) {
+            return redirect()->route('work-roles.index')->with('error', 'You are not authorized to access work role imports.');
+        }
+
         return Inertia::render('WorkRoles/Import');
     }
     public function importStore(Request $request)
     {
+        // Server-side permission check - redirect with flash for web UX
+        if (! auth()->user() || ! auth()->user()->can('work-role-import')) {
+            return redirect()->route('work-roles.import')->with('error', 'You are not authorized to import work roles.');
+        }
+
         $request->validate([
             'file' => 'required|file|mimes:xlsx,csv',
         ]);

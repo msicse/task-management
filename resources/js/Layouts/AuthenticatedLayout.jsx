@@ -268,21 +268,17 @@ export default function AuthenticatedLayout({ user, header, children }) {
                     <div className="mt-2 px-3 py-1 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
                       Import Management
                     </div>
-                    {/* {hasPermission("work-role-import") && (
+                    {hasPermission("activity-category-import") && (
+                      <Dropdown.Link href={route("activity-categories.import")}>
+                        Import Activity Categories
+                      </Dropdown.Link>
+                    )}
 
-                    )} */}
-
-                    <Dropdown.Link href={route("activity-categories.import")}>
-                      Import Activity Categories
-                    </Dropdown.Link>
-
-                    <Dropdown.Link href={route("work-roles.import")}>
-                      Import Work Roles
-                    </Dropdown.Link>
-
-                    {/* {hasPermission("activity-category-import") && (
-
-                    )} */}
+                    {hasPermission("work-role-import") && (
+                      <Dropdown.Link href={route("work-roles.import")}>
+                        Import Work Roles
+                      </Dropdown.Link>
+                    )}
                   </Dropdown.Content>
                 </Dropdown>
               </div>

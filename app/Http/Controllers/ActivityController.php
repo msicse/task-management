@@ -9,6 +9,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
+use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\Storage;
 
 class ActivityController extends Controller
 {
@@ -19,29 +21,21 @@ class ActivityController extends Controller
     {
         $currentUser = auth()->user();
 
-        // Check SITE PERMISSIONS (what user CAN do)
-        if (!$currentUser->can('activity-list') && !$currentUser->can('activity-list-all')) {
-            abort(403, 'Unauthorized to view activities.');
-        }
-
+        // Build base query
         $query = Activity::with(['user', 'activityCategory', 'files', 'sessions']);
 
-        // Apply permission-based filtering (SITE PERMISSIONS)
-        if (!$currentUser->can('activity-list-all')) {
-            // User can only see their own activities
-            $query->where('user_id', $currentUser->id);
-        } else {
-            // User can see all activities, but filter by ASSIGNED CATEGORIES if needed
-            $assignedCategories = $currentUser->getAssignedActivityCategories();
-            if ($assignedCategories->isNotEmpty()) {
-                // Optionally filter by assigned categories
-                // $query->whereIn('activity_category_id', $assignedCategories->pluck('id'));
+        // Scope activities based on permissions:
+        // - If the current user has 'activity-list-all', they may view all activities.
+        //   If a specific user_id is provided, filter to that user; otherwise leave unfiltered
+        //   so they see activities across users.
+        // - If the current user lacks that permission, always restrict to their own activities.
+        if ($currentUser->can('activity-list-all')) {
+            if ($request->filled('user_id')) {
+                $query->where('user_id', $request->user_id);
             }
-        }
-
-        // Filter by user if provided (only for users with activity-list-all permission)
-        if ($request->has('user_id') && $currentUser->can('activity-list-all')) {
-            $query->byUser($request->user_id);
+        } else {
+            // Non-privileged users always see only their own activities
+            $query->where('user_id', $currentUser->id);
         }
 
         // Filter by category if provided
@@ -63,7 +57,16 @@ class ActivityController extends Controller
             $query->whereDate('started_at', '<=', $request->end_date);
         }
 
-        $activities = $query->latest()->paginate(15);
+        // Allow client to control per-page via `per_page` query parameter.
+        // Default to 15 and enforce reasonable bounds to avoid excessive memory use.
+        $perPage = (int) $request->input('per_page', 15);
+        if ($perPage <= 0) {
+            $perPage = 15;
+        }
+        // Cap per-page to a safe maximum (e.g. 10000) when 'All' is requested via large numbers
+        $perPage = min($perPage, 10000);
+
+        $activities = $query->latest()->paginate($perPage)->appends($request->all());
 
         if ($request->wantsJson()) {
             return response()->json($activities);
@@ -84,8 +87,56 @@ class ActivityController extends Controller
             'permissions' => [
                 'canSeeAllActivities' => $currentUser->can('activity-list-all'),
                 'canSeeOwnActivities' => $currentUser->can('activity-list'),
+                'canImportActivities' => $currentUser->can('activity-import'),
             ]
         ]);
+    }
+
+    /**
+     * Show import form for activities
+     */
+    public function importForm()
+    {
+        // Server-side permission check - redirect with flash for web UX
+        if (! auth()->user() || ! auth()->user()->can('activity-import')) {
+            return redirect()->route('activities.index')->with('error', 'You are not authorized to access activity imports.');
+        }
+
+        return Inertia::render('Activities/Import', [
+            'success' => session('success'),
+            'error' => session('error'),
+        ]);
+    }
+
+    /**
+     * Handle import upload for activities (basic/optional importer)
+     */
+    public function import(Request $request)
+    {
+        // Server-side permission check - redirect with flash for web UX
+        if (! auth()->user() || ! auth()->user()->can('activity-import')) {
+            return redirect()->route('activities.index')->with('error', 'You are not authorized to import activities.');
+        }
+
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv|max:10240',
+        ]);
+
+        try {
+            // If a dedicated importer exists, attempt to run it
+            if (class_exists('\App\\Imports\\ActivityImport')) {
+                $className = '\\App\\Imports\\ActivityImport';
+                $importClass = new $className();
+                Excel::import($importClass, $request->file('file'));
+                return redirect()->route('activities.index')->with('success', 'Import completed successfully.');
+            }
+
+            // Otherwise store the uploaded file for manual processing and inform the user
+            $path = $request->file('file')->store('imports/activities');
+            return redirect()->route('activities.index')->with('success', 'File uploaded to storage/' . $path . '. No automatic importer is registered.');
+        } catch (\Exception $e) {
+            return redirect()->route('activities.index')->with('error', 'Import failed: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -192,10 +243,12 @@ class ActivityController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Activity $activity): Response
+    public function edit(Activity $activity): Response|\Illuminate\Http\RedirectResponse
     {
         // Load activity with its relationships
         $activity->load(['activityCategory', 'files', 'user']);
+
+        $this->authorize('update', $activity);
 
         // Get categories applicable to current user's roles
         $categories = auth()->user()->getApplicableActivityCategories();
@@ -218,6 +271,8 @@ class ActivityController extends Controller
             'files_count' => $request->hasFile('files') ? count($request->file('files')) : 0,
             'all_data' => $request->all()
         ]);
+
+        $this->authorize('update', $activity);
 
         $validated = $request->validate([
             'activity_category_id' => 'required|exists:activity_categories,id',
@@ -271,6 +326,8 @@ class ActivityController extends Controller
      */
     public function destroy(Activity $activity): RedirectResponse|JsonResponse
     {
+        $this->authorize('delete', $activity);
+
         $activity->delete();
 
         if (request()->wantsJson()) {
@@ -286,6 +343,7 @@ class ActivityController extends Controller
     public function start(Activity $activity): JsonResponse|RedirectResponse
     {
         try {
+            $this->authorize('operate', $activity);
             $activity->startActivityExclusive();
 
             if (request()->wantsJson()) {
@@ -308,6 +366,7 @@ class ActivityController extends Controller
     public function pause(Activity $activity): JsonResponse|RedirectResponse
     {
         try {
+            $this->authorize('operate', $activity);
             $activity->pauseActivity();
 
             if (request()->wantsJson()) {
@@ -330,6 +389,7 @@ class ActivityController extends Controller
     public function complete(Activity $activity): JsonResponse|RedirectResponse
     {
         try {
+            $this->authorize('operate', $activity);
             // Debug logging: record incoming request details to help trace file/count issues
             $reqAll = request()->all();
             $filesCandidate = request()->file('files') ?? request()->file('files[]') ?? [];

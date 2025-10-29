@@ -16,6 +16,8 @@ class ActivityFileController extends Controller
      */
     public function index(Activity $activity): JsonResponse
     {
+        $this->authorize('manageFiles', $activity);
+
         $files = $activity->files;
         return response()->json($files);
     }
@@ -28,6 +30,7 @@ class ActivityFileController extends Controller
         $request->validate([
             'file' => 'required|file|max:10240', // 10MB max
         ]);
+        $this->authorize('manageFiles', $activity);
 
         $file = $request->file('file');
         $path = $file->store('activity-files', 'public');
@@ -52,6 +55,8 @@ class ActivityFileController extends Controller
      */
     public function show(ActivityFile $activityFile): JsonResponse
     {
+        $this->authorize('manageFiles', $activityFile->activity);
+
         return response()->json($activityFile->load('activity'));
     }
 
@@ -60,6 +65,8 @@ class ActivityFileController extends Controller
      */
     public function download(ActivityFile $activityFile)
     {
+        $this->authorize('manageFiles', $activityFile->activity);
+
         if (!Storage::disk('public')->exists($activityFile->file_path)) {
             abort(404, 'File not found.');
         }
@@ -75,6 +82,8 @@ class ActivityFileController extends Controller
      */
     public function destroy(ActivityFile $activityFile): JsonResponse|RedirectResponse
     {
+        $this->authorize('manageFiles', $activityFile->activity);
+
         // Delete the physical file
         if (Storage::disk('public')->exists($activityFile->file_path)) {
             Storage::disk('public')->delete($activityFile->file_path);
@@ -98,6 +107,12 @@ class ActivityFileController extends Controller
         $request->validate([
             'files.*' => 'required|file|max:10240', // 10MB max per file
         ]);
+
+        // Permission: only Admin or activity owner can upload
+        $currentUser = auth()->user();
+        if (! $currentUser->hasRole('Admin') && $activity->user_id !== $currentUser->id) {
+            return response()->json(['error' => 'You are not authorized to upload files for this activity.'], 403);
+        }
 
         $uploadedFiles = [];
 

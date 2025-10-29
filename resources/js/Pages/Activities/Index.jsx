@@ -45,6 +45,18 @@ export default function Index({
   const [sortDirection, setSortDirection] = useState("desc");
   const [isFilterExpanded, setIsFilterExpanded] = useState(false);
   const [externalUpdateToast, setExternalUpdateToast] = useState(false);
+  // View scope: 'mine' or 'all'
+  // Determine initial scope more precisely:
+  // - If filters.user_id is present and equals the current user -> 'mine'
+  // - If filters.user_id is present and differs -> 'all'
+  // - If no filter provided, privileged users default to 'all', others to 'mine'
+  let initialViewScope = 'mine';
+  if (filters?.user_id) {
+    initialViewScope = String(filters.user_id) === String(auth.user.id) ? 'mine' : 'all';
+  } else {
+    initialViewScope = permissions.canSeeAllActivities ? 'all' : 'mine';
+  }
+  const [viewScope, setViewScope] = useState(initialViewScope);
 
   // Sliding panel state
   const [showAddActivityPanel, setShowAddActivityPanel] = useState(false);
@@ -58,11 +70,17 @@ export default function Index({
   const mainCategories = categories?.filter(cat => !cat.parent_id) || [];
   const subCategories = categories?.filter(cat => cat.parent_id) || [];
   // If backend provided assignedCategories (array of ids), limit sub-categories to those
-  // that the current user has access to. Otherwise fall back to all sub-categories.
+  // that the current user has access to. However, if the user is viewing 'all' scope
+  // and has permission, show all sub-categories so admins can create/view across all.
   const assignedCategoryIds = Array.isArray(assignedCategories) ? assignedCategories.map(String) : [];
-  const allowedSubCategories = (assignedCategoryIds.length > 0)
-    ? subCategories.filter(sub => assignedCategoryIds.includes(String(sub.id)))
-    : subCategories;
+  let allowedSubCategories;
+  if (viewScope === 'all' && permissions.canSeeAllActivities) {
+    allowedSubCategories = subCategories;
+  } else {
+    allowedSubCategories = (assignedCategoryIds.length > 0)
+      ? subCategories.filter(sub => assignedCategoryIds.includes(String(sub.id)))
+      : subCategories;
+  }
 
   // State for selected main category in the sliding panel
   const [selectedMainCategory, setSelectedMainCategory] = useState("");
@@ -116,7 +134,28 @@ export default function Index({
       const timer = setTimeout(() => setShowSuccess(false), 3000);
       return () => clearTimeout(timer);
     }
+    // If user lacks permission to see all activities, always keep scope to 'mine'
+    if (!permissions.canSeeAllActivities) {
+      setViewScope('mine');
+    }
   }, [success]);
+
+  const changeScope = (scope) => {
+    if (scope === viewScope) return;
+    // Non-privileged users cannot switch to 'all'
+    if (scope === 'all' && !permissions.canSeeAllActivities) return;
+
+    setViewScope(scope);
+    const params = { ...filters };
+    if (scope === 'mine') {
+      params.user_id = auth.user.id;
+    } else {
+      // remove user_id to view all
+      delete params.user_id;
+    }
+
+    router.get(route('activities.index'), params, { preserveState: true });
+  };
 
   // Listen for cross-tab activity updates (set by Dashboard or other pages)
   useEffect(() => {
@@ -267,17 +306,45 @@ export default function Index({
             <h2 className="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
               Activities
             </h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              {permissions.canSeeAllActivities ? 'Viewing all team activities' : 'Viewing your activities'}
-            </p>
+            <div className="mt-1">
+              {permissions.canSeeAllActivities ? (
+                <div className="inline-flex items-center rounded-md border bg-white dark:bg-gray-800">
+                  <button
+                    onClick={() => changeScope('mine')}
+                    className={`px-3 py-1 text-sm ${viewScope === 'mine' ? 'bg-indigo-600 text-white rounded-l' : 'text-gray-600 dark:text-gray-300'}`}
+                  >
+                    My Activities
+                  </button>
+                  <button
+                    onClick={() => changeScope('all')}
+                    className={`px-3 py-1 text-sm ${viewScope === 'all' ? 'bg-indigo-600 text-white rounded-r' : 'text-gray-600 dark:text-gray-300'}`}
+                  >
+                    All Activities
+                  </button>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-600 dark:text-gray-400">Viewing: My activities</p>
+              )}
+            </div>
           </div>
-          <button
-            onClick={() => setShowAddActivityPanel(true)}
-            className="bg-emerald-500 py-2 px-3 text-white rounded shadow transition-all hover:bg-emerald-600 inline-flex items-center"
-          >
-            <PlusIcon className="w-4 h-4 mr-2" />
-            Add New Activity
-          </button>
+          <div className="flex items-center space-x-2">
+            {permissions.canImportActivities && (
+              <Link
+                href={route('activities.import')}
+                className="bg-yellow-500 py-2 px-3 text-white rounded shadow transition-all hover:bg-yellow-600 inline-flex items-center"
+              >
+                Import
+              </Link>
+            )}
+
+            <button
+              onClick={() => setShowAddActivityPanel(true)}
+              className="bg-emerald-500 py-2 px-3 text-white rounded shadow transition-all hover:bg-emerald-600 inline-flex items-center"
+            >
+              <PlusIcon className="w-4 h-4 mr-2" />
+              Add New Activity
+            </button>
+          </div>
         </div>
       }
     >
@@ -548,9 +615,26 @@ export default function Index({
                     </table>
                   </div>
 
-                  {activities?.meta?.links && (
-                    <Pagination links={activities.meta.links} />
-                  )}
+                  {(() => {
+                    // Support both serialization shapes: paginator links may be at
+                    // activities.links (top-level) or activities.meta.links depending on
+                    // how the controller/resource formatted the response.
+                    const links = activities?.links || activities?.meta?.links || null;
+                    const meta = activities?.meta || null;
+
+                    if (links && Array.isArray(links) && links.length > 0) {
+                      return (
+                        <Pagination
+                          links={links}
+                          meta={meta}
+                          routeName={"activities.index"}
+                          queryParams={filters}
+                        />
+                      );
+                    }
+
+                    return null;
+                  })()}
                 </>
               ) : (
                 <div className="text-center py-8">

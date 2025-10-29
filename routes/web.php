@@ -52,11 +52,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
         }
     });
 
-    // Activity Categories Import Routes
-    Route::get('/activity-categories-import', [ActivityCategoryController::class, 'importForm'])->name('activity-categories.import.form');
-    Route::post('/activity-categories-import', [ActivityCategoryController::class, 'import'])->name('activity-categories.import');
-    Route::get('/activity-categories-import/template', [ActivityCategoryController::class, 'downloadTemplate'])->name('activity-categories.import.template');
-    Route::get('/activity-categories-import/new-template', [ActivityCategoryController::class, 'downloadNewTemplate'])->name('activity-categories.download-new-template');
+    // Activity Categories Import Routes (permission protected)
+    Route::get('/activity-categories-import', [ActivityCategoryController::class, 'importForm'])
+        ->name('activity-categories.import.form')
+        ->middleware('permission:activity-category-import');
+    Route::post('/activity-categories-import', [ActivityCategoryController::class, 'import'])
+        ->name('activity-categories.import')
+        ->middleware('permission:activity-category-import');
+    Route::get('/activity-categories-import/template', [ActivityCategoryController::class, 'downloadTemplate'])
+        ->name('activity-categories.import.template')
+        ->middleware('permission:activity-category-import');
+    Route::get('/activity-categories-import/new-template', [ActivityCategoryController::class, 'downloadNewTemplate'])
+        ->name('activity-categories.download-new-template')
+        ->middleware('permission:activity-category-import');
 
     Route::resource('projects', ProjectController::class);
     Route::get('my-tasks', [TaskController::class, 'myTasks'])->name('task.mytasks');
@@ -92,6 +100,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Activity routes
     Route::resource('activities', ActivityController::class);
+    // Activity import routes (basic uploader) - permission protected
+    Route::get('/activities/import', [ActivityController::class, 'importForm'])
+        ->name('activities.import')
+        ->middleware('permission:activity-import');
+    Route::post('/activities/import', [ActivityController::class, 'import'])
+        ->name('activities.import.process')
+        ->middleware('permission:activity-import');
     Route::put('/activities/{activity}/start', [ActivityController::class, 'start'])->name('activities.start');
     Route::put('/activities/{activity}/pause', [ActivityController::class, 'pause'])->name('activities.pause');
 	Route::put('/activities/{activity}/complete', [ActivityController::class, 'complete'])->name('activities.complete');
@@ -108,8 +123,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/activity-files/{activityFile}', [ActivityFileController::class, 'destroy'])->name('activity-files.destroy');
 
     // Work roles management (NEW SYSTEM)
-    Route::get('/work-roles/import', [WorkRoleController::class, 'import'])->name('work-roles.import');
-    Route::post('/work-roles/import', [WorkRoleController::class, 'importStore'])->name('work-roles.import.store');
+    Route::get('/work-roles/import', [WorkRoleController::class, 'import'])
+        ->name('work-roles.import')
+        ->middleware('permission:work-role-import');
+    Route::post('/work-roles/import', [WorkRoleController::class, 'importStore'])
+        ->name('work-roles.import.store')
+        ->middleware('permission:work-role-import');
     Route::resource('work-roles', WorkRoleController::class);
     Route::post('/work-roles/{workRole}/assign-user/{user}', [WorkRoleController::class, 'assignUser'])->name('work-roles.assign-user');
     Route::post('/work-roles/{workRole}/remove-user/{user}', [WorkRoleController::class, 'removeUser'])->name('work-roles.remove-user');

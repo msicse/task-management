@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
+use App\Models\Activity;
+use App\Policies\ActivityPolicy;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -28,5 +30,8 @@ class AppServiceProvider extends ServiceProvider
         Gate::before(function ($user, $ability) {
             return $user->hasRole('global-admin') ? true : null;
         });
+
+        // Register Activity policy
+        Gate::policy(Activity::class, ActivityPolicy::class);
     }
 }

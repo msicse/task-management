@@ -51,6 +51,7 @@ class CompletePermissionSeeder extends Seeder
             'role-create',
             'role-edit',
             'role-delete',
+            'work-role-import', // Import work roles (management dropdown)
         ];
 
         // Category permissions
@@ -82,6 +83,8 @@ class CompletePermissionSeeder extends Seeder
         $activityPermissions = [
             'activity-list',          // View own activities
             'activity-list-all',      // View all team activities
+            'activity-import',        // Import activities
+            'activity-category-import', // Import activity categories (management dropdown)
             'activity-create',        // Create new activities
             'activity-edit',          // Edit activities
             'activity-delete',        // Delete activities
@@ -125,9 +128,9 @@ class CompletePermissionSeeder extends Seeder
             $reportingPermissions
         );
 
-        // Create permissions in DB
+        // Create permissions in DB (use firstOrCreate to avoid duplicate insert errors)
         foreach ($allPermissions as $permission) {
-            Permission::create(['name' => $permission]);
+            Permission::firstOrCreate(['name' => $permission]);
         }
         // Create roles with permissions
 
