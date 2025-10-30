@@ -32,7 +32,8 @@ export default function Show({ auth, activity }) {
   const [showCompletePanel, setShowCompletePanel] = useState(false);
   const [completeFiles, setCompleteFiles] = useState([]);
   const [completeNotes, setCompleteNotes] = useState(activity.notes || "");
-  const [completeCount, setCompleteCount] = useState(activity.count ?? 1);
+  // Prefill completeCount with the number of sessions for this activity when available
+  const [completeCount, setCompleteCount] = useState((activity.sessions && activity.sessions.length) ? activity.sessions.length : (activity.count ?? 1));
   const [isEditingCount, setIsEditingCount] = useState(false);
   const [countValue, setCountValue] = useState(activity.count ?? 0);
   const [isSavingCount, setIsSavingCount] = useState(false);
@@ -71,7 +72,8 @@ export default function Show({ auth, activity }) {
       // open sliding panel instead of modal
       setCompleteFiles([]);
       setCompleteNotes(activity.notes || "");
-      setCompleteCount(activity.count ?? 1);
+      // Prefill with session count when opening the panel
+      setCompleteCount((activity.sessions && activity.sessions.length) ? activity.sessions.length : (activity.count ?? 1));
       setShowCompletePanel(true);
       return;
     }
@@ -546,6 +548,10 @@ export default function Show({ auth, activity }) {
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Count</label>
               <input type="number" min={1} value={completeCount} onChange={e => setCompleteCount(Number(e.target.value))} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md" />
+              <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                Sessions in this activity: <span className="font-medium text-gray-700 dark:text-gray-200">{activity.sessions ? activity.sessions.length : 0}</span>
+                {' '}• Total time: <span className="font-medium text-gray-700 dark:text-gray-200">{formatMinutesDisplay(getTotalDurationMinutes(activity))}</span>
+              </div>
             </div>
           </div>
 

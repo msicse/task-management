@@ -239,7 +239,8 @@ export default function Index({
       setCompleteActivity(activity);
       setCompleteUploadFiles([]);
       setCompleteNotes(activity.notes || '');
-      setCompleteCount(activity.count ?? 1);
+      // Prefill count with number of sessions if available
+      setCompleteCount((activity.sessions && activity.sessions.length) ? activity.sessions.length : (activity.count ?? 1));
       setShowCompletePanel(true);
       return;
     }
@@ -910,6 +911,10 @@ export default function Index({
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Count</label>
               <input type="number" min={1} value={completeCount} onChange={e => setCompleteCount(Number(e.target.value))} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md" />
+              <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                Sessions in this activity: <span className="font-medium text-gray-700 dark:text-gray-200">{completeActivity?.sessions ? completeActivity.sessions.length : (completeActivity ? (completeActivity.sessions ? completeActivity.sessions.length : 0) : 0)}</span>
+                {' '}• Total time: <span className="font-medium text-gray-700 dark:text-gray-200">{completeActivity ? formatActivityDuration(completeActivity) : '0m'}</span>
+              </div>
             </div>
           </div>
 

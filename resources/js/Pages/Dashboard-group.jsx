@@ -88,6 +88,13 @@ export default function Dashboard({
     description: "",
   });
   const [isCreatingActivity, setIsCreatingActivity] = useState(false);
+  // Complete sliding panel state
+  const [showCompletePanel, setShowCompletePanel] = useState(false);
+  const [completeActivity, setCompleteActivity] = useState(null);
+  const [completeUploadFiles, setCompleteUploadFiles] = useState([]);
+  const [completeNotes, setCompleteNotes] = useState('');
+  const [completeCount, setCompleteCount] = useState(1);
+  const [isSubmittingComplete, setIsSubmittingComplete] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
         // Debug: Log allCategories and groupedOptions
         useEffect(() => {
@@ -151,6 +158,18 @@ export default function Dashboard({
   };
 
   const handleActivityAction = async (activityId, action) => {
+    // If completing, open the sliding panel to collect files/notes/count
+    if (action === 'complete') {
+      const activity = activeActivities.find(a => a.id === activityId) || null;
+      if (!activity) return;
+      setCompleteActivity(activity);
+      setCompleteUploadFiles([]);
+      setCompleteNotes(activity.notes || '');
+      setCompleteCount((activity.sessions && activity.sessions.length) ? activity.sessions.length : (activity.count ?? 1));
+      setShowCompletePanel(true);
+      return;
+    }
+
     setProcessingActivity(activityId);
     try {
       await router.put(route(`activities.${action}`, activityId), {}, {
@@ -168,6 +187,53 @@ export default function Dashboard({
       alert(`Failed to ${action} activity. Please try again.`);
     } finally {
       setProcessingActivity(null);
+    }
+  };
+
+  const closeCompletePanel = () => {
+    setShowCompletePanel(false);
+    setCompleteActivity(null);
+    setCompleteUploadFiles([]);
+    setCompleteNotes('');
+    setCompleteCount(1);
+    setIsSubmittingComplete(false);
+  }
+
+  const handleCompleteFileSelect = (event) => {
+    const files = Array.from(event.target.files || []);
+    setCompleteUploadFiles(files);
+  };
+
+  const handleRemoveCompleteFile = (index) => {
+    setCompleteUploadFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const submitCompletePanel = async () => {
+    if (!completeActivity) return;
+    setIsSubmittingComplete(true);
+
+    const formData = new FormData();
+    formData.append('_method', 'PUT');
+    formData.append('count', completeCount);
+    if (completeNotes && completeNotes.trim() !== '') {
+      formData.append('notes', completeNotes.trim());
+    }
+    completeUploadFiles.forEach((f) => formData.append('files[]', f));
+
+    try {
+      await router.post(route('activities.complete', completeActivity.id), formData, {
+        onSuccess: () => {
+          closeCompletePanel();
+          try { localStorage.setItem('activities_updated', Date.now().toString()); } catch (e) {}
+        },
+        onError: () => {
+          // keep panel open so user can retry
+        }
+      });
+    } catch (err) {
+      console.error('Failed to submit complete:', err);
+    } finally {
+      setIsSubmittingComplete(false);
     }
   };
 
@@ -1117,6 +1183,66 @@ export default function Dashboard({
           className="fixed inset-0 bg-black bg-opacity-25 z-40 transition-opacity duration-300"
           onClick={() => setShowAddActivityPanel(false)}
         />
+      )}
+
+      {/* Complete Sliding Panel for Dashboard */}
+      <div className={`fixed inset-y-0 right-0 z-50 w-96 bg-white dark:bg-gray-800 shadow-xl transform transition-transform duration-300 ease-in-out ${showCompletePanel ? 'translate-x-0' : 'translate-x-full'}`}>
+        <div className="flex flex-col h-full">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Complete Activity</h3>
+              {completeActivity && (
+                <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">{completeActivity.activity_category?.name || completeActivity.description}</div>
+              )}
+            </div>
+            <button onClick={closeCompletePanel} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+              <XMarkIcon className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="flex-1 px-6 py-4 overflow-y-auto space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Add Files</label>
+              <input type="file" multiple onChange={handleCompleteFileSelect} className="w-full" />
+              {completeUploadFiles.length > 0 && (
+                <div className="mt-2 text-sm text-gray-600 dark:text-gray-300">{completeUploadFiles.length} file(s) selected</div>
+              )}
+              {completeUploadFiles.length > 0 && (
+                <div className="mt-2 space-y-2">
+                  {completeUploadFiles.map((f, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
+                      <div className="text-sm text-gray-900 dark:text-gray-100">{f.name}</div>
+                      <button onClick={() => handleRemoveCompleteFile(idx)} className="text-red-500 text-sm">Remove</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Notes (optional)</label>
+              <textarea value={completeNotes} onChange={e => setCompleteNotes(e.target.value)} placeholder="Add notes (optional)" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md resize-y" rows={4} />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Count</label>
+              <input type="number" min={1} value={completeCount} onChange={e => setCompleteCount(Number(e.target.value))} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md" />
+              <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                Sessions in this activity: <span className="font-medium text-gray-700 dark:text-gray-200">{completeActivity?.sessions ? completeActivity.sessions.length : 0}</span>
+                {' '}• Total time: <span className="font-medium text-gray-700 dark:text-gray-200">{completeActivity ? formatDurationFromSessions(completeActivity) : '0m'}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex space-x-3">
+            <button onClick={closeCompletePanel} className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600">Cancel</button>
+            <button onClick={submitCompletePanel} disabled={isSubmittingComplete} className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-sm text-white uppercase tracking-widest hover:bg-green-700 focus:bg-green-700 active:bg-green-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50">{isSubmittingComplete ? 'Submitting...' : 'Submit'}</button>
+          </div>
+        </div>
+      </div>
+
+      {showCompletePanel && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 z-40 transition-opacity duration-300" onClick={closeCompletePanel}></div>
       )}
     </AuthenticatedLayout>
   );

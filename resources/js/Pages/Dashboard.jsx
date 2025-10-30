@@ -195,6 +195,13 @@ export default function Dashboard({
           setCompleteActivityCount(1);
           setCompleteActivityNotes('');
             try { localStorage.setItem('activities_updated', Date.now().toString()); } catch(e) {}
+          // Reload activeActivities prop so the dashboard reflects updated count/notes/files
+          try {
+            router.reload({ only: ['activeActivities'] });
+          } catch (e) {
+            // fallback: full reload
+            window.location.reload();
+          }
         },
         onError: (errors) => {
           alert("Failed to complete activity. Please check your input and try again.");
@@ -609,7 +616,13 @@ export default function Dashboard({
 
                           {/* Complete Button triggers sliding window */}
                           <button
-                            onClick={() => setCompleteActivityPanel({ open: true, activity })}
+                            onClick={() => {
+                              // open panel and prefill files/notes/count from activity
+                              setCompleteActivityPanel({ open: true, activity });
+                              setCompleteActivityFiles([]);
+                              setCompleteActivityNotes(activity.notes || '');
+                              setCompleteActivityCount((activity.sessions && activity.sessions.length) ? activity.sessions.length : (activity.count ?? 1));
+                            }}
                             disabled={processingActivity === activity.id}
                             className="inline-flex items-center px-3 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition ease-in-out duration-150"
                           >
@@ -618,10 +631,10 @@ export default function Dashboard({
                           </button>
   {/* Sliding window/modal for completing activity */}
   {/* Sliding Panel for Completing Activity */}
-  <div className={`fixed inset-y-0 right-0 z-50 w-96 bg-white dark:bg-gray-800 shadow-xl transform transition-transform duration-300 ease-in-out ${completeActivityPanel.open ? 'translate-x-0' : 'translate-x-full'}`}>
+  <div className={`fixed inset-y-0 right-0 z-50 w-80 bg-white dark:bg-gray-800 shadow-xl transform transition-transform duration-300 ease-in-out ${completeActivityPanel.open ? 'translate-x-0' : 'translate-x-full'}`}>
     <div className="flex flex-col h-full">
       {/* Panel Header */}
-  <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+  <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Complete Activity</h3>
           {completeActivityPanel.activity && (
@@ -632,11 +645,11 @@ export default function Dashboard({
           <XMarkIcon className="w-5 h-5" />
         </button>
       </div>
-      {/* Panel Content */}
-      <div className="flex-1 px-6 py-4 overflow-y-auto space-y-4">
+  {/* Panel Content */}
+  <div className="flex-1 px-4 py-3 space-y-3">
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Add Files</label>
-          <input type="file" multiple onChange={e => setCompleteActivityFiles(Array.from(e.target.files))} className="w-full" />
+          <input type="file" multiple onChange={e => setCompleteActivityFiles(Array.from(e.target.files))} className="w-full text-sm" />
           {completeActivityFiles.length > 0 && (
             <div className="mt-2 text-sm text-gray-600 dark:text-gray-300">{completeActivityFiles.length} file(s) selected</div>
           )}
@@ -647,19 +660,23 @@ export default function Dashboard({
             value={completeActivityNotes}
             onChange={e => setCompleteActivityNotes(e.target.value)}
             placeholder="Add any notes about this activity (optional)"
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md resize-y"
-            rows={4}
+            className="w-full px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-md resize-none text-sm"
+            rows={3}
           />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Count</label>
-          <input type="number" min={1} value={completeActivityCount} onChange={e => setCompleteActivityCount(Number(e.target.value))} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md" />
+          <input type="number" min={1} value={completeActivityCount} onChange={e => setCompleteActivityCount(Number(e.target.value))} className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md text-sm" />
+        </div>
+        <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+          Sessions in this activity: <span className="font-medium text-gray-700 dark:text-gray-200">{completeActivityPanel.activity?.sessions ? completeActivityPanel.activity.sessions.length : 0}</span>
+          {' '}• Total time: <span className="font-medium text-gray-700 dark:text-gray-200">{completeActivityPanel.activity ? formatDurationFromSessions(completeActivityPanel.activity) : '0m'}</span>
         </div>
       </div>
       {/* Panel Footer */}
-      <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex space-x-3">
-        <button onClick={() => setCompleteActivityPanel({ open: false, activity: null })} className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors">Cancel</button>
-        <button onClick={handleCompleteActivitySubmit} disabled={isSubmittingComplete} className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-sm text-white uppercase tracking-widest hover:bg-green-700 focus:bg-green-700 active:bg-green-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition ease-in-out duration-150">
+      <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex space-x-2">
+        <button onClick={() => setCompleteActivityPanel({ open: false, activity: null })} className="flex-1 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors">Cancel</button>
+        <button onClick={handleCompleteActivitySubmit} disabled={isSubmittingComplete} className="flex-1 inline-flex items-center justify-center px-3 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-sm text-white uppercase tracking-widest hover:bg-green-700 focus:bg-green-700 active:bg-green-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition ease-in-out duration-150">
           <CheckIcon className="w-4 h-4 mr-2" />
           {isSubmittingComplete ? "Submitting..." : "Submit"}
         </button>
@@ -1227,12 +1244,12 @@ export default function Dashboard({
       </div>
 
       {/* Sliding Panel for Adding New Activity */}
-      <div className={`fixed inset-y-0 right-0 z-50 w-96 bg-white dark:bg-gray-800 shadow-xl transform transition-transform duration-300 ease-in-out ${
+      <div className={`fixed inset-y-0 right-0 z-50 w-80 bg-white dark:bg-gray-800 shadow-xl transform transition-transform duration-300 ease-in-out ${
         showAddActivityPanel ? 'translate-x-0' : 'translate-x-full'
       }`}>
         <div className="flex flex-col h-full">
           {/* Panel Header */}
-          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                 Add New Activity
@@ -1247,7 +1264,7 @@ export default function Dashboard({
           </div>
 
           {/* Panel Content */}
-          <div className="flex-1 px-6 py-4 overflow-y-auto">
+          <div className="flex-1 px-4 py-3">
             <div className="space-y-4">
               {/* Main Category Selection */}
               <div>
@@ -1306,8 +1323,8 @@ export default function Dashboard({
                     description: e.target.value
                   }))}
                   placeholder="Enter activity description..."
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-gray-200 resize-none"
-                  rows="4"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-gray-200 resize-none text-sm"
+                  rows="2"
                 />
               </div>
 
@@ -1322,18 +1339,18 @@ export default function Dashboard({
           </div>
 
           {/* Panel Footer */}
-          <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
-            <div className="flex space-x-3">
+          <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex space-x-2">
               <button
                 onClick={closeAddActivityPanel}
-                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
+                className="flex-1 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleCreateNewActivity}
                 disabled={isCreatingActivity || !newActivityData.activity_category_id}
-                className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-sm text-white uppercase tracking-widest hover:bg-green-700 focus:bg-green-700 active:bg-green-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition ease-in-out duration-150"
+                className="flex-1 inline-flex items-center justify-center px-3 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-sm text-white uppercase tracking-widest hover:bg-green-700 focus:bg-green-700 active:bg-green-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition ease-in-out duration-150"
               >
                 <PlayIcon className="w-4 h-4 mr-2" />
                 {isCreatingActivity ? "Starting..." : "Start Activity"}

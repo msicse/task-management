@@ -67,8 +67,23 @@ class DashboardController extends Controller
             ->orderBy('updated_at', 'desc')
             ->get()
             ->map(function($activity) {
-                // Calculate real-time duration from sessions
-                $activity->real_time_duration = $activity->getTotalDurationFromSessions();
+                // Compute real-time duration directly from the loaded sessions
+                // to avoid calling model methods on objects that may be plain arrays/objects
+                $completedDuration = 0.0;
+                $activeSeconds = 0;
+
+                if (is_object($activity) && method_exists($activity, 'relationLoaded') && $activity->relationLoaded('sessions')) {
+                    // Sum durations for completed sessions (stored in minutes)
+                    $completedDuration = (float) $activity->sessions->whereNotNull('ended_at')->sum('duration');
+
+                    // If there's an active session (ended_at null), compute current seconds
+                    $activeSession = $activity->sessions->firstWhere('ended_at', null);
+                    if ($activeSession && $activeSession->started_at) {
+                        $activeSeconds = $activeSession->started_at->diffInSeconds(now());
+                    }
+                }
+
+                $activity->real_time_duration = $completedDuration + ($activeSeconds / 60.0);
                 return $activity;
             });
 
