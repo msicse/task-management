@@ -294,6 +294,7 @@ export default function Index({
         onSuccess: () => {
           closeCompletePanel();
           try { localStorage.setItem('activities_updated', Date.now().toString()); } catch (e) {}
+          try { router.reload({ only: ['activities'] }); } catch (e) { /* ignore reload errors */ }
         },
         onError: () => {
           // keep panel open so user can retry
@@ -870,9 +871,9 @@ export default function Index({
       )}
 
       {/* Complete Sliding Panel (matches Dashboard behaviour) */}
-      <div className={`fixed inset-y-0 right-0 z-50 w-96 bg-white dark:bg-gray-800 shadow-xl transform transition-transform duration-300 ease-in-out ${showCompletePanel ? 'translate-x-0' : 'translate-x-full'}`}>
+      <div className={`fixed inset-y-0 right-0 z-50 w-80 bg-white dark:bg-gray-800 shadow-xl transform transition-transform duration-300 ease-in-out ${showCompletePanel ? 'translate-x-0' : 'translate-x-full'}`}>
         <div className="flex flex-col h-full">
-          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+          <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
             <div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Complete Activity</h3>
               {completeActivity && (
@@ -883,11 +884,10 @@ export default function Index({
               <XMarkIcon className="w-5 h-5" />
             </button>
           </div>
-
-          <div className="flex-1 px-6 py-4 overflow-y-auto space-y-4">
+          <div className="flex-1 px-4 py-3 space-y-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Add Files</label>
-              <input type="file" multiple onChange={handleCompleteFileSelect} className="w-full" />
+              <input type="file" multiple onChange={handleCompleteFileSelect} className="w-full text-sm" />
               {completeUploadFiles.length > 0 && (
                 <div className="mt-2 text-sm text-gray-600 dark:text-gray-300">{completeUploadFiles.length} file(s) selected</div>
               )}
@@ -905,22 +905,21 @@ export default function Index({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Notes (optional)</label>
-              <textarea value={completeNotes} onChange={e => setCompleteNotes(e.target.value)} placeholder="Add notes (optional)" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md resize-y" rows={4} />
+              <textarea value={completeNotes} onChange={e => setCompleteNotes(e.target.value)} placeholder="Add notes (optional)" className="w-full px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-md resize-none text-sm" rows={3} />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Count</label>
-              <input type="number" min={1} value={completeCount} onChange={e => setCompleteCount(Number(e.target.value))} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md" />
+              <input type="number" min={1} value={completeCount} onChange={e => setCompleteCount(Number(e.target.value))} className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md text-sm" />
               <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                 Sessions in this activity: <span className="font-medium text-gray-700 dark:text-gray-200">{completeActivity?.sessions ? completeActivity.sessions.length : (completeActivity ? (completeActivity.sessions ? completeActivity.sessions.length : 0) : 0)}</span>
                 {' '}• Total time: <span className="font-medium text-gray-700 dark:text-gray-200">{completeActivity ? formatActivityDuration(completeActivity) : '0m'}</span>
               </div>
             </div>
           </div>
-
-          <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex space-x-3">
-            <button onClick={closeCompletePanel} className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600">Cancel</button>
-            <button onClick={submitCompletePanel} disabled={isSubmittingComplete} className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-sm text-white uppercase tracking-widest hover:bg-green-700 focus:bg-green-700 active:bg-green-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50">{isSubmittingComplete ? 'Submitting...' : 'Submit'}</button>
+          <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex space-x-2">
+            <button onClick={closeCompletePanel} className="flex-1 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600">Cancel</button>
+            <button onClick={submitCompletePanel} disabled={isSubmittingComplete} className="flex-1 inline-flex items-center justify-center px-3 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-sm text-white uppercase tracking-widest hover:bg-green-700 focus:bg-green-700 active:bg-green-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50">{isSubmittingComplete ? 'Submitting...' : 'Submit'}</button>
           </div>
         </div>
       </div>
