@@ -5,9 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Task;
 use App\Models\Activity;
 use App\Models\ActivityCategory;
-use Illuminate\Http\Request;
 use App\Http\Resources\TaskResource;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
@@ -66,24 +66,12 @@ class DashboardController extends Controller
             })
             ->orderBy('updated_at', 'desc')
             ->get()
-            ->map(function($activity) {
-                // Compute real-time duration directly from the loaded sessions
-                // to avoid calling model methods on objects that may be plain arrays/objects
-                $completedDuration = 0.0;
-                $activeSeconds = 0;
-
-                if (is_object($activity) && method_exists($activity, 'relationLoaded') && $activity->relationLoaded('sessions')) {
-                    // Sum durations for completed sessions (stored in minutes)
-                    $completedDuration = (float) $activity->sessions->whereNotNull('ended_at')->sum('duration');
-
-                    // If there's an active session (ended_at null), compute current seconds
-                    $activeSession = $activity->sessions->firstWhere('ended_at', null);
-                    if ($activeSession && $activeSession->started_at) {
-                        $activeSeconds = $activeSession->started_at->diffInSeconds(now());
-                    }
+            ->map(function (Activity $activity) {
+                if (! $activity->relationLoaded('sessions')) {
+                    $activity->load('sessions');
                 }
 
-                $activity->real_time_duration = $completedDuration + ($activeSeconds / 60.0);
+                $activity->real_time_duration = (float) $activity->getTotalDurationFromSessions();
                 return $activity;
             });
 
@@ -96,22 +84,16 @@ class DashboardController extends Controller
         $allCategories = ActivityCategory::orderBy('name')->get(['id', 'name', 'parent_id']);
 
         // Compute top categories used by the current user (by activity count)
-        $topCategories = Activity::selectRaw('activity_category_id, count(*) as usage_count')
-            ->where('user_id', $user->id)
-            ->groupBy('activity_category_id')
-            ->orderByDesc('usage_count')
+        $topCategories = Activity::join('activity_categories', 'activities.activity_category_id', '=', 'activity_categories.id')
+            ->where('activities.user_id', $user->id)
+            ->groupBy('activity_categories.id', 'activity_categories.name')
+            ->orderByRaw('COUNT(*) DESC')
             ->limit(10)
-            ->get()
-            ->map(function ($row) {
-                $category = ActivityCategory::find($row->activity_category_id);
-                return [
-                    'id' => $category?->id,
-                    'name' => $category?->name,
-                    'usage_count' => $row->usage_count,
-                ];
-            })
-            ->filter()
-            ->values();
+            ->get([
+                'activity_categories.id as id',
+                'activity_categories.name as name',
+                DB::raw('COUNT(*) as usage_count'),
+            ]);
 
         return inertia("Dashboard", compact(
             "totalPendingTasks",
@@ -129,7 +111,8 @@ class DashboardController extends Controller
             "activeActivities",
             "userWorkRoles",
             "allMainCategories",
-            "allCategories"
+            "allCategories",
+            "topCategories"
         ));
     }
 }

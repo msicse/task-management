@@ -11,9 +11,9 @@ import {
   ClockIcon,
   XMarkIcon,
   TagIcon,
-  UserGroupIcon
+  UserGroupIcon,
 } from "@heroicons/react/24/outline";
-import { formatMinutesDisplay, exactTooltip } from '@/utils/timeFormat';
+import { formatMinutesDisplay, exactTooltip } from "@/utils/timeFormat";
 import {
   TASK_STATUS_CLASS_MAP,
   TASK_STATUS_TEXT_MAP,
@@ -39,30 +39,35 @@ export default function Dashboard({
   allCategories,
   activeActivities,
   userWorkRoles,
+  topCategories,
 }) {
   // State for complete activity sliding panel
-  const [completeActivityPanel, setCompleteActivityPanel] = useState({ open: false, activity: null });
+  const [completeActivityPanel, setCompleteActivityPanel] = useState({
+    open: false,
+    activity: null,
+  });
   const [completeActivityFiles, setCompleteActivityFiles] = useState([]);
   const [completeActivityCount, setCompleteActivityCount] = useState(1);
-  const [completeActivityNotes, setCompleteActivityNotes] = useState('');
+  const [completeActivityNotes, setCompleteActivityNotes] = useState("");
   const [isSubmittingComplete, setIsSubmittingComplete] = useState(false);
   // Check if user has admin role
   // Main categories: show only those with at least one accessible sub-category
-  const subCategories = activityCategories.filter(cat => cat.parent_id);
+  const subCategories = activityCategories.filter((cat) => cat.parent_id);
   const mainCategoryIds = subCategories
-    .map(sub => sub.parent_id)
+    .map((sub) => sub.parent_id)
     .filter((id, idx, arr) => id && arr.indexOf(id) === idx); // unique parent IDs
   const mainCategories = mainCategoryIds
-    .map(parentId => allCategories.find(cat => cat.id === parentId))
+    .map((parentId) => allCategories.find((cat) => cat.id === parentId))
     .filter(Boolean); // remove nulls
 
   // State for selected main category in the sliding panel
   const [selectedMainCategory, setSelectedMainCategory] = useState("");
   // Filtered sub-categories based on main category selection
   const filteredSubCategories = selectedMainCategory
-    ? subCategories.filter(sub => sub.parent_id === Number(selectedMainCategory))
+    ? subCategories.filter(
+        (sub) => sub.parent_id === Number(selectedMainCategory)
+      )
     : subCategories;
-  const isAdmin = auth.user.roles.some((role) => role.name === "Admin");
   const isAdminLeader = auth.user.roles.some(
     (role) => role.name === "Admin" || role.name === "Team Leader"
   );
@@ -87,6 +92,7 @@ export default function Dashboard({
     activity_category_id: "",
     description: "",
   });
+
   const [isStarting, setIsStarting] = useState(false);
   const [processingActivity, setProcessingActivity] = useState(null);
   const [uploadingFiles, setUploadingFiles] = useState({});
@@ -111,10 +117,11 @@ export default function Dashboard({
   }, []);
 
   // Prepare category options for SearchableSelect
-  const categoryOptions = activityCategories?.map(category => ({
-    value: String(category.id),
-    label: category.name
-  })) || [];
+  const categoryOptions =
+    activityCategories?.map((category) => ({
+      value: String(category.id),
+      label: category.name,
+    })) || [];
 
   const handleStartActivity = async () => {
     if (!activityData.activity_category_id) {
@@ -123,7 +130,9 @@ export default function Dashboard({
     }
 
     // Check if there are currently running activities
-    const hasRunningActivities = activeActivities?.some(activity => activity.status === 'started');
+    const hasRunningActivities = activeActivities?.some(
+      (activity) => activity.status === "started"
+    );
 
     if (hasRunningActivities) {
       const confirmed = confirm(
@@ -144,7 +153,7 @@ export default function Dashboard({
 
       // Signal other tabs/pages that activities have been updated
       try {
-        localStorage.setItem('activities_updated', Date.now().toString());
+        localStorage.setItem("activities_updated", Date.now().toString());
       } catch (e) {
         // ignore localStorage errors (e.g., private mode)
       }
@@ -174,39 +183,47 @@ export default function Dashboard({
     setIsSubmittingComplete(true);
     const formData = new FormData();
     // Use method spoofing so the request is sent as POST (allowing files) but treated as PUT by Laravel
-    formData.append('_method', 'PUT');
-    formData.append('count', completeActivityCount);
-    if (completeActivityNotes && completeActivityNotes.trim() !== '') {
-      formData.append('notes', completeActivityNotes.trim());
+    formData.append("_method", "PUT");
+    formData.append("count", completeActivityCount);
+    if (completeActivityNotes && completeActivityNotes.trim() !== "") {
+      formData.append("notes", completeActivityNotes.trim());
     }
     if (completeActivityFiles.length > 0) {
       completeActivityFiles.forEach((file) => {
         // ensure files are sent as an array
-        formData.append('files[]', file);
+        formData.append("files[]", file);
       });
     }
     try {
       // Use POST with method spoofing to ensure file upload works reliably
-      await router.post(route("activities.complete", completeActivityPanel.activity.id), formData, {
-        // don't set Content-Type manually — let the browser set the multipart boundary
-        onSuccess: () => {
-          setCompleteActivityPanel({ open: false, activity: null });
-          setCompleteActivityFiles([]);
-          setCompleteActivityCount(1);
-          setCompleteActivityNotes('');
-            try { localStorage.setItem('activities_updated', Date.now().toString()); } catch(e) {}
-          // Reload activeActivities prop so the dashboard reflects updated count/notes/files
-          try {
-            router.reload({ only: ['activeActivities'] });
-          } catch (e) {
-            // fallback: full reload
-            window.location.reload();
-          }
-        },
-        onError: (errors) => {
-          alert("Failed to complete activity. Please check your input and try again.");
-        },
-      });
+      await router.post(
+        route("activities.complete", completeActivityPanel.activity.id),
+        formData,
+        {
+          // don't set Content-Type manually — let the browser set the multipart boundary
+          onSuccess: () => {
+            setCompleteActivityPanel({ open: false, activity: null });
+            setCompleteActivityFiles([]);
+            setCompleteActivityCount(1);
+            setCompleteActivityNotes("");
+            try {
+              localStorage.setItem("activities_updated", Date.now().toString());
+            } catch (e) {}
+            // Reload activeActivities prop so the dashboard reflects updated count/notes/files
+            try {
+              router.reload({ only: ["activeActivities"] });
+            } catch (e) {
+              // fallback: full reload
+              window.location.reload();
+            }
+          },
+          onError: (errors) => {
+            alert(
+              "Failed to complete activity. Please check your input and try again."
+            );
+          },
+        }
+      );
     } catch (error) {
       alert("Error completing activity. Please try again.");
     } finally {
@@ -217,17 +234,23 @@ export default function Dashboard({
   const handleActivityAction = async (activityId, action) => {
     setProcessingActivity(activityId);
     try {
-      await router.put(route(`activities.${action}`, activityId), {}, {
-        preserveScroll: true,
-        onSuccess: () => {
-          // Success message will be handled by Laravel session
-          try { localStorage.setItem('activities_updated', Date.now().toString()); } catch(e) {}
-        },
-        onError: (errors) => {
-          console.error(`Error ${action} activity:`, errors);
-          alert(`Failed to ${action} activity. Please try again.`);
+      await router.put(
+        route(`activities.${action}`, activityId),
+        {},
+        {
+          preserveScroll: true,
+          onSuccess: () => {
+            // Success message will be handled by Laravel session
+            try {
+              localStorage.setItem("activities_updated", Date.now().toString());
+            } catch (e) {}
+          },
+          onError: (errors) => {
+            console.error(`Error ${action} activity:`, errors);
+            alert(`Failed to ${action} activity. Please try again.`);
+          },
         }
-      });
+      );
     } catch (error) {
       console.error(`Error ${action} activity:`, error);
       alert(`Failed to ${action} activity. Please try again.`);
@@ -239,21 +262,21 @@ export default function Dashboard({
   const handleFileUpload = async (activityId, files) => {
     if (!files.length) return;
 
-    setUploadingFiles(prev => ({ ...prev, [activityId]: true }));
+    setUploadingFiles((prev) => ({ ...prev, [activityId]: true }));
 
     const formData = new FormData();
-    Array.from(files).forEach(file => {
-      formData.append('files[]', file);
+    Array.from(files).forEach((file) => {
+      formData.append("files[]", file);
     });
 
     try {
-      await router.post(route('activity-files.store', activityId), formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+      await router.post(route("activity-files.store", activityId), formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
     } catch (error) {
-      console.error('Error uploading files:', error);
+      console.error("Error uploading files:", error);
     } finally {
-      setUploadingFiles(prev => ({ ...prev, [activityId]: false }));
+      setUploadingFiles((prev) => ({ ...prev, [activityId]: false }));
     }
   };
 
@@ -267,13 +290,15 @@ export default function Dashboard({
     // Add duration from completed sessions
     if (activity.sessions) {
       totalDuration = activity.sessions
-        .filter(session => session.ended_at && session.duration)
+        .filter((session) => session.ended_at && session.duration)
         .reduce((sum, session) => sum + session.duration, 0);
     }
 
     // If activity is currently running, add current session duration (with fractional minutes)
-    if (activity.status === 'started' && activity.sessions) {
-      const activeSession = activity.sessions.find(session => !session.ended_at);
+    if (activity.status === "started" && activity.sessions) {
+      const activeSession = activity.sessions.find(
+        (session) => !session.ended_at
+      );
       if (activeSession && activeSession.started_at) {
         const sessionStart = new Date(activeSession.started_at);
         const now = currentTime;
@@ -283,7 +308,11 @@ export default function Dashboard({
     }
 
     // For completed or paused activities, use the stored duration if sessions don't have duration
-    if ((activity.status === 'completed' || activity.status === 'paused') && totalDuration === 0 && activity.duration) {
+    if (
+      (activity.status === "completed" || activity.status === "paused") &&
+      totalDuration === 0 &&
+      activity.duration
+    ) {
       totalDuration = activity.duration;
     }
 
@@ -301,12 +330,14 @@ export default function Dashboard({
 
     if (activity.sessions) {
       totalDuration = activity.sessions
-        .filter(session => session.ended_at && session.duration)
+        .filter((session) => session.ended_at && session.duration)
         .reduce((sum, session) => sum + session.duration, 0);
     }
 
-    if (activity.status === 'started' && activity.sessions) {
-      const activeSession = activity.sessions.find(session => !session.ended_at);
+    if (activity.status === "started" && activity.sessions) {
+      const activeSession = activity.sessions.find(
+        (session) => !session.ended_at
+      );
       if (activeSession && activeSession.started_at) {
         const sessionStart = new Date(activeSession.started_at);
         const now = currentTime;
@@ -315,7 +346,11 @@ export default function Dashboard({
       }
     }
 
-    if ((activity.status === 'completed' || activity.status === 'paused') && totalDuration === 0 && activity.duration) {
+    if (
+      (activity.status === "completed" || activity.status === "paused") &&
+      totalDuration === 0 &&
+      activity.duration
+    ) {
       totalDuration = activity.duration;
     }
 
@@ -333,7 +368,9 @@ export default function Dashboard({
     }
 
     // Check if there are currently running activities
-    const hasRunningActivities = activeActivities?.some(activity => activity.status === 'started');
+    const hasRunningActivities = activeActivities?.some(
+      (activity) => activity.status === "started"
+    );
 
     if (hasRunningActivities) {
       const confirmed = confirm(
@@ -347,27 +384,31 @@ export default function Dashboard({
     setIsCreatingActivity(true);
 
     try {
-      await router.post(route("activities.store"), {
-        ...newActivityData,
-        status: "started",
-        redirect_to: "dashboard", // Add this to indicate we want to stay on dashboard
-      }, {
-        onSuccess: () => {
-          // Reset form and close panel after successful creation
-          setNewActivityData({
-            activity_category_id: "",
-            description: "",
-          });
-          setSelectedMainCategory("");
-          setShowAddActivityPanel(false);
-          // Reload the current page (dashboard) to show updated activities
-          router.reload({ only: ['activeActivities'] });
+      await router.post(
+        route("activities.store"),
+        {
+          ...newActivityData,
+          status: "started",
+          redirect_to: "dashboard", // Add this to indicate we want to stay on dashboard
+        },
+        {
+          onSuccess: () => {
+            // Reset form and close panel after successful creation
+            setNewActivityData({
+              activity_category_id: "",
+              description: "",
+            });
+            setSelectedMainCategory("");
+            setShowAddActivityPanel(false);
+            // Reload the current page (dashboard) to show updated activities
+            router.reload({ only: ["activeActivities"] });
+          },
         }
-      });
+      );
 
       // Signal other tabs/pages that activities have been updated
       try {
-        localStorage.setItem('activities_updated', Date.now().toString());
+        localStorage.setItem("activities_updated", Date.now().toString());
       } catch (e) {
         // ignore localStorage errors
       }
@@ -388,7 +429,7 @@ export default function Dashboard({
     setCompleteActivityPanel({ open: false, activity: null });
     setCompleteActivityFiles([]);
     setCompleteActivityCount(1);
-    setCompleteActivityNotes('');
+    setCompleteActivityNotes("");
   };
 
   return (
@@ -420,14 +461,19 @@ export default function Dashboard({
                   <div className="flex flex-col items-end space-y-2">
                     {/* System Role Badge */}
                     <div className="flex items-center space-x-2">
-                      <span className="text-xs text-gray-500 dark:text-gray-400">System:</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        System:
+                      </span>
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                        {auth.user.roles?.map(role => role.name).join(', ') || 'No roles'}
+                        {auth.user.roles?.map((role) => role.name).join(", ") ||
+                          "No roles"}
                       </span>
                     </div>
                     {/* Work Roles Badges */}
                     <div className="flex items-center space-x-2">
-                      <span className="text-xs text-gray-500 dark:text-gray-400">Work:</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        Work:
+                      </span>
                       <div className="flex flex-wrap gap-1 max-w-xs">
                         {userWorkRoles && userWorkRoles.length > 0 ? (
                           userWorkRoles.slice(0, 3).map((role, index) => (
@@ -439,7 +485,9 @@ export default function Dashboard({
                             </span>
                           ))
                         ) : (
-                          <span className="text-xs text-gray-400 italic">No work roles</span>
+                          <span className="text-xs text-gray-400 italic">
+                            No work roles
+                          </span>
                         )}
                         {userWorkRoles && userWorkRoles.length > 3 && (
                           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
@@ -459,16 +507,19 @@ export default function Dashboard({
                         No Categories Available
                       </h3>
                       <p className="text-yellow-700 dark:text-yellow-300 mb-2">
-                        No activity categories are available for your current work role(s).
-                        Contact your administrator to assign activity categories to your work roles.
+                        No activity categories are available for your current
+                        work role(s). Contact your administrator to assign
+                        activity categories to your work roles.
                       </p>
                       <div className="mt-4 text-sm text-yellow-600 dark:text-yellow-400">
-                        Your work roles: {userWorkRoles?.map(role => role.name).join(', ') || 'No work roles assigned'}
+                        Your work roles:{" "}
+                        {userWorkRoles?.map((role) => role.name).join(", ") ||
+                          "No work roles assigned"}
                       </div>
                       <div className="mt-4">
                         {hasPermission("user-list") ? (
                           <a
-                            href={route('users.index')}
+                            href={route("users.index")}
                             className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-sm transition-colors duration-200"
                           >
                             <UserGroupIcon className="w-4 h-4 mr-2" />
@@ -476,7 +527,7 @@ export default function Dashboard({
                           </a>
                         ) : hasPermission("role-list") ? (
                           <a
-                            href={route('work-roles.index')}
+                            href={route("work-roles.index")}
                             className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-sm transition-colors duration-200"
                           >
                             <UserGroupIcon className="w-4 h-4 mr-2" />
@@ -492,54 +543,98 @@ export default function Dashboard({
                   </div>
                 ) : (
                   <div className="text-center">
-                      <button
-                        onClick={() => setShowAddActivityPanel(true)}
-                        className="inline-flex items-center px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg shadow-sm transition-colors duration-200"
-                      >
-                        <PlayIcon className="w-5 h-5 mr-2" />
-                        Start Activity
-                      </button>
+                    <button
+                      onClick={() => setShowAddActivityPanel(true)}
+                      className="inline-flex items-center px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg shadow-sm transition-colors duration-200"
+                    >
+                      <PlayIcon className="w-5 h-5 mr-2" />
+                      Start Activity
+                    </button>
 
-                      <div className="mt-3 text-sm text-gray-500 dark:text-gray-400">
-                        Available categories: {activityCategories.length}
-                      </div>
+                    <div className="mt-3 text-sm text-gray-500 dark:text-gray-400">
+                      Available categories: {activityCategories.length}
+                    </div>
 
-                      {/* Top categories quick start grid */}
-                      { (typeof topCategories !== 'undefined' && topCategories.length > 0 ? topCategories : activityCategories) && ( (typeof topCategories !== 'undefined' && topCategories.length > 0 ? topCategories : activityCategories).length > 0) && (
+                    {/* Top categories quick start grid */}
+                    {(typeof topCategories !== "undefined" &&
+                    topCategories.length > 0
+                      ? topCategories
+                      : activityCategories) &&
+                      (typeof topCategories !== "undefined" &&
+                      topCategories.length > 0
+                        ? topCategories
+                        : activityCategories
+                      ).length > 0 && (
                         <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
-                          {(typeof topCategories !== 'undefined' && topCategories.length > 0 ? topCategories : activityCategories).slice(0, TOP_CATEGORIES_COUNT).map((cat) => (
-                            <div key={cat.id} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
-                              <div title={cat.name} aria-label={cat.name} className="text-sm text-gray-700 dark:text-gray-100 truncate">{cat.name}</div>
-                              <button
-                                onClick={async () => {
-                                  // one-click start
-                                  setIsStartingCategoryId(cat.id);
-                                  try {
-                                    await router.post(route('activities.store'), {
-                                      activity_category_id: cat.id,
-                                      status: 'started',
-                                      redirect_to: 'dashboard'
-                                    }, {
-                                      onSuccess: () => {
-                                        // reload only activeActivities to refresh running items
-                                        router.reload({ only: ['activeActivities'] });
-                                        // Signal other tabs/pages that activities have been updated
-                                        try { localStorage.setItem('activities_updated', Date.now().toString()); } catch(e) {}
-                                      },
-                                      onFinish: () => setIsStartingCategoryId(null)
-                                    });
-                                  } catch (err) {
-                                    console.error('Failed to start category', err);
-                                    setIsStartingCategoryId(null);
-                                  }
-                                }}
-                                disabled={isStartingCategoryId === cat.id}
-                                className={`ml-2 inline-flex items-center px-2 py-1 text-xs rounded ${isStartingCategoryId === cat.id ? 'bg-gray-300 text-gray-700' : 'bg-green-600 text-white hover:bg-green-700'}`}
+                          {(typeof topCategories !== "undefined" &&
+                          topCategories.length > 0
+                            ? topCategories
+                            : activityCategories
+                          )
+                            .slice(0, TOP_CATEGORIES_COUNT)
+                            .map((cat) => (
+                              <div
+                                key={cat.id}
+                                className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded"
                               >
-                                {isStartingCategoryId === cat.id ? 'Starting...' : 'Start'}
-                              </button>
-                            </div>
-                          ))}
+                                <div
+                                  title={cat.name}
+                                  aria-label={cat.name}
+                                  className="text-sm text-gray-700 dark:text-gray-100 truncate"
+                                >
+                                  {cat.name}
+                                </div>
+                                <button
+                                  onClick={async () => {
+                                    // one-click start
+                                    setIsStartingCategoryId(cat.id);
+                                    try {
+                                      await router.post(
+                                        route("activities.store"),
+                                        {
+                                          activity_category_id: cat.id,
+                                          status: "started",
+                                          redirect_to: "dashboard",
+                                        },
+                                        {
+                                          onSuccess: () => {
+                                            // reload only activeActivities to refresh running items
+                                            router.reload({
+                                              only: ["activeActivities"],
+                                            });
+                                            // Signal other tabs/pages that activities have been updated
+                                            try {
+                                              localStorage.setItem(
+                                                "activities_updated",
+                                                Date.now().toString()
+                                              );
+                                            } catch (e) {}
+                                          },
+                                          onFinish: () =>
+                                            setIsStartingCategoryId(null),
+                                        }
+                                      );
+                                    } catch (err) {
+                                      console.error(
+                                        "Failed to start category",
+                                        err
+                                      );
+                                      setIsStartingCategoryId(null);
+                                    }
+                                  }}
+                                  disabled={isStartingCategoryId === cat.id}
+                                  className={`ml-2 inline-flex items-center px-2 py-1 text-xs rounded ${
+                                    isStartingCategoryId === cat.id
+                                      ? "bg-gray-300 text-gray-700"
+                                      : "bg-green-600 text-white hover:bg-green-700"
+                                  }`}
+                                >
+                                  {isStartingCategoryId === cat.id
+                                    ? "Starting..."
+                                    : "Start"}
+                                </button>
+                              </div>
+                            ))}
                         </div>
                       )}
                   </div>
@@ -556,19 +651,26 @@ export default function Dashboard({
               </h2>
               <div className="grid gap-4">
                 {activeActivities.map((activity) => (
-                  <div key={activity.id} className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                  <div
+                    key={activity.id}
+                    className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg"
+                  >
                     <div className="p-6">
                       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                         {/* Activity Info */}
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
-                            <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
-                              activity.status === 'started'
-                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                                : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                            }`}>
+                            <span
+                              className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
+                                activity.status === "started"
+                                  ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                                  : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+                              }`}
+                            >
                               <ClockIcon className="w-3 h-3 mr-1" />
-                              {activity.status === 'started' ? 'Running' : 'Paused'}
+                              {activity.status === "started"
+                                ? "Running"
+                                : "Paused"}
                             </span>
                             <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                               {activity.activity_category?.name}
@@ -581,7 +683,19 @@ export default function Dashboard({
                           )}
                           <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
                             <ClockIcon className="w-4 h-4 mr-1" />
-                            Duration: <span title={exactTooltip(getTotalDurationMinutes(activity))} aria-label={exactTooltip(getTotalDurationMinutes(activity))}>{formatMinutesDisplay(getTotalDurationMinutes(activity))}</span>
+                            Duration:{" "}
+                            <span
+                              title={exactTooltip(
+                                getTotalDurationMinutes(activity)
+                              )}
+                              aria-label={exactTooltip(
+                                getTotalDurationMinutes(activity)
+                              )}
+                            >
+                              {formatMinutesDisplay(
+                                getTotalDurationMinutes(activity)
+                              )}
+                            </span>
                             {activity.files?.length > 0 && (
                               <span className="ml-4 flex items-center">
                                 <DocumentArrowUpIcon className="w-4 h-4 mr-1" />
@@ -594,23 +708,31 @@ export default function Dashboard({
                         {/* Action Buttons */}
                         <div className="flex flex-wrap gap-2">
                           {/* Pause/Resume Button */}
-                          {activity.status === 'started' ? (
+                          {activity.status === "started" ? (
                             <button
-                              onClick={() => handleActivityAction(activity.id, 'pause')}
+                              onClick={() =>
+                                handleActivityAction(activity.id, "pause")
+                              }
                               disabled={processingActivity === activity.id}
                               className="inline-flex items-center px-3 py-2 bg-yellow-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-yellow-700 focus:bg-yellow-700 active:bg-yellow-900 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition ease-in-out duration-150"
                             >
                               <PauseIcon className="w-4 h-4 mr-1" />
-                              {processingActivity === activity.id ? 'Pausing...' : 'Pause'}
+                              {processingActivity === activity.id
+                                ? "Pausing..."
+                                : "Pause"}
                             </button>
                           ) : (
                             <button
-                              onClick={() => handleActivityAction(activity.id, 'start')}
+                              onClick={() =>
+                                handleActivityAction(activity.id, "start")
+                              }
                               disabled={processingActivity === activity.id}
                               className="inline-flex items-center px-3 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 focus:bg-green-700 active:bg-green-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition ease-in-out duration-150"
                             >
                               <PlayIcon className="w-4 h-4 mr-1" />
-                              {processingActivity === activity.id ? 'Resuming...' : 'Resume'}
+                              {processingActivity === activity.id
+                                ? "Resuming..."
+                                : "Resume"}
                             </button>
                           )}
 
@@ -618,75 +740,161 @@ export default function Dashboard({
                           <button
                             onClick={() => {
                               // open panel and prefill files/notes/count from activity
-                              setCompleteActivityPanel({ open: true, activity });
+                              setCompleteActivityPanel({
+                                open: true,
+                                activity,
+                              });
                               setCompleteActivityFiles([]);
-                              setCompleteActivityNotes(activity.notes || '');
-                              setCompleteActivityCount((activity.sessions && activity.sessions.length) ? activity.sessions.length : (activity.count ?? 1));
+                              setCompleteActivityNotes(activity.notes || "");
+                              setCompleteActivityCount(
+                                activity.sessions && activity.sessions.length
+                                  ? activity.sessions.length
+                                  : activity.count ?? 1
+                              );
                             }}
                             disabled={processingActivity === activity.id}
                             className="inline-flex items-center px-3 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition ease-in-out duration-150"
                           >
                             <CheckIcon className="w-4 h-4 mr-1" />
-                            {processingActivity === activity.id ? 'Completing...' : 'Complete'}
+                            {processingActivity === activity.id
+                              ? "Completing..."
+                              : "Complete"}
                           </button>
-  {/* Sliding window/modal for completing activity */}
-  {/* Sliding Panel for Completing Activity */}
-  <div className={`fixed inset-y-0 right-0 z-50 w-80 bg-white dark:bg-gray-800 shadow-xl transform transition-transform duration-300 ease-in-out ${completeActivityPanel.open ? 'translate-x-0' : 'translate-x-full'}`}>
-    <div className="flex flex-col h-full">
-      {/* Panel Header */}
-  <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Complete Activity</h3>
-          {completeActivityPanel.activity && (
-            <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">{completeActivityPanel.activity.activity_category?.name || completeActivityPanel.activity.name}</div>
-          )}
-        </div>
-        <button onClick={closeCompleteActivityPanel} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-          <XMarkIcon className="w-5 h-5" />
-        </button>
-      </div>
-  {/* Panel Content */}
-  <div className="flex-1 px-4 py-3 space-y-3">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Add Files</label>
-          <input type="file" multiple onChange={e => setCompleteActivityFiles(Array.from(e.target.files))} className="w-full text-sm" />
-          {completeActivityFiles.length > 0 && (
-            <div className="mt-2 text-sm text-gray-600 dark:text-gray-300">{completeActivityFiles.length} file(s) selected</div>
-          )}
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Notes (optional)</label>
-          <textarea
-            value={completeActivityNotes}
-            onChange={e => setCompleteActivityNotes(e.target.value)}
-            placeholder="Add any notes about this activity (optional)"
-            className="w-full px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-md resize-none text-sm"
-            rows={3}
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Count</label>
-          <input type="number" min={1} value={completeActivityCount} onChange={e => setCompleteActivityCount(Number(e.target.value))} className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md text-sm" />
-        </div>
-        <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-          Sessions in this activity: <span className="font-medium text-gray-700 dark:text-gray-200">{completeActivityPanel.activity?.sessions ? completeActivityPanel.activity.sessions.length : 0}</span>
-          {' '}• Total time: <span className="font-medium text-gray-700 dark:text-gray-200">{completeActivityPanel.activity ? formatDurationFromSessions(completeActivityPanel.activity) : '0m'}</span>
-        </div>
-      </div>
-      {/* Panel Footer */}
-      <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex space-x-2">
-        <button onClick={() => setCompleteActivityPanel({ open: false, activity: null })} className="flex-1 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors">Cancel</button>
-        <button onClick={handleCompleteActivitySubmit} disabled={isSubmittingComplete} className="flex-1 inline-flex items-center justify-center px-3 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-sm text-white uppercase tracking-widest hover:bg-green-700 focus:bg-green-700 active:bg-green-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition ease-in-out duration-150">
-          <CheckIcon className="w-4 h-4 mr-2" />
-          {isSubmittingComplete ? "Submitting..." : "Submit"}
-        </button>
-      </div>
-    </div>
-  </div>
-  {/* Backdrop for Complete Activity Panel */}
-  {completeActivityPanel.open && (
-    <div className="fixed inset-0 bg-black bg-opacity-30 z-40 transition-opacity duration-300" onClick={closeCompleteActivityPanel}></div>
-  )}
+                          {/* Sliding window/modal for completing activity */}
+                          {/* Sliding Panel for Completing Activity */}
+                          <div
+                            className={`fixed inset-y-0 right-0 z-50 w-80 bg-white dark:bg-gray-800 shadow-xl transform transition-transform duration-300 ease-in-out ${
+                              completeActivityPanel.open
+                                ? "translate-x-0"
+                                : "translate-x-full"
+                            }`}
+                          >
+                            <div className="flex flex-col h-full">
+                              {/* Panel Header */}
+                              <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                                <div>
+                                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                                    Complete Activity
+                                  </h3>
+                                  {completeActivityPanel.activity && (
+                                    <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                      {completeActivityPanel.activity
+                                        .activity_category?.name ||
+                                        completeActivityPanel.activity.name}
+                                    </div>
+                                  )}
+                                </div>
+                                <button
+                                  onClick={closeCompleteActivityPanel}
+                                  className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                                >
+                                  <XMarkIcon className="w-5 h-5" />
+                                </button>
+                              </div>
+                              {/* Panel Content */}
+                              <div className="flex-1 px-4 py-3 space-y-3">
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Add Files
+                                  </label>
+                                  <input
+                                    type="file"
+                                    multiple
+                                    onChange={(e) =>
+                                      setCompleteActivityFiles(
+                                        Array.from(e.target.files)
+                                      )
+                                    }
+                                    className="w-full text-sm"
+                                  />
+                                  {completeActivityFiles.length > 0 && (
+                                    <div className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                                      {completeActivityFiles.length} file(s)
+                                      selected
+                                    </div>
+                                  )}
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Notes (optional)
+                                  </label>
+                                  <textarea
+                                    value={completeActivityNotes}
+                                    onChange={(e) =>
+                                      setCompleteActivityNotes(e.target.value)
+                                    }
+                                    placeholder="Add any notes about this activity (optional)"
+                                    className="w-full px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-md resize-none text-sm"
+                                    rows={3}
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Count
+                                  </label>
+                                  <input
+                                    type="number"
+                                    min={1}
+                                    value={completeActivityCount}
+                                    onChange={(e) =>
+                                      setCompleteActivityCount(
+                                        Number(e.target.value)
+                                      )
+                                    }
+                                    className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md text-sm"
+                                  />
+                                </div>
+                                <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                                  Sessions in this activity:{" "}
+                                  <span className="font-medium text-gray-700 dark:text-gray-200">
+                                    {completeActivityPanel.activity?.sessions
+                                      ? completeActivityPanel.activity.sessions
+                                          .length
+                                      : 0}
+                                  </span>{" "}
+                                  • Total time:{" "}
+                                  <span className="font-medium text-gray-700 dark:text-gray-200">
+                                    {completeActivityPanel.activity
+                                      ? formatDurationFromSessions(
+                                          completeActivityPanel.activity
+                                        )
+                                      : "0m"}
+                                  </span>
+                                </div>
+                              </div>
+                              {/* Panel Footer */}
+                              <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex space-x-2">
+                                <button
+                                  onClick={() =>
+                                    setCompleteActivityPanel({
+                                      open: false,
+                                      activity: null,
+                                    })
+                                  }
+                                  className="flex-1 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  onClick={handleCompleteActivitySubmit}
+                                  disabled={isSubmittingComplete}
+                                  className="flex-1 inline-flex items-center justify-center px-3 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-sm text-white uppercase tracking-widest hover:bg-green-700 focus:bg-green-700 active:bg-green-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition ease-in-out duration-150"
+                                >
+                                  <CheckIcon className="w-4 h-4 mr-2" />
+                                  {isSubmittingComplete
+                                    ? "Submitting..."
+                                    : "Submit"}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                          {/* Backdrop for Complete Activity Panel */}
+                          {completeActivityPanel.open && (
+                            <div
+                              className="fixed inset-0 bg-black bg-opacity-30 z-40 transition-opacity duration-300"
+                              onClick={closeCompleteActivityPanel}
+                            ></div>
+                          )}
 
                           {/* File upload removed from Dashboard active list (use activity detail page or complete panel) */}
 
@@ -1038,7 +1246,7 @@ export default function Dashboard({
                       Tasks Assigned To Me
                     </h3>
                     <Link
-                      href={route("tasks.index", { filter: 'assigned' })}
+                      href={route("tasks.index", { filter: "assigned" })}
                       className="text-sm text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
                     >
                       View All
@@ -1145,7 +1353,7 @@ export default function Dashboard({
                       Tasks Created By Me
                     </h3>
                     <Link
-                      href={route("tasks.index", { filter: 'created' })}
+                      href={route("tasks.index", { filter: "created" })}
                       className="text-sm text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
                     >
                       View All
@@ -1244,9 +1452,11 @@ export default function Dashboard({
       </div>
 
       {/* Sliding Panel for Adding New Activity */}
-      <div className={`fixed inset-y-0 right-0 z-50 w-80 bg-white dark:bg-gray-800 shadow-xl transform transition-transform duration-300 ease-in-out ${
-        showAddActivityPanel ? 'translate-x-0' : 'translate-x-full'
-      }`}>
+      <div
+        className={`fixed inset-y-0 right-0 z-50 w-80 bg-white dark:bg-gray-800 shadow-xl transform transition-transform duration-300 ease-in-out ${
+          showAddActivityPanel ? "translate-x-0" : "translate-x-full"
+        }`}
+      >
         <div className="flex flex-col h-full">
           {/* Panel Header */}
           <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
@@ -1272,7 +1482,10 @@ export default function Dashboard({
                   Main Category
                 </label>
                 <MultipleSearchableSelect
-                  options={mainCategories.map(cat => ({ value: String(cat.id), label: cat.name }))}
+                  options={mainCategories.map((cat) => ({
+                    value: String(cat.id),
+                    label: cat.name,
+                  }))}
                   value={selectedMainCategory}
                   onChange={setSelectedMainCategory}
                   placeholder="Select main category..."
@@ -1291,12 +1504,20 @@ export default function Dashboard({
                   Sub-Category *
                 </label>
                 <MultipleSearchableSelect
-                  options={filteredSubCategories.map(cat => ({ value: String(cat.id), label: cat.name }))}
+                  options={filteredSubCategories.map((cat) => ({
+                    value: String(cat.id),
+                    label: cat.name,
+                  }))}
                   value={newActivityData.activity_category_id}
-                  onChange={value => {
-                    setNewActivityData(prev => ({ ...prev, activity_category_id: value }));
+                  onChange={(value) => {
+                    setNewActivityData((prev) => ({
+                      ...prev,
+                      activity_category_id: value,
+                    }));
                     // Auto-select parent category if sub-category is chosen
-                    const selectedSub = filteredSubCategories.find(cat => String(cat.id) === String(value));
+                    const selectedSub = filteredSubCategories.find(
+                      (cat) => String(cat.id) === String(value)
+                    );
                     if (selectedSub && selectedSub.parent_id) {
                       setSelectedMainCategory(String(selectedSub.parent_id));
                     }
@@ -1318,10 +1539,12 @@ export default function Dashboard({
                 </label>
                 <textarea
                   value={newActivityData.description}
-                  onChange={(e) => setNewActivityData(prev => ({
-                    ...prev,
-                    description: e.target.value
-                  }))}
+                  onChange={(e) =>
+                    setNewActivityData((prev) => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
+                  }
                   placeholder="Enter activity description..."
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-gray-200 resize-none text-sm"
                   rows="2"
@@ -1332,7 +1555,8 @@ export default function Dashboard({
               <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-md p-3">
                 <p className="text-sm text-blue-700 dark:text-blue-300">
                   <ClockIcon className="w-4 h-4 inline mr-1" />
-                  Starting this activity will automatically pause any currently running activities and begin tracking time immediately.
+                  Starting this activity will automatically pause any currently
+                  running activities and begin tracking time immediately.
                 </p>
               </div>
             </div>
@@ -1349,7 +1573,9 @@ export default function Dashboard({
               </button>
               <button
                 onClick={handleCreateNewActivity}
-                disabled={isCreatingActivity || !newActivityData.activity_category_id}
+                disabled={
+                  isCreatingActivity || !newActivityData.activity_category_id
+                }
                 className="flex-1 inline-flex items-center justify-center px-3 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-sm text-white uppercase tracking-widest hover:bg-green-700 focus:bg-green-700 active:bg-green-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition ease-in-out duration-150"
               >
                 <PlayIcon className="w-4 h-4 mr-2" />
