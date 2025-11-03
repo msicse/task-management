@@ -116,6 +116,19 @@ export default function Dashboard({
     return () => clearInterval(timer);
   }, []);
 
+  // Session keep-alive: ping server every 5 minutes to prevent session timeout
+  useEffect(() => {
+    const keepAlive = setInterval(() => {
+      // Make a lightweight HEAD request to keep session active
+      window.axios.head('/dashboard').catch(error => {
+        // Silently fail - if there's a problem, user will see 419 which will auto-retry
+        console.debug('Session keep-alive ping failed:', error.response?.status);
+      });
+    }, 5 * 60 * 1000); // Ping every 5 minutes (300,000ms)
+
+    return () => clearInterval(keepAlive);
+  }, []);
+
   // Prepare category options for SearchableSelect
   const categoryOptions =
     activityCategories?.map((category) => ({
