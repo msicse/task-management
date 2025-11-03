@@ -324,21 +324,6 @@ export default function Reports({
 
   const canSeeAllActivities = hasPermission("activity-list-all");
 
-  // Clear team-specific filters when switching to 'my' view
-  useEffect(() => {
-    if (data.filter === "my") {
-      // Clear filters that don't make sense for 'my' view
-      if (data.user_id || data.department_id || data.role_id) {
-        setData({
-          ...data,
-          user_id: "",
-          department_id: "",
-          role_id: "",
-        });
-      }
-    }
-  }, [data.filter]);
-
   // Prepare options for MultipleSearchableSelect
   const userOptions =
     users?.map((user) => ({
@@ -374,7 +359,7 @@ export default function Reports({
   };
 
   const clearFilters = () => {
-    // Reset all form data to empty values
+    // Reset all form data to empty values but preserve the current filter
     setData({
       start_date: "",
       end_date: "",
@@ -382,12 +367,13 @@ export default function Reports({
       category_id: "",
       department_id: "",
       role_id: "",
+      filter: data.filter, // Preserve current filter (my/all)
     });
 
-    // Navigate to reports page without any filters - use router.get directly with empty params
+    // Navigate to reports page without any filters except the current filter type
     router.get(
       route("activities.reports"),
-      {},
+      { filter: data.filter },
       {
         preserveState: false,
         preserveScroll: true,
@@ -491,7 +477,19 @@ export default function Reports({
                         name="filter"
                         value="my"
                         checked={data.filter === "my"}
-                        onChange={(e) => setData("filter", e.target.value)}
+                        onChange={(e) => {
+                          const newFilter = e.target.value;
+                          setData("filter", newFilter);
+                          // Navigate with just the filter parameter - backend will handle defaults
+                          router.get(
+                            route("activities.reports"),
+                            { filter: newFilter },
+                            {
+                              preserveState: true,
+                              preserveScroll: true,
+                            }
+                          );
+                        }}
                         className="mr-2 text-indigo-600 focus:ring-indigo-500"
                       />
                       <span className="text-sm text-gray-700 dark:text-gray-300">
@@ -504,7 +502,19 @@ export default function Reports({
                         name="filter"
                         value="all"
                         checked={data.filter === "all"}
-                        onChange={(e) => setData("filter", e.target.value)}
+                        onChange={(e) => {
+                          const newFilter = e.target.value;
+                          setData("filter", newFilter);
+                          // Navigate with just the filter parameter - backend will handle defaults
+                          router.get(
+                            route("activities.reports"),
+                            { filter: newFilter },
+                            {
+                              preserveState: true,
+                              preserveScroll: true,
+                            }
+                          );
+                        }}
                         className="mr-2 text-indigo-600 focus:ring-indigo-500"
                       />
                       <span className="text-sm text-gray-700 dark:text-gray-300">

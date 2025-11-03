@@ -32,13 +32,13 @@ class ActivityReportController extends Controller
         $departmentId = $request->input('department_id');
         $roleId = $request->input('role_id');
 
-        // Defaults: last 30 days, but if user explicitly requested 'all' filter with no date range,
-        // default to today's data (so /activities/reports?filter=all shows today's data by default)
-        if (!$startDate && !$endDate && $filter === 'all') {
+        // Defaults: if no date range provided, default to today's data for both 'my' and 'all'
+        // This ensures consistent behavior when accessing reports page
+        if (!$startDate && !$endDate) {
             $start = now()->startOfDay();
             $end = now()->endOfDay();
         } else {
-            $start = $startDate ? \Carbon\Carbon::parse($startDate)->startOfDay() : now()->subDays(29)->startOfDay();
+            $start = $startDate ? \Carbon\Carbon::parse($startDate)->startOfDay() : now()->startOfDay();
             $end = $endDate ? \Carbon\Carbon::parse($endDate)->endOfDay() : now()->endOfDay();
         }
 
@@ -306,12 +306,12 @@ class ActivityReportController extends Controller
             $userId = $currentUser->id;
         }
 
-    // For exports, follow same defaulting behavior: if filter=all and no dates provided, export today's data
-    if (!$startDate && !$endDate && $filter === 'all') {
+    // For exports, follow same defaulting behavior: if no dates provided, export today's data
+    if (!$startDate && !$endDate) {
         $start = now()->startOfDay();
         $end = now()->endOfDay();
     } else {
-        $start = $startDate ? \Carbon\Carbon::parse($startDate)->startOfDay() : now()->subDays(29)->startOfDay();
+        $start = $startDate ? \Carbon\Carbon::parse($startDate)->startOfDay() : now()->startOfDay();
         $end = $endDate ? \Carbon\Carbon::parse($endDate)->endOfDay() : now()->endOfDay();
     }
 
