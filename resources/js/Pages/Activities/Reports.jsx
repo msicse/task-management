@@ -461,6 +461,22 @@ export default function Reports({
               onClose={() => setShowSuccess(false)}
             />
           )}
+
+          {/* Quick Links to Other Reports */}
+          <div className="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg mb-6">
+            <div className="p-4 flex items-center justify-between">
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Other Reports
+              </h3>
+              <Link
+                href={route("activities.reports.category-performance")}
+                className="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
+              >
+                📊 Category Performance Report
+              </Link>
+            </div>
+          </div>
+
           {/* Filters */}
           <div className="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg mb-6">
             <div className="p-6">

@@ -353,4 +353,273 @@ class ActivityReportController extends Controller
             abort(403, 'Unauthorized action.');
         }
     }
+
+    /**
+     * Show detailed category performance report
+     */
+    public function categoryPerformance(Request $request)
+    {
+        $this->authorizeReports();
+
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+        $userId = $request->input('user_id');
+        $perPage = $request->input('per_page', 20); // Default 20 items per page
+        $page = $request->input('page', 1);
+
+        // Default to current month if no dates provided
+        if (!$startDate && !$endDate) {
+            $start = now()->startOfMonth();
+            $end = now()->endOfMonth();
+        } else {
+            $start = $startDate ? \Carbon\Carbon::parse($startDate)->startOfDay() : now()->startOfMonth();
+            $end = $endDate ? \Carbon\Carbon::parse($endDate)->endOfDay() : now()->endOfMonth();
+        }
+
+        // Ensure end date is not before start date
+        if ($end->lt($start)) {
+            $end = $start->copy()->endOfDay();
+        }
+
+        // Apply permission-based filtering
+        $currentUser = Auth::user();
+        $canViewAll = $currentUser->can('activity-list-all');
+
+        // Base query for activities
+        $activitiesQuery = Activity::query()
+            ->with(['activityCategory', 'user'])
+            ->whereBetween('started_at', [$start, $end])
+            ->where('status', 'completed'); // Only completed activities
+
+        // Apply user filter
+        if ($userId && $canViewAll) {
+            $activitiesQuery->where('user_id', $userId);
+        } elseif (!$canViewAll) {
+            $activitiesQuery->where('user_id', $currentUser->id);
+            $userId = $currentUser->id;
+        }
+
+        // Get all completed activities for the period
+        $activities = $activitiesQuery->get();
+
+        // Group by sub-category and calculate metrics
+        $categoryStats = [];
+
+        foreach ($activities as $activity) {
+            $categoryId = $activity->activity_category_id;
+            $category = $activity->activityCategory;
+
+            if (!$category) continue;
+
+            // Initialize category stats if not exists
+            if (!isset($categoryStats[$categoryId])) {
+                $categoryStats[$categoryId] = [
+                    'sub_category_name' => $category->name,
+                    'standard_time' => $category->standard_time ?? 0, // in minutes
+                    'total_performed_time' => 0, // in minutes
+                    'total_activity_count' => 0,
+                    'user_ids' => [],
+                ];
+            }
+
+            // Add activity data
+            $categoryStats[$categoryId]['total_performed_time'] += $activity->duration ?? 0;
+            $categoryStats[$categoryId]['total_activity_count'] += 1;
+
+            // Track unique users
+            if (!in_array($activity->user_id, $categoryStats[$categoryId]['user_ids'])) {
+                $categoryStats[$categoryId]['user_ids'][] = $activity->user_id;
+            }
+        }
+
+        // Calculate derived metrics and format data
+        $allReportData = [];
+        foreach ($categoryStats as $stats) {
+            $totalUserCount = count($stats['user_ids']);
+            $avgPerformedTime = $stats['total_activity_count'] > 0
+                ? round($stats['total_performed_time'] / $stats['total_activity_count'], 2)
+                : 0;
+
+            // Determine limit/remark
+            $standardTime = $stats['standard_time'];
+            $remark = '';
+            if ($standardTime > 0) {
+                if ($avgPerformedTime > $standardTime) {
+                    $remark = 'Above Standard';
+                } elseif ($avgPerformedTime < $standardTime) {
+                    $remark = 'Below Standard';
+                } else {
+                    $remark = 'Within Standard';
+                }
+            } else {
+                $remark = 'No Standard Set';
+            }
+
+            $allReportData[] = [
+                'sub_category' => $stats['sub_category_name'],
+                'standard_time' => $standardTime,
+                'total_performed_time' => round($stats['total_performed_time'], 2),
+                'total_activity_count' => $stats['total_activity_count'],
+                'total_user_count' => $totalUserCount,
+                'average_performed_time' => $avgPerformedTime,
+                'limit_remark' => $remark,
+            ];
+        }
+
+        // Sort by sub-category name
+        usort($allReportData, fn($a, $b) => strcmp($a['sub_category'], $b['sub_category']));
+
+        // Apply pagination
+        $totalItems = count($allReportData);
+        $totalPages = ceil($totalItems / $perPage);
+        $page = max(1, min($page, $totalPages ?: 1)); // Ensure page is within bounds
+
+        $offset = ($page - 1) * $perPage;
+        $reportData = array_slice($allReportData, $offset, $perPage);
+
+        // Create pagination info
+        $pagination = [
+            'current_page' => $page,
+            'per_page' => $perPage,
+            'total' => $totalItems,
+            'last_page' => $totalPages ?: 1,
+            'from' => $totalItems > 0 ? $offset + 1 : 0,
+            'to' => min($offset + $perPage, $totalItems),
+        ];
+
+        // Get users list for filter
+        $users = User::orderBy('name')->get(['id', 'name']);
+
+        return Inertia::render('Activities/CategoryPerformance', [
+            'filters' => [
+                'start_date' => $start->toDateString(),
+                'end_date' => $end->toDateString(),
+                'user_id' => $userId,
+                'per_page' => $perPage,
+            ],
+            'users' => $users,
+            'canViewAll' => $canViewAll,
+            'reportData' => $reportData,
+            'pagination' => $pagination,
+            'summary' => [
+                'total_categories' => $totalItems,
+                'total_activities' => array_sum(array_column($allReportData, 'total_activity_count')),
+                'total_time' => round(array_sum(array_column($allReportData, 'total_performed_time')), 2),
+            ],
+        ]);
+    }
+
+    /**
+     * Export category performance report to Excel
+     */
+    public function exportCategoryPerformance(Request $request)
+    {
+        $this->authorizeReports();
+
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+        $userId = $request->input('user_id');
+
+        // Default to current month if no dates provided
+        if (!$startDate && !$endDate) {
+            $start = now()->startOfMonth();
+            $end = now()->endOfMonth();
+        } else {
+            $start = $startDate ? \Carbon\Carbon::parse($startDate)->startOfDay() : now()->startOfMonth();
+            $end = $endDate ? \Carbon\Carbon::parse($endDate)->endOfDay() : now()->endOfMonth();
+        }
+
+        // Ensure end date is not before start date
+        if ($end->lt($start)) {
+            $end = $start->copy()->endOfDay();
+        }
+
+        // Apply permission-based filtering
+        $currentUser = Auth::user();
+        $canViewAll = $currentUser->can('activity-list-all');
+
+        // Base query for activities
+        $activitiesQuery = Activity::query()
+            ->with(['activityCategory', 'user'])
+            ->whereBetween('started_at', [$start, $end])
+            ->where('status', 'completed');
+
+        // Apply user filter
+        if ($userId && $canViewAll) {
+            $activitiesQuery->where('user_id', $userId);
+        } elseif (!$canViewAll) {
+            $activitiesQuery->where('user_id', $currentUser->id);
+        }
+
+        // Get all completed activities for the period
+        $activities = $activitiesQuery->get();
+
+        // Group by sub-category and calculate metrics
+        $categoryStats = [];
+
+        foreach ($activities as $activity) {
+            $categoryId = $activity->activity_category_id;
+            $category = $activity->activityCategory;
+
+            if (!$category) continue;
+
+            if (!isset($categoryStats[$categoryId])) {
+                $categoryStats[$categoryId] = [
+                    'sub_category_name' => $category->name,
+                    'standard_time' => $category->standard_time ?? 0,
+                    'total_performed_time' => 0,
+                    'total_activity_count' => 0,
+                    'user_ids' => [],
+                ];
+            }
+
+            $categoryStats[$categoryId]['total_performed_time'] += $activity->duration ?? 0;
+            $categoryStats[$categoryId]['total_activity_count'] += 1;
+
+            if (!in_array($activity->user_id, $categoryStats[$categoryId]['user_ids'])) {
+                $categoryStats[$categoryId]['user_ids'][] = $activity->user_id;
+            }
+        }
+
+        // Calculate derived metrics
+        $exportData = [];
+        foreach ($categoryStats as $stats) {
+            $totalUserCount = count($stats['user_ids']);
+            $avgPerformedTime = $stats['total_activity_count'] > 0
+                ? round($stats['total_performed_time'] / $stats['total_activity_count'], 2)
+                : 0;
+
+            $standardTime = $stats['standard_time'];
+            $remark = '';
+            if ($standardTime > 0) {
+                if ($avgPerformedTime > $standardTime) {
+                    $remark = 'Above Standard';
+                } elseif ($avgPerformedTime < $standardTime) {
+                    $remark = 'Below Standard';
+                } else {
+                    $remark = 'Within Standard';
+                }
+            } else {
+                $remark = 'No Standard Set';
+            }
+
+            $exportData[] = [
+                'Sub-Category' => $stats['sub_category_name'],
+                'Standard Time (min)' => $standardTime,
+                'Total Performed Time (min)' => round($stats['total_performed_time'], 2),
+                'Total Activity Count' => $stats['total_activity_count'],
+                'Total User Count' => $totalUserCount,
+                'Average Performed Time (min)' => $avgPerformedTime,
+                'Limit/Remark' => $remark,
+            ];
+        }
+
+        // Sort by sub-category name
+        usort($exportData, fn($a, $b) => strcmp($a['Sub-Category'], $b['Sub-Category']));
+
+        return Excel::download(
+            new \App\Exports\CategoryPerformanceExport($exportData, $start, $end, $userId),
+            'category_performance_' . now()->format('Ymd_His') . '.xlsx'
+        );
+    }
 }

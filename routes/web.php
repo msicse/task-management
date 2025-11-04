@@ -80,7 +80,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Activity reports and exports
     Route::get('/activities/reports', [ActivityReportController::class, 'index'])->name('activities.reports');
+    Route::get('/activities/reports/category-performance', [ActivityReportController::class, 'categoryPerformance'])->name('activities.reports.category-performance');
     Route::get('/activities/export/excel', [ActivityReportController::class, 'exportExcel'])->name('activities.export.excel');
+    Route::get('/activities/reports/category-performance/export', [ActivityReportController::class, 'exportCategoryPerformance'])->name('activities.reports.category-performance.export');
 
     Route::resource('tasks', TaskController::class);
     Route::put('/tasks/{task}/details', [TaskController::class, 'updateTaskDetails'])->name('tasks.update-details');
@@ -107,6 +109,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/activities/import', [ActivityController::class, 'import'])
         ->name('activities.import.process')
         ->middleware('permission:activity-import');
+    // API route to get user's assigned categories - permission protected
+    Route::get('/api/users/{user}/assigned-categories', [ActivityController::class, 'getUserAssignedCategories'])
+        ->name('api.users.assigned-categories')
+        ->middleware('permission:activity-create-manual');
     // Manual activity routes - permission protected
     Route::get('/activities-manual/create', [ActivityController::class, 'createManual'])
         ->name('activities.create-manual')

@@ -588,4 +588,26 @@ class ActivityController extends Controller
             return back()->with('error', 'Failed to complete activity.');
         }
     }
+
+    /**
+     * Get assigned categories for a specific user
+     */
+    public function getUserAssignedCategories(User $user): JsonResponse
+    {
+        // Only users with 'activity-create-manual' permission can access this
+        if (!auth()->user() || !auth()->user()->can('activity-create-manual')) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        // Get all categories
+        $allCategories = ActivityCategory::orderBy('name')->get(['id', 'name', 'parent_id']);
+
+        // Get assigned category IDs for the selected user
+        $assignedCategoryIds = $user->getAssignedActivityCategories()->pluck('id')->toArray();
+
+        return response()->json([
+            'categories' => $allCategories,
+            'assignedCategories' => $assignedCategoryIds,
+        ]);
+    }
 }

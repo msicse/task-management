@@ -7,7 +7,7 @@ import MultipleSearchableSelect from "@/Components/MultipleSearchableSelect";
 import ActivityFileUpload from "@/Components/ActivityFileUpload";
 import PrimaryButton from "@/Components/PrimaryButton";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function CreateManual({ auth, categories, assignedCategories = [], permissions = {}, users = [] }) {
   const { data, setData, post, errors, processing } = useForm({
@@ -23,11 +23,51 @@ export default function CreateManual({ auth, categories, assignedCategories = []
 
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [selectedMainCategory, setSelectedMainCategory] = useState("");
+  const [loadingCategories, setLoadingCategories] = useState(false);
+  const [userCategories, setUserCategories] = useState(categories);
+  const [userAssignedCategories, setUserAssignedCategories] = useState(assignedCategories);
+
+  // Fetch categories when user changes
+  useEffect(() => {
+    if (data.user_id && data.user_id !== auth.user.id && permissions?.canCreateManual) {
+      setLoadingCategories(true);
+
+      // Fetch user-specific categories
+      window.axios.get(route('api.users.assigned-categories', data.user_id))
+        .then(response => {
+          setUserCategories(response.data.categories);
+          setUserAssignedCategories(response.data.assignedCategories);
+
+          // Reset selected category if it's no longer available for the new user
+          const availableCategoryIds = permissions?.canCreateManual
+            ? response.data.categories.map(cat => cat.id)
+            : response.data.assignedCategories;
+
+          if (data.activity_category_id && !availableCategoryIds.includes(Number(data.activity_category_id))) {
+            setData('activity_category_id', '');
+            setSelectedMainCategory('');
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching user categories:', error);
+          // Fallback to initial categories
+          setUserCategories(categories);
+          setUserAssignedCategories(assignedCategories);
+        })
+        .finally(() => {
+          setLoadingCategories(false);
+        });
+    } else if (data.user_id === auth.user.id) {
+      // Reset to current user's categories
+      setUserCategories(categories);
+      setUserAssignedCategories(assignedCategories);
+    }
+  }, [data.user_id]);
 
   // Separate main and sub-categories
   // Main categories are those without a parent_id. Sub-categories have a parent_id.
-  const mainCategories = categories?.filter((cat) => !cat.parent_id) || [];
-  const subCategories = categories?.filter((cat) => cat.parent_id) || [];
+  const mainCategories = userCategories?.filter((cat) => !cat.parent_id) || [];
+  const subCategories = userCategories?.filter((cat) => cat.parent_id) || [];
 
   // Filtered sub-categories based on main category selection
   let filteredSubCategories = selectedMainCategory
@@ -35,10 +75,17 @@ export default function CreateManual({ auth, categories, assignedCategories = []
     : subCategories;
 
   // If the user does NOT have the manual-create permission, restrict
-  // sub-categories to those assigned to the user's work roles.
+  // sub-categories to those assigned to the selected user's work roles.
   if (!permissions?.canCreateManual) {
-    const allowedIds = (assignedCategories || []).map((id) => Number(id));
+    const allowedIds = (userAssignedCategories || []).map((id) => Number(id));
     filteredSubCategories = filteredSubCategories.filter((sub) => allowedIds.includes(Number(sub.id)));
+  } else {
+    // If user has manual-create permission but we're creating for a specific user,
+    // filter to show only that user's assigned categories
+    if (data.user_id && data.user_id !== auth.user.id) {
+      const allowedIds = (userAssignedCategories || []).map((id) => Number(id));
+      filteredSubCategories = filteredSubCategories.filter((sub) => allowedIds.includes(Number(sub.id)));
+    }
   }
 
   const closeAddActivityPanel = () => {
@@ -188,31 +235,43 @@ export default function CreateManual({ auth, categories, assignedCategories = []
                   {/* Right half: Sub-Category full height */}
                   <div>
                     <InputLabel htmlFor="activity_category_id" value="Sub-Category *" className="text-sm" />
-                    <MultipleSearchableSelect
-                      options={filteredSubCategories.map((cat) => ({
-                        value: String(cat.id),
-                        label: cat.name,
-                      }))}
-                      value={data.activity_category_id}
-                      onChange={(value) => {
-                        setData("activity_category_id", value);
-                        // Auto-select parent category if sub-category is chosen
-                        const selectedSub = filteredSubCategories.find(
-                          (cat) => String(cat.id) === String(value)
-                        );
-                        if (selectedSub && selectedSub.parent_id) {
-                          setSelectedMainCategory(String(selectedSub.parent_id));
-                        }
-                      }}
-                      placeholder="Select sub-category..."
-                      searchPlaceholder="Search sub-categories..."
-                      searchable={true}
-                      multiSelect={false}
-                      closeOnSelect={true}
-                      allowClear={true}
-                      className="mt-1"
-                    />
+                    {loadingCategories ? (
+                      <div className="mt-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-sm text-gray-500 dark:text-gray-400">
+                        Loading categories...
+                      </div>
+                    ) : (
+                      <MultipleSearchableSelect
+                        options={filteredSubCategories.map((cat) => ({
+                          value: String(cat.id),
+                          label: cat.name,
+                        }))}
+                        value={data.activity_category_id}
+                        onChange={(value) => {
+                          setData("activity_category_id", value);
+                          // Auto-select parent category if sub-category is chosen
+                          const selectedSub = filteredSubCategories.find(
+                            (cat) => String(cat.id) === String(value)
+                          );
+                          if (selectedSub && selectedSub.parent_id) {
+                            setSelectedMainCategory(String(selectedSub.parent_id));
+                          }
+                        }}
+                        placeholder={loadingCategories ? "Loading..." : "Select sub-category..."}
+                        searchPlaceholder="Search sub-categories..."
+                        searchable={true}
+                        multiSelect={false}
+                        closeOnSelect={true}
+                        allowClear={true}
+                        className="mt-1"
+                        disabled={loadingCategories}
+                      />
+                    )}
                     <InputError message={errors.activity_category_id} className="mt-1" />
+                    {!loadingCategories && filteredSubCategories.length === 0 && (
+                      <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+                        No sub-categories available for the selected user
+                      </p>
+                    )}
                   </div>
                 </div>
 
