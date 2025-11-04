@@ -488,7 +488,7 @@ class ActivityReportController extends Controller
         ];
 
         // Get users list for filter
-        $users = User::orderBy('name')->get(['id', 'name']);
+        $users = User::orderBy('name')->get(['id', 'name', 'employee_id']);
 
         return Inertia::render('Activities/CategoryPerformance', [
             'filters' => [

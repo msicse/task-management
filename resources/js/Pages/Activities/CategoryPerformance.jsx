@@ -199,7 +199,9 @@ export default function CategoryPerformance({
                             { value: "", label: "All Users" },
                             ...users.map((user) => ({
                               value: String(user.id),
-                              label: user.name,
+                              label: user.employee_id
+                                ? `${user.name} (${user.employee_id})`
+                                : user.name,
                             })),
                           ]}
                           value={userId}
