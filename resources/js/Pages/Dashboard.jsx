@@ -137,6 +137,11 @@ export default function Dashboard({
     })) || [];
 
   const handleStartActivity = async () => {
+    // Prevent double-click/double-submission
+    if (isStarting) {
+      return;
+    }
+
     if (!activityData.activity_category_id) {
       alert("Please select a category");
       return;
@@ -245,6 +250,11 @@ export default function Dashboard({
   };
 
   const handleActivityAction = async (activityId, action) => {
+    // Prevent double-click/concurrent action on same activity
+    if (processingActivity === activityId) {
+      return;
+    }
+
     setProcessingActivity(activityId);
     try {
       await router.put(
@@ -375,6 +385,11 @@ export default function Dashboard({
   };
 
   const handleCreateNewActivity = async () => {
+    // Prevent double-click/double-submission
+    if (isCreatingActivity) {
+      return;
+    }
+
     if (!newActivityData.activity_category_id) {
       alert("Please select a category");
       return;
@@ -599,6 +614,11 @@ export default function Dashboard({
                                 </div>
                                 <button
                                   onClick={async () => {
+                                    // Prevent double-click on category quick-start
+                                    if (isStartingCategoryId === cat.id) {
+                                      return;
+                                    }
+
                                     // one-click start
                                     setIsStartingCategoryId(cat.id);
                                     try {

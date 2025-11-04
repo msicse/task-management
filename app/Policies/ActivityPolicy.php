@@ -17,6 +17,22 @@ class ActivityPolicy
     }
 
     /**
+     * Determine whether the user can create activities.
+     */
+    public function create(User $user): bool
+    {
+        return $user->can('activity-create');
+    }
+
+    /**
+     * Determine whether the user can create manual activities.
+     */
+    public function createManual(User $user): bool
+    {
+        return $user->can('activity-create-manual');
+    }
+
+    /**
      * Determine whether the user can update the activity.
      */
     public function update(User $user, Activity $activity): bool

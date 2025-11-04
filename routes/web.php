@@ -107,6 +107,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/activities/import', [ActivityController::class, 'import'])
         ->name('activities.import.process')
         ->middleware('permission:activity-import');
+    // Manual activity routes - permission protected
+    Route::get('/activities-manual/create', [ActivityController::class, 'createManual'])
+        ->name('activities.create-manual')
+        ->middleware('permission:activity-create-manual');
+    Route::post('/activities-manual', [ActivityController::class, 'storeManual'])
+        ->name('activities.store-manual')
+        ->middleware('permission:activity-create-manual');
     Route::put('/activities/{activity}/start', [ActivityController::class, 'start'])->name('activities.start');
     Route::put('/activities/{activity}/pause', [ActivityController::class, 'pause'])->name('activities.pause');
 	Route::put('/activities/{activity}/complete', [ActivityController::class, 'complete'])->name('activities.complete');

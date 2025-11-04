@@ -11,10 +11,26 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 class CompletePermissionSeeder extends Seeder
 {
     /**
+     * ⚠️ DEPRECATED: This seeder is deprecated!
+     *
+     * Please use PermissionsSeeder instead, which reads from config/permissions.php
+     *
+     * To manage permissions:
+     * 1. Edit: config/permissions.php
+     * 2. Run: php artisan db:seed --class=PermissionsSeeder
+     *
+     * This seeder is kept for backward compatibility only.
+     *
      * Run the database seeds.
      */
     public function run(): void
     {
+        $this->command->warn('⚠️  WARNING: CompletePermissionSeeder is DEPRECATED!');
+        $this->command->warn('Please use: php artisan db:seed --class=PermissionsSeeder');
+        $this->command->warn('And edit: config/permissions.php for permission management');
+        $this->command->info('');
+        $this->command->info('Continuing with deprecated seeder...');
+
         // Reset cached roles and permissions
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
@@ -86,6 +102,7 @@ class CompletePermissionSeeder extends Seeder
             'activity-import',        // Import activities
             'activity-category-import', // Import activity categories (management dropdown)
             'activity-create',        // Create new activities
+            'activity-create-manual', // Create manual activities (with custom date/time)
             'activity-edit',          // Edit activities
             'activity-delete',        // Delete activities
             'activity-view',          // View activity details
@@ -160,6 +177,8 @@ class CompletePermissionSeeder extends Seeder
             // Activity related
             'activity-list',
             'activity-list-all',
+            'activity-create',
+            'activity-create-manual',
             'activity-view',
             'activity-reports',
             'activity-export',
@@ -192,6 +211,8 @@ class CompletePermissionSeeder extends Seeder
             // Activity related
             'activity-list',
             'activity-list-all',
+            'activity-create',
+            'activity-create-manual',
             'activity-view',
             'activity-reports',
             'activity-export',
@@ -218,6 +239,8 @@ class CompletePermissionSeeder extends Seeder
 
             // Activity permissions - employees can only see their own activities
             'activity-list',
+            'activity-create',
+            'activity-create-manual',
             'activity-view',
 
             'file-upload',

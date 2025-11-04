@@ -18,6 +18,7 @@ class Activity extends Model
         'duration',
         'count',
         'notes',
+        'is_manual',
     ];
 
     protected $casts = [
@@ -47,73 +48,79 @@ class Activity extends Model
 
     public function startActivity(): void
     {
-        $now = now();
+        \DB::transaction(function() {
+            $now = now();
 
-        // Update activity status and started_at
-        $this->update([
-            'status' => 'started',
-            'started_at' => $now,
-            'ended_at' => null,
-        ]);
+            // Update activity status and started_at
+            $this->update([
+                'status' => 'started',
+                'started_at' => $now,
+                'ended_at' => null,
+            ]);
 
-        // Create a new session for this start
-        $this->sessions()->create([
-            'started_at' => $now,
-        ]);
+            // Create a new session for this start
+            $this->sessions()->create([
+                'started_at' => $now,
+            ]);
 
-        // Refresh the model to ensure we have the latest data
-        $this->refresh();
+            // Refresh the model to ensure we have the latest data
+            $this->refresh();
+        });
     }
 
     public function pauseActivity(): void
     {
-        $now = now();
+        \DB::transaction(function() {
+            $now = now();
 
-        if ($this->status === 'started') {
-            // End the current active session
-            $activeSession = $this->sessions()->whereNull('ended_at')->first();
-            if ($activeSession) {
-                $activeSession->update(['ended_at' => $now]);
-                $activeSession->calculateDuration();
+            if ($this->status === 'started') {
+                // End the current active session
+                $activeSession = $this->sessions()->whereNull('ended_at')->first();
+                if ($activeSession) {
+                    $activeSession->update(['ended_at' => $now]);
+                    $activeSession->calculateDuration();
+                }
+
+                // Recalculate total duration
+                $this->calculateTotalDuration();
             }
 
-            // Recalculate total duration
-            $this->calculateTotalDuration();
-        }
+            $this->update([
+                'status' => 'paused',
+                'ended_at' => $now,
+            ]);
 
-        $this->update([
-            'status' => 'paused',
-            'ended_at' => $now,
-        ]);
-
-        // Refresh to get latest data
-        $this->refresh();
+            // Refresh to get latest data
+            $this->refresh();
+        });
     }
 
     public function completeActivity(): void
     {
-        $now = now();
+        \DB::transaction(function() {
+            $now = now();
 
-        // If activity is currently started, end the active session
-        if ($this->status === 'started') {
-            $activeSession = $this->sessions()->whereNull('ended_at')->first();
-            if ($activeSession) {
-                $activeSession->update(['ended_at' => $now]);
-                $activeSession->calculateDuration();
+            // If activity is currently started, end the active session
+            if ($this->status === 'started') {
+                $activeSession = $this->sessions()->whereNull('ended_at')->first();
+                if ($activeSession) {
+                    $activeSession->update(['ended_at' => $now]);
+                    $activeSession->calculateDuration();
+                }
             }
-        }
 
-        // Always recalculate total duration before completing
-        $this->calculateTotalDuration();
+            // Always recalculate total duration before completing
+            $this->calculateTotalDuration();
 
-        // Update status to completed
-        $this->update([
-            'status' => 'completed',
-            'ended_at' => $now,
-        ]);
+            // Update status to completed
+            $this->update([
+                'status' => 'completed',
+                'ended_at' => $now,
+            ]);
 
-        // Refresh to get latest data including the calculated duration
-        $this->refresh();
+            // Refresh to get latest data including the calculated duration
+            $this->refresh();
+        });
     }
 
     public function calculateTotalDuration(): void
@@ -246,14 +253,37 @@ class Activity extends Model
 
     /**
      * Start this activity and automatically pause all other active activities for the user
+     * Uses database transaction with row locking to prevent race conditions
      */
     public function startActivityExclusive(): void
     {
-        // First pause all other active activities for this user (excluding this activity)
-        self::pauseAllActiveForUser($this->user_id, $this->id);
+        \DB::transaction(function() {
+            // Lock all user's started activities for update (prevents concurrent reads)
+            // This ensures only one transaction can process this user's activities at a time
+            $activeActivities = self::where('user_id', $this->user_id)
+                ->where('status', 'started')
+                ->where('id', '!=', $this->id)
+                ->lockForUpdate()
+                ->get();
 
-        // Then start this activity
-        $this->startActivity();
+            // Log if multiple activities detected (shouldn't happen with proper locking)
+            if ($activeActivities->count() > 0) {
+                \Log::info('Auto-pausing multiple started activities', [
+                    'user_id' => $this->user_id,
+                    'activity_count' => $activeActivities->count(),
+                    'activity_ids' => $activeActivities->pluck('id')->toArray(),
+                    'new_activity_id' => $this->id,
+                ]);
+            }
+
+            // Pause each active activity
+            foreach ($activeActivities as $activity) {
+                $activity->pauseActivity();
+            }
+
+            // Then start this activity
+            $this->startActivity();
+        });
     }
 
     /**

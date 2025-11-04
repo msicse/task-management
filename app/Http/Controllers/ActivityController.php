@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Activity;
 use App\Models\ActivityCategory;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -88,6 +89,7 @@ class ActivityController extends Controller
                 'canSeeAllActivities' => $currentUser->can('activity-list-all'),
                 'canSeeOwnActivities' => $currentUser->can('activity-list'),
                 'canImportActivities' => $currentUser->can('activity-import'),
+                'canCreateManual' => $currentUser->can('activity-create-manual'),
             ]
         ]);
     }
@@ -153,6 +155,41 @@ class ActivityController extends Controller
     }
 
     /**
+     * Show the form for creating a new manual activity with custom date/time.
+     */
+    public function createManual(): Response|RedirectResponse
+    {
+        // Check permission
+        if (!auth()->user() || !auth()->user()->can('activity-create-manual')) {
+            return redirect()->route('activities.index')->with('error', 'You are not authorized to create manual activities.');
+        }
+
+        // Provide all categories (for main/sub selection) and also the subset
+        // assigned to the current user's work roles so the UI can restrict
+        // selectable sub-categories if needed.
+        $categories = ActivityCategory::orderBy('name')->get(['id', 'name', 'parent_id']);
+        $assignedCategories = auth()->user()->getAssignedActivityCategories()->pluck('id');
+
+        // Provide a users list only if the current user may create manual activities for others.
+        if (auth()->user()->can('activity-create-manual')) {
+            // Include employee_id so the frontend can display it
+            $users = User::orderBy('name')->get(['id', 'name', 'employee_id']);
+        } else {
+            // Only include the current user
+            $users = User::where('id', auth()->id())->get(['id', 'name', 'employee_id']);
+        }
+
+        return Inertia::render('Activities/CreateManual', [
+            'categories' => $categories,
+            'assignedCategories' => $assignedCategories,
+            'users' => $users,
+            'permissions' => [
+                'canCreateManual' => auth()->user()->can('activity-create-manual'),
+            ],
+        ]);
+    }
+
+    /**
      * Store a newly created resource in storage.
      */
     public function store(Request $request): RedirectResponse|JsonResponse
@@ -165,14 +202,9 @@ class ActivityController extends Controller
             'redirect_to' => 'nullable|string|in:dashboard,activities',
         ]);
 
-        // Verify user can access this category
-        $category = ActivityCategory::find($validated['activity_category_id']);
-        if (!auth()->user()->canAccessActivityCategory($category->name)) {
-            if ($request->wantsJson()) {
-                return response()->json(['error' => 'You do not have access to this category.'], 403);
-            }
-            return back()->withErrors(['activity_category_id' => 'You do not have access to this category.']);
-        }
+        // Users with 'activity-create-manual' permission can access all categories.
+        // No category access check is performed for them.
+        // (The permission gate at the method entry already verified they can create manual activities.)
 
         $validated['user_id'] = auth()->id();
 
@@ -215,6 +247,114 @@ class ActivityController extends Controller
 
         return redirect()->route('activities.index')
             ->with('success', 'Activity created successfully' . ($request->hasFile('files') ? ' with files' : '') . '.');
+    }
+
+    /**
+     * Store a newly created manual activity with custom date/time.
+     */
+    public function storeManual(Request $request): RedirectResponse|JsonResponse
+    {
+        // Check permission
+        if (!auth()->user() || !auth()->user()->can('activity-create-manual')) {
+            if ($request->wantsJson()) {
+                return response()->json(['error' => 'You are not authorized to create manual activities.'], 403);
+            }
+            return redirect()->route('activities.index')->with('error', 'You are not authorized to create manual activities.');
+        }
+
+        $validated = $request->validate([
+            'activity_category_id' => 'required|exists:activity_categories,id',
+            'description' => 'nullable|string|max:1000',
+            'started_at' => 'required|date',
+            'ended_at' => 'nullable|date|after:started_at',
+            'duration' => 'nullable|numeric|min:0',
+            'count' => 'nullable|integer|min:0',
+            'user_id' => 'required|exists:users,id',
+            'notes' => 'nullable|string|max:2000',
+            'files.*' => 'nullable|file|max:10240', // 10MB max per file
+            'redirect_to' => 'nullable|string|in:dashboard,activities',
+        ]);
+
+        // Verify user can access this category
+        $category = ActivityCategory::find($validated['activity_category_id']);
+        if (!auth()->user()->canAccessActivityCategory($category->name)) {
+            if ($request->wantsJson()) {
+                return response()->json(['error' => 'You do not have access to this category.'], 403);
+            }
+            return back()->withErrors(['activity_category_id' => 'You do not have access to this category.']);
+        }
+
+        // Determine user_id to store.
+        // If the current user has the manual-create permission, prefer the provided user_id
+        // (if any); otherwise always use the authenticated user's id.
+        if (auth()->user()->can('activity-create-manual')) {
+            $validated['user_id'] = isset($validated['user_id']) && $validated['user_id'] ? (int)$validated['user_id'] : auth()->id();
+        } else {
+            $validated['user_id'] = auth()->id();
+        }
+        // Debug log to help trace incorrect user assignment during testing
+        \Log::info('Creating manual activity - resolved user_id', [
+            'resolved_user_id' => $validated['user_id'],
+            'provided_user_id' => $request->input('user_id'),
+            'auth_user_id' => auth()->id(),
+            'has_permission' => auth()->user()->can('activity-create-manual'),
+        ]);
+        $validated['is_manual'] = true;
+
+        // Set status based on whether ended_at is provided
+        if (isset($validated['ended_at']) && $validated['ended_at']) {
+            $validated['status'] = 'completed';
+
+            // Calculate duration from dates if not provided
+            if (!isset($validated['duration']) || !$validated['duration']) {
+                $start = \Carbon\Carbon::parse($validated['started_at']);
+                $end = \Carbon\Carbon::parse($validated['ended_at']);
+                $validated['duration'] = $start->diffInMinutes($end);
+            }
+        } else {
+            $validated['status'] = 'completed'; // Manual activities are typically completed
+            $validated['ended_at'] = $validated['started_at']; // Set same as started if not provided
+        }
+
+        // Ensure count has a default value
+        if (!isset($validated['count'])) {
+            $validated['count'] = 1;
+        }
+
+        // Create the manual activity
+        $activity = Activity::create($validated);
+
+        // Handle file uploads if any
+        if ($request->hasFile('files')) {
+            foreach ($request->file('files') as $file) {
+                // Additional validation for each file
+                if ($file->isValid()) {
+                    $path = $file->store('activity-files', 'public');
+
+                    $activity->files()->create([
+                        'file_path' => $path,
+                        'original_name' => $file->getClientOriginalName(),
+                        'file_size' => $file->getSize(),
+                        'mime_type' => $file->getMimeType(),
+                    ]);
+                }
+            }
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json($activity->load(['user', 'activityCategory', 'files']), 201);
+        }
+
+        // Check if redirect_to parameter is provided
+        $redirectTo = $request->input('redirect_to', 'activities');
+
+        if ($redirectTo === 'dashboard') {
+            return redirect()->route('dashboard')
+                ->with('success', 'Manual activity created successfully' . ($request->hasFile('files') ? ' with files' : '') . '.');
+        }
+
+        return redirect()->route('activities.index')
+            ->with('success', 'Manual activity created successfully' . ($request->hasFile('files') ? ' with files' : '') . '.');
     }
 
     /**

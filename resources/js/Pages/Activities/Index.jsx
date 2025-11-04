@@ -400,12 +400,22 @@ export default function Index({
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            {permissions.canImportActivities && (
+            {/* {permissions.canImportActivities && (
               <Link
                 href={route('activities.import')}
                 className="bg-yellow-500 py-2 px-3 text-white rounded shadow transition-all hover:bg-yellow-600 inline-flex items-center"
               >
                 Import
+              </Link>
+            )} */}
+
+            {permissions.canCreateManual && (
+              <Link
+                href={route('activities.create-manual')}
+                className="bg-blue-500 py-2 px-3 text-white rounded shadow transition-all hover:bg-blue-600 inline-flex items-center"
+              >
+                <ClockIcon className="w-4 h-4 mr-2" />
+                Add Manual Activity
               </Link>
             )}
 
