@@ -114,13 +114,7 @@ export default function CategoryPerformance({
       user={auth.user}
       header={
         <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <Link
-              href={route("activities.reports")}
-              className="mr-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-            >
-              <ArrowLeftIcon className="w-5 h-5" />
-            </Link>
+          <div>
             <h2 className="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
               Category Performance Report
             </h2>
@@ -132,6 +126,37 @@ export default function CategoryPerformance({
 
       <div className="py-6">
         <div className="max-w-full mx-auto sm:px-6 lg:px-8">
+          {/* Reports Navigation Bar */}
+          <div className="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg mb-4 overflow-hidden">
+            <div className="border-b border-gray-200 dark:border-gray-700">
+              <nav className="flex -mb-px">
+                <Link
+                  href={route("activities.reports")}
+                  className="group inline-flex items-center px-4 py-3 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 transition-colors duration-200"
+                >
+                  <svg className="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                  Activity Summary
+                </Link>
+                <Link
+                  href={route("activities.reports.category-performance")}
+                  className="group inline-flex items-center px-4 py-3 border-b-2 border-indigo-500 text-sm font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20"
+                >
+                  <span className="mr-1.5">📊</span>
+                  Category Performance
+                </Link>
+                <Link
+                  href={route("activities.reports.user-visualization")}
+                  className="group inline-flex items-center px-4 py-3 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 transition-colors duration-200"
+                >
+                  <span className="mr-1.5">📈</span>
+                  User Visualization
+                </Link>
+              </nav>
+            </div>
+          </div>
+
           {/* Filters Section */}
           <div className="mb-6 bg-white dark:bg-gray-800 overflow-visible shadow-sm sm:rounded-lg">
             <div className="p-6 overflow-visible">

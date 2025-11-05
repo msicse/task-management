@@ -413,7 +413,6 @@ export default function Reports({
                 ? "Viewing all team activities"
                 : "Viewing your activities"}
             </p>
-            {/* Removed 'Showing: Today (default)' hint per request */}
           </div>
           <div className="flex items-center space-x-3">
             <button
@@ -462,26 +461,34 @@ export default function Reports({
             />
           )}
 
-          {/* Quick Links to Other Reports */}
-          <div className="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg mb-6">
-            <div className="p-4">
-              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                Other Reports
-              </h3>
-              <div className="flex flex-wrap gap-3">
+          {/* Reports Navigation Bar */}
+          <div className="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg mb-4 overflow-hidden">
+            <div className="border-b border-gray-200 dark:border-gray-700">
+              <nav className="flex -mb-px">
+                <Link
+                  href={route("activities.reports")}
+                  className="group inline-flex items-center px-4 py-3 border-b-2 border-indigo-500 text-sm font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20"
+                >
+                  <svg className="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                  Activity Summary
+                </Link>
                 <Link
                   href={route("activities.reports.category-performance")}
-                  className="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
+                  className="group inline-flex items-center px-4 py-3 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 transition-colors duration-200"
                 >
-                  📊 Category Performance Report
+                  <span className="mr-1.5">📊</span>
+                  Category Performance
                 </Link>
                 <Link
                   href={route("activities.reports.user-visualization")}
-                  className="inline-flex items-center px-4 py-2 bg-purple-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-purple-700 focus:bg-purple-700 active:bg-purple-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition ease-in-out duration-150"
+                  className="group inline-flex items-center px-4 py-3 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 transition-colors duration-200"
                 >
-                  📈 User Activity Visualization
+                  <span className="mr-1.5">📈</span>
+                  User Visualization
                 </Link>
-              </div>
+              </nav>
             </div>
           </div>
 

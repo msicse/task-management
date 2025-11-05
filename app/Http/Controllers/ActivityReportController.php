@@ -15,10 +15,28 @@ use Inertia\Inertia;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Auth;
 
+/**
+ * Activity Report Controller
+ *
+ * Permission Structure:
+ * - All authenticated users can view their own activity reports (default access)
+ * - Users with 'activity-list-all' permission can view all team members' reports
+ *
+ * Report Types:
+ * 1. Activity Summary - Daily activity overview with charts and breakdowns
+ * 2. Category Performance - Performance metrics by activity category
+ * 3. User Activity Visualization - Detailed user activity with timeline and heatmaps
+ *
+ * Access Control:
+ * - Own Reports: Always accessible to any authenticated user
+ * - All Reports: Requires 'activity-list-all' permission
+ */
 class ActivityReportController extends Controller
 {
     /**
      * Show the activity reports page with filters and aggregates
+     * Users can see their own reports by default
+     * Users with 'activity-list-all' can switch between 'my' and 'all' views
      */
     public function index(Request $request)
     {
@@ -315,47 +333,64 @@ class ActivityReportController extends Controller
         $end = $endDate ? \Carbon\Carbon::parse($endDate)->endOfDay() : now()->endOfDay();
     }
 
-        $query = Activity::with(['user','activityCategory:id,name,standard_time'])
-            ->whereBetween('started_at', [$start, $end]);
+        // Use ActivitySession instead of Activity to match web display
+        $sessions = ActivitySession::query()
+            ->whereBetween('started_at', [$start, $end])
+            ->with(['activity.user.department', 'activity.activityCategory']);
 
         if ($userId) {
-            $query->where('user_id', $userId);
+            $sessions->whereHas('activity', fn($q) => $q->where('user_id', $userId));
         }
         if ($departmentId) {
-            $query->whereHas('user', fn($q) => $q->where('department_id', $departmentId));
+            $sessions->whereHas('activity.user', fn($q) => $q->where('department_id', $departmentId));
         }
         if ($categoryId) {
-            $query->where('activity_category_id', $categoryId);
+            $sessions->whereHas('activity', fn($q) => $q->where('activity_category_id', $categoryId));
         }
         if ($roleId) {
-            $query->whereHas('user.roles', fn($q) => $q->where('roles.id', $roleId));
+            $sessions->whereHas('activity.user.roles', fn($q) => $q->where('roles.id', $roleId));
         }
 
-        $activities = $query->get();
+        // Group by activity and sum session durations
+        $sessionData = $sessions->get();
+        $activitySums = $sessionData->groupBy('activity_id')->map(function($activitySessions) {
+            $first = $activitySessions->first();
+            $totalDuration = $activitySessions->sum('duration');
+
+            return [
+                'activity' => $first->activity,
+                'total_duration' => round($totalDuration, 2),
+            ];
+        })->values();
 
         return Excel::download(
-            new ActivitiesExport($activities, $start, $end),
+            new ActivitiesExport($activitySums, $start, $end),
             'activities_report_' . now()->format('Ymd_His') . '.xlsx'
         );
     }
 
     /**
      * Basic permission check for activity reports
+     * All authenticated users can view their own reports
+     * Only users with 'activity-list-all' can view all team reports
      */
     protected function authorizeReports(): void
     {
         $user = Auth::user();
         if (!$user) {
-            abort(403);
+            abort(403, 'Unauthorized. Please login to view reports.');
         }
-        // Allow users with activity permissions or task permissions (backward compatibility)
-        if (!($user->can('activity-list') || $user->can('activity-list-all') || $user->can('task-list'))) {
-            abort(403, 'Unauthorized action.');
-        }
+        // All authenticated users can view their own activity reports by default
+        // No additional permission check needed for viewing own reports
     }
 
     /**
      * Show detailed category performance report
+     * Shows performance metrics grouped by activity categories
+     *
+     * Access Control:
+     * - Users without 'activity-list-all': Can only view their own category performance
+     * - Users with 'activity-list-all': Can filter by any user or view all
      */
     public function categoryPerformance(Request $request)
     {
@@ -623,8 +658,14 @@ class ActivityReportController extends Controller
         );
     }
 
-    /**
-     * User Activity Visualization Report
+        /**
+     * Show user activity visualization report
+     * Displays detailed activity visualization with charts, heatmaps, and timelines
+     *
+     * Access Control:
+     * - Users without 'activity-list-all': Can only view their own activity visualization
+     * - Users with 'activity-list-all': Can select any user to view
+     * - Defaults to current user if no user selected
      */
     public function userActivityVisualization(Request $request)
     {

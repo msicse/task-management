@@ -10,34 +10,36 @@ use Maatwebsite\Excel\Concerns\WithTitle;
 
 class ActivitiesExport implements FromCollection, WithHeadings, WithMapping, WithTitle
 {
-    public function __construct(private Collection $activities, private $start, private $end)
+    public function __construct(private Collection $activitySums, private $start, private $end)
     {
     }
 
     public function collection(): Collection
     {
-        return $this->activities;
+        return $this->activitySums;
     }
 
     public function headings(): array
     {
         return [
-            'ID',
+            'Activity ID',
             'User',
             'Department',
             'Category',
             'Count',
-            'Standard Time (minutes)',
+            'Standard Time (min)',
             'Description',
             'Status',
             'Started At',
             'Ended At',
-            'Duration (minutes)'
+            'Duration (min)'
         ];
     }
 
-    public function map($activity): array
+    public function map($activitySum): array
     {
+        $activity = $activitySum['activity'];
+
         return [
             $activity->id,
             optional($activity->user)->name,
@@ -49,7 +51,7 @@ class ActivitiesExport implements FromCollection, WithHeadings, WithMapping, Wit
             $activity->status,
             optional($activity->started_at)?->toDateTimeString(),
             optional($activity->ended_at)?->toDateTimeString(),
-            round((float)($activity->duration ?? 0), 2),
+            $activitySum['total_duration'], // Use summed session duration
         ];
     }
 
