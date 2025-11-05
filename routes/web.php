@@ -81,6 +81,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Activity reports and exports
     Route::get('/activities/reports', [ActivityReportController::class, 'index'])->name('activities.reports');
     Route::get('/activities/reports/category-performance', [ActivityReportController::class, 'categoryPerformance'])->name('activities.reports.category-performance');
+    Route::get('/activities/reports/user-visualization', [ActivityReportController::class, 'userActivityVisualization'])->name('activities.reports.user-visualization');
     Route::get('/activities/export/excel', [ActivityReportController::class, 'exportExcel'])->name('activities.export.excel');
     Route::get('/activities/reports/category-performance/export', [ActivityReportController::class, 'exportCategoryPerformance'])->name('activities.reports.category-performance.export');
 

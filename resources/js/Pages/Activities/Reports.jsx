@@ -464,16 +464,24 @@ export default function Reports({
 
           {/* Quick Links to Other Reports */}
           <div className="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg mb-6">
-            <div className="p-4 flex items-center justify-between">
-              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <div className="p-4">
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                 Other Reports
               </h3>
-              <Link
-                href={route("activities.reports.category-performance")}
-                className="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
-              >
-                📊 Category Performance Report
-              </Link>
+              <div className="flex flex-wrap gap-3">
+                <Link
+                  href={route("activities.reports.category-performance")}
+                  className="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
+                >
+                  📊 Category Performance Report
+                </Link>
+                <Link
+                  href={route("activities.reports.user-visualization")}
+                  className="inline-flex items-center px-4 py-2 bg-purple-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-purple-700 focus:bg-purple-700 active:bg-purple-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition ease-in-out duration-150"
+                >
+                  📈 User Activity Visualization
+                </Link>
+              </div>
             </div>
           </div>
 

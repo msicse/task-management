@@ -1,13 +1,8 @@
 export function formatMinutesDisplay(minutes) {
   const minutesFloat = Number(minutes) || 0;
-  if (minutesFloat === 0) return '0m';
-  if (minutesFloat < 1) return `${minutesFloat.toFixed(2)}m`;
-  if (minutesFloat >= 60) {
-    const hours = Math.floor(minutesFloat / 60);
-    const minutesRound = Math.round(minutesFloat % 60);
-    return `${hours}h ${minutesRound}m`;
-  }
-  return `${Math.round(minutesFloat)}m`;
+  if (minutesFloat === 0) return '0 min';
+  if (minutesFloat < 1) return `${minutesFloat.toFixed(2)} min`;
+  return `${Math.round(minutesFloat)} min`;
 }
 
 export function exactTooltip(minutes) {

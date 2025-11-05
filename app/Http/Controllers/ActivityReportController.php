@@ -265,14 +265,14 @@ class ActivityReportController extends Controller
                 'total_hours' => $totalHours,
                 'total_minutes' => round((float)$totalMinutes, 2),
                 'total_activities' => $activities->count(),
-                'average_duration' => $activities->count() > 0 ? round($totalMinutes / $activities->count(), 2) . ' minutes' : '0 minutes',
+                'average_duration' => $activities->count() > 0 ? round($totalMinutes / $activities->count(), 2) . ' min' : '0 min',
                 // Average hours per person per day (numeric hours)
                 'avg_per_person_per_day' => round($avgPerPersonPerDay, 2),
                 // Human-friendly display for frontend (hours or minutes)
                 'avg_per_person_per_day_display' => $avgDisplay,
                 'avg_per_person_per_day_tooltip' => $avgTooltip,
                 'total_users' => $uniqueUserCount,
-                'total_duration' => $totalHours . ' hours',
+                'total_duration' => round((float)$totalMinutes, 2) . ' min',
                 'status_breakdown' => $statusBreakdown,
                 'category_breakdown' => $categoryBreakdown,
                 'department_breakdown' => $departmentBreakdown,
@@ -621,5 +621,195 @@ class ActivityReportController extends Controller
             new \App\Exports\CategoryPerformanceExport($exportData, $start, $end, $userId),
             'category_performance_' . now()->format('Ymd_His') . '.xlsx'
         );
+    }
+
+    /**
+     * User Activity Visualization Report
+     */
+    public function userActivityVisualization(Request $request)
+    {
+        $this->authorizeReports();
+
+        $currentUser = Auth::user();
+        $canViewAll = $currentUser->can('activity-list-all');
+
+        // Get user filter - if can't view all, force to current user
+        $userId = $request->input('user_id');
+        if (!$canViewAll) {
+            $userId = $currentUser->id;
+        }
+
+        // If no user selected and can view all, default to current user
+        if (!$userId) {
+            $userId = $currentUser->id;
+        }
+
+        // Date range - default to last 30 days
+        $endDate = $request->input('end_date') ? \Carbon\Carbon::parse($request->input('end_date')) : now();
+        $startDate = $request->input('start_date')
+            ? \Carbon\Carbon::parse($request->input('start_date'))
+            : $endDate->copy()->subDays(29);
+
+        $viewType = $request->input('view_type', 'daily');
+
+        // Get user info
+        $selectedUser = User::find($userId);
+        $selectedUserName = $selectedUser ? ($selectedUser->employee_id
+            ? "{$selectedUser->name} ({$selectedUser->employee_id})"
+            : $selectedUser->name) : null;
+
+        // Query activity sessions for the user
+        $sessions = ActivitySession::whereHas('activity', function($q) use ($userId) {
+                $q->where('user_id', $userId);
+            })
+            ->whereBetween('started_at', [$startDate->startOfDay(), $endDate->endOfDay()])
+            ->with(['activity.activityCategory.parent'])
+            ->get();
+
+        // Prepare daily data
+        $dailyData = [];
+        $categoryBreakdown = [];
+        $dateRange = new \DatePeriod(
+            $startDate->copy()->startOfDay(),
+            new \DateInterval('P1D'),
+            $endDate->copy()->addDay()->startOfDay()
+        );
+
+        foreach ($dateRange as $date) {
+            $dateKey = $date->format('Y-m-d');
+            $daySessions = $sessions->filter(function($session) use ($date) {
+                return \Carbon\Carbon::parse($session->started_at)->isSameDay($date);
+            });
+
+            $totalMinutes = $daySessions->sum('duration');
+
+            // Only add to dailyData if there's activity on this day
+            if ($totalMinutes > 0) {
+                $dailyData[] = [
+                    'date' => $date->format('M d'),
+                    'total_minutes' => round($totalMinutes, 2),
+                ];
+
+                // Category breakdown - Use parent category (main category)
+                $categoryData = ['date' => $date->format('M d')];
+                $categoriesInDay = $daySessions->groupBy(function($session) {
+                    $category = $session->activity->activityCategory;
+                    // If it has a parent, use parent name (main category), otherwise use its own name
+                    if ($category && $category->parent_id && $category->parent) {
+                        return $category->parent->name;
+                    }
+                    return $category ? $category->name : 'Uncategorized';
+                });
+
+                foreach ($categoriesInDay as $categoryName => $categorySessions) {
+                    $categoryData[$categoryName] = round($categorySessions->sum('duration'), 2);
+                }
+
+                $categoryBreakdown[] = $categoryData;
+            }
+        }        // Prepare hourly heatmap (day of week vs hour of day)
+        $hourlyHeatmap = [];
+        for ($day = 0; $day < 7; $day++) {
+            $hourlyHeatmap[$day] = array_fill(0, 24, 0);
+        }
+
+        foreach ($sessions as $session) {
+            $startTime = \Carbon\Carbon::parse($session->started_at);
+            $dayOfWeek = $startTime->dayOfWeek; // 0 = Sunday, 6 = Saturday
+            $hour = $startTime->hour;
+
+            $hourlyHeatmap[$dayOfWeek][$hour] += $session->duration ?? 0;
+        }
+
+        // Calculate summary statistics
+        $totalMinutes = $sessions->sum('duration');
+        $totalActivities = $sessions->pluck('activity_id')->unique()->count();
+        $activeDays = $sessions->pluck('started_at')
+            ->map(function($date) {
+                return \Carbon\Carbon::parse($date)->format('Y-m-d');
+            })
+            ->unique()
+            ->count();
+
+        $avgPerDay = $activeDays > 0 ? $totalMinutes / $activeDays : 0;
+
+        $summary = [
+            'total_minutes' => round($totalMinutes, 2),
+            'total_activities' => $totalActivities,
+            'active_days' => $activeDays,
+            'avg_per_day' => round($avgPerDay, 2),
+        ];
+
+        // Prepare detailed session timeline
+        $sessionTimeline = [];
+        $sortedSessions = $sessions->sortBy('started_at')->values();
+
+        foreach ($sortedSessions as $index => $session) {
+            $startTime = \Carbon\Carbon::parse($session->started_at);
+            $endTime = $session->ended_at ? \Carbon\Carbon::parse($session->ended_at) : null;
+
+            $category = $session->activity->activityCategory;
+            $mainCategory = ($category && $category->parent_id && $category->parent)
+                ? $category->parent->name
+                : ($category ? $category->name : 'Uncategorized');
+            $subCategory = ($category && $category->parent_id) ? $category->name : null;
+
+            $duration = $session->duration ?? 0;
+            $hours = floor($duration / 60);
+            $minutes = $duration % 60;
+            $durationFormatted = $hours > 0 ? "{$hours}h {$minutes}m" : "{$minutes}m";
+
+            // Calculate idle time to next session
+            $idleAfter = null;
+            $nextSessionStart = null;
+            if ($index < $sortedSessions->count() - 1) {
+                $nextSession = $sortedSessions[$index + 1];
+                $nextStart = \Carbon\Carbon::parse($nextSession->started_at);
+
+                // Only calculate idle if sessions are on the same day
+                if ($endTime && $startTime->isSameDay($nextStart)) {
+                    $idleMinutes = $endTime->diffInMinutes($nextStart);
+                    if ($idleMinutes > 0) {
+                        $idleHours = floor($idleMinutes / 60);
+                        $idleMins = $idleMinutes % 60;
+                        $idleAfter = $idleHours > 0 ? "{$idleHours}h {$idleMins}m" : "{$idleMins}m";
+                        $nextSessionStart = $nextStart->format('h:i A');
+                    }
+                }
+            }
+
+            $sessionTimeline[] = [
+                'date' => $startTime->format('l, F j, Y'), // e.g., "Monday, November 5, 2025"
+                'start_time' => $startTime->format('h:i A'), // e.g., "08:34 AM"
+                'end_time' => $endTime ? $endTime->format('h:i A') : 'Ongoing',
+                'category' => $mainCategory,
+                'sub_category' => $subCategory,
+                'description' => $session->activity->description ?? '',
+                'duration' => $durationFormatted,
+                'status' => $session->activity->status ?? 'unknown',
+                'idle_after' => $idleAfter,
+                'next_session_start' => $nextSessionStart,
+            ];
+        }
+
+        // Get users list for filter dropdown
+        $users = User::orderBy('name')->get(['id', 'name', 'employee_id']);
+
+        return Inertia::render('Activities/UserActivityVisualization', [
+            'filters' => [
+                'start_date' => $startDate->toDateString(),
+                'end_date' => $endDate->toDateString(),
+                'user_id' => $userId,
+                'view_type' => $viewType,
+            ],
+            'users' => $users,
+            'canViewAll' => $canViewAll,
+            'dailyData' => $dailyData,
+            'categoryBreakdown' => $categoryBreakdown,
+            'hourlyHeatmap' => $hourlyHeatmap,
+            'summary' => $summary,
+            'selectedUserName' => $selectedUserName,
+            'sessionTimeline' => $sessionTimeline,
+        ]);
     }
 }
